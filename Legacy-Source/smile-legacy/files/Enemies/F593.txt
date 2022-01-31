@@ -1,0 +1,6 @@
+F593 (BATTA2Na)
+[Speed] = 0000/0001 for facing left/right
+[Speed 2] = distance it can cover/jump
+[Graphic Unknown] = 0004
+
+Fighter pirates from Norfair.

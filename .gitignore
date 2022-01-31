@@ -5,6 +5,8 @@
 
 # Project Resource File
 *.sfc
+*.smc
+*.zip
 
 # User-specific files
 *.suo
