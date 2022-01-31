@@ -1,0 +1,27 @@
+Start
+84:85DA           JSR ($1CD7,X)	        Pre PLM Command
+84:85DD           LDX $1C27             Load room ID
+84:85E0           LDA $7EDE1C,X         Load timer
+84:85E4           DEC A                 Dec timer
+84:85E5           STA $7EDE1C,X
+84:85E9           BNE $861D             If Timer =/= 0, return
+84:85EB           LDY $1D27,X           Load pointer to next instruction
+84:85EE           LDA $0000,Y           Load next instruction ID
+84:85F1           BPL $85FD             Go here if it's not a pointer
+84:85F3           STA $12               Store instruction ID
+84:85F5           INY                   Inc Y to target argument
+84:85F6           INY 
+84:85F7           PEA $85ED             Put 85ED onto stack
+84:85FA           JMP ($0012)           Jump (return address is 85ED) to the PLM routine
+84:85FD           STA $7EDE1C,X         Not a pointer! Store to timer
+84:8601           LDA $0002,Y           Load thing after the set-timer
+84:8604           STA $7EDE6C,X         and store here
+84:8608           TYA                   Take the pointer to next instruction
+84:8609           CLC 
+84:860A           ADC #$0004            and add four
+84:860D           STA $1D27,X           and return it, to be run when timer is up
+84:8610           JSR $861E             Edits the blocks where the PLM is located. Also detects if Samus is touching the PLM?
+84:8613           LDX $1C27             Reload room ID
+84:8616           JSR $848290           Find the X/Y coord PLM to draw
+84:861A           JSR $8DAA             Draw it
+84:861D           RTS 

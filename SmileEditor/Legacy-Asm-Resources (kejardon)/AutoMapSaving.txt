@@ -1,0 +1,284 @@
+Random note: This is all in bank 81. So offsets are both in-bank offsets and ROM offsets. XD
+The first half of this is documenting the original code and stuff.
+The second half is my proposed changes, making the code simpler and more efficient.
+At the very bottom are details of what SMILE would need to do to implement automap saving/loading.
+
+
+Original game code:
+
+8131,x: Index of how many bytes each individual area uses in srm (1 byte each)
+8138,X: Sum of how many bytes all previous areas have used (2 bytes each)
+82D6,X: Pointer to start of map-saved pointers (2 bytes each)
+
+$82E4: Load Map
+	PHB
+	PHP
+	PHK
+	PLB
+	REP #$30
+	LDX #$0700
+	LDA #$0000
+
+BRANCH_ALPHA
+
+	STA $7ECD52, X
+	DEX
+	DEX
+
+	BPL BRANCH_ALPHA
+
+	STZ $16
+
+BRANCH_GAMMA
+
+	LDA $16
+	XBA
+	STA $14
+	LDX $16
+	LDA $8131, X
+	AND #$00FF
+	STA $12
+	LDA $16
+	ASL A
+	TAX
+	LDA $82D6, X
+	STA $00
+	LDA #$0081
+	STA $02
+	LDA $8138, X
+	TAX
+	LDA #$CD52
+	STA $03
+	LDA #$007E
+	STA $05
+
+BRANCH_BETA
+
+	LDA ($00)
+	AND #$00FF
+	CLC
+	ADC $14
+	TAY
+	SEP #$20
+	LDA $7ED91C, X
+	STA [$03], Y
+	REP #$20
+	INC $00
+	INX
+	DEC $12
+
+	BNE BRANCH_BETA
+
+	INC $16
+	LDA $16
+	CMP #$0006
+
+	BMI BRANCH_GAMMA
+
+	PLP
+	PLB
+	RTS
+
+$834B: Save Map
+
+	PHB
+	PHP
+	PHK
+	PLB
+	REP #$30
+	STZ $1A
+
+BRANCH_EPSILON
+
+	LDX $1A
+	LDA $8131, X
+	AND #$00FF
+	STA $16
+	LDA $1A
+	ASL A
+	TAX
+	LDA $82D6, X
+	STA $00
+	LDA $8138, X
+	TAX
+	LDA $1A
+	XBA
+	STA $18
+	LDA #$CD52
+	STA $03
+	LDA #$007E
+	STA $05
+
+BRANCH_DELTA
+
+	LDA ($00)
+	AND #$00FF
+	CLC
+	ADC $18
+	TAY
+	SEP #$20
+	LDA [$03], Y
+	STA $7ED91C, X
+	REP #$20
+	INC $00
+	INX
+	DEC $16
+
+	BNE BRANCH_DELTA
+
+	INC $1A
+	LDA $1A
+	CMP #$0006
+
+	BMI BRANCH_EPSILON
+
+	PLP
+	PLB
+	RTS
+}
+
+190 bytes set aside for offsets to save, out of 700 possible offsets.
+Likely going to need to change for a larger automap. F800 looks good to me.
+
+
+Proposed change:
+8131,x: Index of how many bytes each individual area uses in srm (1 byte each. Unchanged)
+F800: List of offsets to use (1 byte each. Replaces 82D6 array and subarrays, 8146-82D5)
+
+$82E4: Load Map
+	PHB
+	PHP
+	PHK
+	PLB
+	REP #$30
+	LDA #$F800
+	STA $00
+	LDA #$0081
+	STA $02
+	LDA #$CD52
+	STA $03
+	LDA #$007E
+	STA $05
+	LDX #$0702
+	LDA #$0000
+
+BRANCH_ALPHA:
+
+	STA $7ECD50, X
+	DEX
+	DEX
+
+	BNE BRANCH_ALPHA
+
+	STZ $15
+	STZ $16
+
+BRANCH_GAMMA:
+
+	PHX
+	TAX
+	LDA $8131, X
+	PLX
+	AND #$00FF
+	STA $12
+
+BRANCH_BETA:
+
+	LDA ($00)
+	AND #$00FF
+	CLC
+	ADC $15
+	TAY
+	SEP #$20
+	LDA $7ED91C, X
+	STA [$03], Y
+	REP #$20
+	INC $00
+	INX
+	DEC $12
+
+	BNE BRANCH_BETA
+
+	INC $16
+	LDA $16
+	CMP #$0006		;Change this to 7 to include Ceres
+
+	BMI BRANCH_GAMMA
+
+	PLP
+	PLB
+	RTS
+
+$834B: Save Map
+
+	PHB
+	PHP
+	PHK
+	PLB
+	REP #$30
+	STZ $19
+	STZ $1A
+	LDA #$F800
+	STA $00
+	LDA #$CD52
+	STA $03
+	LDA #$007E
+	STA $05
+	LDA #$0000
+	TAX
+
+BRANCH_EPSILON:
+
+	PHX
+	TAX
+	LDA $8131, X
+	PLX
+	AND #$00FF
+	STA $16
+
+BRANCH_DELTA:
+
+	LDA ($00)
+	AND #$00FF
+	CLC
+	ADC $19
+	TAY
+	SEP #$20
+	LDA [$03], Y
+	STA $7ED91C, X
+	REP #$20
+	INC $00
+	INX
+	DEC $16
+
+	BNE BRANCH_DELTA
+
+	INC $1A
+	LDA $1A
+	CMP #$0006		;Change this to 7 to include Ceres
+
+	BMI BRANCH_EPSILON
+
+	PLP
+	PLB
+	RTS
+
+Compiled stuff:
+82E4: 8B084BABC230A900F88500A981008502A952CD8503A97E008505A20207A900009F50CD7ECACAD0F864156416DAAABD3181FA29FF008512B20029FF00186515A8E220BF1CD97E9703C220E600E8C612D0E6E616A516C9060030D228AB60
+834B: 8B084BABC2306419641AA900F88500A952CD8503A97E008505A90000AADAAABD3181FA29FF008516B20029FF00186519A8E220B7039F1CD97EC220E600E8C616D0E6E61AA51AC9060030D228AB60
+
+Tweaking the original map to work with this new code:
+Copy the bytes from 8146-82D5 to F800 (There are a lot of unused bytes in this though, which means changing 8131 also)
+Change the bytes at 8131: 50 50 50 20 50 20 10 (Yes, last byte is for Ceres. By default it's not used though)
+
+What SMILE needs to do:
+Add the compiled code (82E4 and 834B)
+Check the ROM in bank B5, for the automap data.
+2 bytes in bank B5 = 1 tile = 1 bit of RAM for explored. 8 tiles = 1 byte RAM to track explored/not explored. 100 bytes (groups of tiles) keep track of all the explored tiles for one area.
+If first 10 bytes (2 bytes * 8 tiles) are '1F 00', ignore it.
+If any are not '1F 00', write that group number down in a list starting at F800. (group number starts at 0, ends at FF)
+Repeat until 100 groups have been checked (1 total area)
+Record how many groups were written at 8131.
+Repeat with next 100 groups, continue the list where it left off past F800 (group numbers restart at 0)
+Record how many groups were written at 8132 (ONLY counting the ones in these 256 groups, not the previous 256)
+Repeat for rest of areas (6 total, 7 if you're counting Ceres)

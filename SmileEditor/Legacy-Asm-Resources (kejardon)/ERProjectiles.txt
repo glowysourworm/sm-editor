@@ -1,0 +1,21 @@
+Enemy/Room Projectile data (Bank 86)
+Projectile headers look like they're E bytes each
+
+Draygon's gunk (8E50):
+04 8D  0F 8E  3A 8C  08 08  00 D0  38 8C  58 8C
+Init.  First  First  X  Y   Touch  Touch  Proj.
+       AI     Graph  radii  Flags  Graph  Graph
+              AI            +Damg  AI     AI
+
+
+Kago's bugs (D02E):
+88 D0  EB D0  7D 9C  04 04  14 00  00 00  64 D0
+
+Bytes 0-1: Initialization code
+Bytes 2-3: Pointer of first AI to run (Run once every frame before any other part of the projectile)
+Bytes 4-5: Pointer of first graphic AI to run (Same as PLM format and enemy graphic AI)
+Byte    6: X 'radius' (1/2 width) of hit box
+Byte    7: Y 'radius' (1/2 height) of hit box
+Bytes 8-9: 8000 = Check for collisions with Samus's projectiles, 4000 = DON'T die on collision with Samus, 2000 = Disable collision with Samus, 1000 = Invisible. 0XXX = Damage to Samus
+Bytes A-B: Pointer to new graphic AI on hit contact.
+Bytes C-D: Pointer to new graphic AI on Samus's projectile contact. (Only for normal collisions - 7EF380,X = 0000)

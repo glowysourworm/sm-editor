@@ -1,0 +1,103 @@
+Enemies								
+								
+Name		HP	Attack	Energy	BigE	Missile	Super	PB	Description
+								
+Geemer		15	5	22	10	66	2	0	Purple, crawls.  Also called zoomer.
+Silv. Geemer	15	5	51	8	0	0	2	Impervious to non-plasma beams
+Orng. Geemer	??	??	??	??	??	??	??	Unique: HZOOMER
+Kihunter	60	20	20	12	31	4	4	Flies, swoops, and spits acid on ground
+Yell. Kihunter	360	60	22	31	4	24	4	Stronger kihunter
+Red Kihunter	1800	200	14	47	4	24	4	Screw attack kills them easiest.
+Space Pirate	20	15	20	47	31	2	0	Grey; looks sorta like praying mantis
+G. Space Pirate	90	20	20	12	39	8	4	Green
+R. Space Pirate	200	80	4	8	8	2	2	Red
+P. Space Pirate	300	160	20	47	31	2	0	Pink
+Y. Space Pirate	900	200	20	47	31	2	0	Yellow
+S. Space Pirate	1800	100	0	59	2	39	0	Silver
+Space Pirate W.	20	15	4	18	75	1	1	These seem to be unique enemies...
+Y. S. Pirate W. 200	80	4	8	8	2	2	Appears in lower norfair, yet is weaker
+P. S. Pirate W. 300	160	12	27	31	2	0	Than this one, which appears in maridia
+Side Hopper	320	80	8	8	22	22	2	Large variety, jumps around
+Blue Side Hopp. 1500	120	8	8	22	22	2	Appears only in tourian
+Reo		45	15	12	31	33	4	4	Yellow and green; they swoop in V form.
+Mellow		9	8	12	27	31	2	0	Pesky little purple flies
+Waver		30	10	24	24	24	24	3	Purple flyer which moves like wave beam
+Kago		??	4	20	35	27	8	8	Nest of bugs; HP seems to be hit counter
+Boyon		1000	10	8	4	33	2	2	Small yellow ball, power bombs kill it
+Metaree		50	50	3	10	31	2	2	Metal variety of skree
+Zebbo		30	20	0	55	4	39	2	Small bee-like green enemy
+Fireflea	20	4	0	1	0	0	99	They illuminate some rooms
+Ripper II	200	10	0	1	0	99	0	Improved version of ripper
+Catatac		60	20	0	1	0	99	0	Dancing cactus; shoots spikes
+Zero		50	40	1	0	0	0	99	Slug-like green enemies; drops p. bomb
+Puyo		100	60	24	24	24	3	24	Ultra thin yellow enemy; jumps
+Mella		30	16	27	12	31	2	0	Small firefly like enemy; comes in swarms
+Ripper		200	5	31	8	31	2	2	Orange enemy which moves between walls
+Skree		15	10	8	1	33	2	2	Green; they dive-bomb as you move under
+Alcoon		200	50	1	0	0	0	99	Land variety of dragon; shoots fireballs
+Sciser		200	120	1	39	0	0	60	Orange, slow moving crab-like creatures
+Sciser (Tan)	200	120	1	39	0	0	60	Is this an actual enemy or just a pal swap?
+Choot		100	80	24	24	24	24	3	Purple, jumps up then floats back down
+Beeton		60	10	1	0	0	0	99	Leech
+Zeela		30	10	22	10	48	20	0	Standard brinstar enemy, crawls on walls
+Geega		10	10	24	24	24	24	3	About the same size as zeela; exits pipes
+Zeb		9	6	24	24	24	24	3	Small red pincered enemy that exits pipes
+Small Side Hopp.60	20	8	16	33	2	2	Small version of side hopper
+Mini-kraid	400	100	0	1	0	99	0	One super missile kills him
+Multiviola	90	50	27	12	29	2	2	Small red fireball with a face on it
+Gamet		20	16	24	24	24	24	3	Flying pipe enemy that comes in 5's
+Geruta		120	60	24	24	24	24	3	Pink/red norfair enemy, flies in circles
+Dragon		300	24	20	20	27	2	2	Fire seahorse
+Magdollite	20	40	31	31	31	2	2	Lava monster
+Viola		30	15	1	0	0	0	99	Small blue fireball with face on it
+Dessgeega	800	160	31	8	20	2	2	Huge norfair enemy; acts like side hopper
+Bull		100	10	0	2	0	0	98	Green with tubes sticking out; charges
+Skultera	300	80	31	12	27	2	0	Blue/purple skull fish
+Menu		100	60	27	8	31	2	0	Small flyer with eye and four feelers
+Powamp		10	100	1	0	0	99	0	Balloon in maridia
+Shaktool	300	120	31	31	31	2	2	Digs a path to the spring ball
+Yard		10	100	31	31	0	0	4	Mollusk (snail) creature
+Metroid		500	120	10	20	35	20	12	Duh
+Holtz		900	120	0	46	20	20	14	Blue/purple flying creature; swoops
+Squeept		300	50	19	19	19	19	19	Red thing with eyes that jumps from lava
+Sova		40	20	31	27	12	20	0	Common orange norfair enemy
+Fune		20	10	31	31	31	2	2	Skull embedded in wall; shoots fireballs
+Small Dessgeega	120	80	1	0	0	0	99	Small variety of dessgeega
+Koben		300	60	20	37	27	8	8	Ghost
+Zoa		40	15	0	39	27	27	4	Small blue/purple maridia enemy
+Owtch		20	100	31	31	31	2	2	Spiked enemy that hides in sand
+Evir		300	100	31	31	31	2	2	Looks like brown mini-draygon
+Mochtroid	100	90	24	24	24	24	3	Imitation metroids
+Rinka		10	40	(none)	(none)	(none)	(none)	(none)	Irritating red rings in tourian
+Atomics		250	40	?	?	?	?	?	The spinning ball-like enemy in Wrek. ship
+								
+Invincible Enemies								
+								
+Yapping Maw	20?	(grabs)	(none)	(none)	(none)	(none)	(none)	Pulls you into spikes or sand
+Namihe		20?	10	31?	31?	31?	2?	2?	Fune with eye; cannot be destroyed
+Tatori		?	200	(none)	(none)	(none)	(none)	(none)	Turtle in the maridia room with an e-tank
+Work Robot	?	(rings)	(none)	(none)	(none)	(none)	(none)	Robots in the wrecked ship
+Oum		?	(licks)	(none)	(none)	(none)	(none)	(none)	Rolling enemies which guard missile refill
+Big Metroid	?	(drains)	(none)	(none)	(none)	(none)	(none)	:P
+								
+Neutral things								
+								
+Mini-tatori	?	0	(none)	(none)	(none)	(none)	(none)	Take a wild guess
+Tripper		?	0	(none)	(none)	(none)	(none)	(none)	The flying platforms outside the wreck. ship
+Etecoon		?	0	(none)	(none)	(none)	(none)	(none)	They teach you the wall jump
+Dachola		?	0	(none)	(none)	(none)	(none)	(none)	It teaches you the super jump
+								
+Mini-bosses								
+								
+Torizo		800	8	?	?	?	?	?	Crateria mini-boss
+Spore Spawn	960	12	?	?	?	?	?	Brinstar mini-boss
+Crocomire	?	?	?	?	?	?	?	Norfair mini-boss, push into lava
+Botwoon		3000	120	0	51	24	12	12	Maridia snake-like mini-boss
+Gold Torizo	13500	160	?	?	?	?	?	Lower norfair mini-boss
+								
+Bosses								
+								
+Kraid		1000	20	?	?	?	?	?	Brinstar
+Phantoon	2500	40	?	?	?	?	?	Wrecked Ship
+Draygon		6000	160	?	?	?	?	?	Maridia
+Ridley		18000	160	?	?	?	?	?	Norfair

@@ -1,0 +1,70 @@
+0.  Normal beam : 20
+1.  Wave beam : 50
+2.  Ice beam : 30
+3.  Ice/Wave beam : 60
+4.  Spazer beam : 40
+5.  Wave/Spazer beam : 70
+6.  Ice/Spazer beam : 60
+7.  Wave/Ice/Spazer beam : 100
+8.  Plasma beam : 150
+9.  Wave/Plasma beam / Speed Echoes : 250 / 4,096
+10. Ice/Plasma beam : 200
+11. Wave/Ice/Plasma beam : 300
+12. Missiles : 100
+13. Super Missiles : 300
+14. Bombs / Space/Time Beam : 60 / 90 per 1/3 of second
+15. Power Bombs : 200, can hit twice
+16. Speed Running : 500 a frame
+17. Super Jump : 150 a frame
+18. Screw Attack : 2,000 a frame
+19. ALL Charge beams / Hyper Beam / Special Beams / Murder Beam : 3x beam combo / 1000 / 300 (90 for ice) / 200
+20. Psuedo Screw Attack : 200
+21. Unknown
+
+Numbering began at 0 to show the Beams' connection (Wave adds 1, Ice 2, Spazer 4, Plasma 8)
+
+Autofire Cooldown for beams at 90:C264
+Missile cooldown at 90:C27B
+Super Missile cooldown at 90:C27C
+Manual cooldown for beams at 90:C283
+
+
+[19:41] <Kejardon> Normal beam damage is at 98431
+[19:42] <Kejardon> Wave beam damage is at 984B5
+[19:42] <Kejardon> Ice beam damage is at 9849F
+[19:42] <Kejardon> Wave/Ice at 984E1
+[19:42] <Kejardon> Spazer @ 98447
+[19:43] <Kejardon> Spazer/Wave @ 984F7
+[19:43] <Kejardon> Spazer/Ice @ 9845D
+[19:43] <Kejardon> Spazer/Wave/Ice @ 98473
+[19:43] <Kejardon> Plasma @ 984CB
+[19:44] <Kejardon> Plasma/Wave @ 9850D
+[19:44] <Kejardon> Plasma/Ice @ 98523
+[19:44] <Kejardon> Plasma/Wave/Ice @ 98489
+[19:44] <Kejardon> Plasma/Spazer @ 98539
+[19:45] <Kejardon> Plasma/Spazer/Wave @ 985D3
+[19:45] <Kejardon> Plasma/Spazer/Ice @ 985A7
+[19:45] <Kejardon> Plasma/Spazer/Wave/Ice @ 985E9
+[19:46] <Kejardon> Charged Normal @ 98539
+[19:46] <Kejardon> Charged Wave @ 985D3
+[19:46] <Kejardon> Charged Ice @ 985A7
+[19:46] <Kejardon> Charged Wave/Ice @ 985E9
+[19:47] <Kejardon> Charged Spazer @ 9854F
+[19:47] <Kejardon> Charged Spazer/Wave @ 985FF
+[19:47] <Kejardon> Charged Spazer/Ice @ 98565
+[19:47] <Kejardon> Charged Spazer/Wave/Ice @ 9857B
+[19:48] <Kejardon> Charged Plasma @ 985BD
+[19:48] <Kejardon> Charged Plasma/Wave @ 9862B
+[19:49] <Kejardon> Charged Plasma/Ice @ 98615
+[19:49] <Kejardon> Charged Plasma/Wave/Ice @ 98591
+[19:49] <Kejardon> Charged Plasma/Spazer @ 98641
+[19:50] <Kejardon> Charged Plasma/Spazer/Wave @ 98641
+[19:50] <Kejardon> Charged Plasma/Spazer/Ice @ 98657
+[19:50] <Kejardon> Charged Plasma/Spazer/Wave/Ice @ 98671
+Wave SBA @ 93:8689
+Ice SBA @ 93:85A7
+Spazer SBA @ 93:86AB
+Plasma SBA @ 93:8685
+
+Beam SBA code at 90:CCC0. Need to look into.
+

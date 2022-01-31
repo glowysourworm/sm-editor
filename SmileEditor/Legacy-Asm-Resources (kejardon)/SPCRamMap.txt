@@ -1,0 +1,572 @@
+If you're trying to learn how to make music for Super Metroid, you'll probably want to scroll down to the newbie friendly text.
+You must be comfortable with hex-editing to have any chance of understanding this. Assembly experience is a plus.
+
+Temporary notes for thoughts
+
+
+
+Random notes
+INCing $2140 will simply reply to the SPC with SPC's sent value + 1. i.e. INC is the same as PHA, LDA, INA, STA, PLA
+SETP is never used except for a single, very confined area (1d3d - 1d40). Use DP whenever convenient.
+$2140 seems to be for engine changes only. $2141-$2143 are used commonly for sound effects.
+Table calls are almost definitely not used:
+b14b 2134 32db e4fe e44b 34ff d11e fd20 0a04 0ff4 e224 c11e bf40 1e22 15f3 d14d
+Pcall also doesn't look usable
+
+Loading a new song
+CPU sends an FF through $F4
+APU gets FF, readies to load data from CPU
+CPU sends data to APU in blocks
+Final block gets an 00 in $F5
+APU loads song start position 00 (581E) into 40, goes from there
+
+Going to a position in a song
+CPU sends a *new* value through $F4 between 0 and 80
+APU gets value, loads 581E+x (x = 2*value) into 40, goes from there.
+
+Unless otherwise stated, assume hexadecimal
+
+Pitch calculations (This was what I was expecting to find)
+dec   hex
++12 = 2000 (maximum possible)
++11 = 1E34
++10 = 1C82
+ +9 = 1AE9
+ +8 = 1966
+ +7 = 17F9
+ +6 = 16A1
+ +5 = 155C
+ +4 = 1429
+ +3 = 1307
+ +2 = 11F6
+ +1 = 10F4
+  0 = 1000
+ -1 = 0F1A
+ -2 = 0E41
+ -3 = 0D74
+ -4 = 0CB3
+ -5 = 0BFD
+ -6 = 0B50
+ -7 = 0AAE
+ -8 = 0A14
+ -9 = 0983
+-10 = 08F3
+-11 = 087A
+-12 = 0800
+
+1E66 seems to contain the actual pitch multipliers used.
+085F 08DE 0965 09F4 0A8C 0B2C 0BD6 0C8B 0D4A 0E14 0EEA 0FCD 10BE
+
+Cleared on start
+0000 - 00EE
+0391 - 03FF
+0500 - 14FF
+
+0000 - 0003 Last recieved from f4-f7? Later put into 04/08
+0004        Current song index (used for 581E). Special case: 00 means no song
+0005 - 0007 Mirrors previous(?) 01-03
+0008        Last F4 that wasn't #FF, #F1, or #F0
+0009 - 000B Same as 05-07, so far as I can tell.
+000C        Song startup counter. 02 = initialize song data, 01 = load song start, 00 = normal play
+
+000E        Key Off 2? (It seems to be used as a permanent 0000)
+
+0014 - 0017 General use temporary values. Can be just about anything.
+;0014 - 0015 Used as pointer to copy data to, in the FFC0-alike routine. Also a pointer to copy data from in 18F9. General temporary pointer?
+;0016 - 0017 Unknown. Data from ($40) is stuck here. Pointer to a data entry at least #10 bytes long?
+0018 - 0019 Unknown. Might be an RNG of sorts
+001A        Keys currently playing? Bitflags of some sort. A guess: Channels currently being used by sound effects
+
+0030-0031+x Current address of channel (x/2)'s instructions.
+0040 - 0041 'Conductor' instruction address. Initializes 0030-003F, mainly
+0042        Loop counter for conductor
+0043        Echo Feedback Volume (calculated as #20 * tics elapsed + old volume?)
+0044        Current channel being worked on
+0045        Key On bits
+0046        Key Off bits
+0047        Bit flags of channels, tells which channel is currently being worked on.
+0048        FLG
+0049        Noise On/Off
+004A        Echo On/Off
+004B        Pitch modulation
+004C        Unknown, something related to echo delay. Set to ((004D EOR #FF) + (old 004C if it's positive)) when echo delay is updated
+004D        Echo delay (Must be 0-2)
+004E        Echo Feedback Volume
+
+0050        Transpose notes up for all channels this many steps
+0051        Timer for song tics. Time intervals (FD) * time length (53) + old value (51). Every time it reaches 100, run 1 tic for the song.
+0052 - 0053 Speed of song (1 tic = 512 ms / $0053)
+0054        Tics left to reach target speed
+0055        Target speed
+0056 - 0057 Rate of song speed
+0058 - 0059 Volume of song
+005A        Tics left to reach target song volume
+005B        Target song volume
+005C - 005D Rate of song volume
+
+005F        Sound index offset?
+0060 - 0061 Echo Left Volume (Only 61 used by register)
+0062 - 0063 Echo Right Volume (Only 63 used by register)
+0064 - 0065 Rate of Echo Left volume
+0066 - 0067 Rate of Echo Right volume
+0068        Target Echo Left volume (for 61)
+0069        Target Echo Right volume (for 63)
+006A        Time left to reach target Echo volumes
+
+0070+x      Delay till next event in channel x/2
+0071+x      (0070+x * 0201+x) / #0100. Used as a counter. How long to actually play sound?
+0080+x      Loop counter? How many more times to loop? Only 1A28 (channel command EF) writes to this.
+
+0090+x      Tics left to reach target volume for current channel
+0091+x      Tics left to reach target panning for current channel
+00A0+x      Tics to reach target note for current channel
+00A1+x      Tics left before actually adjusting pitch for current channel?
+00B0+x      Timer before actually starting vibrato for current channel. Target is 02B0+x
+00B1+x      Vibrato magnitude? 01-F0 is part of a note, F1-FF are actual note steps (subtract by F0)
+00C0+x      Timer before starting volume wavering for current channel. Target is 02E0+x
+00C1+x      Percent of normal volume for volume wavering. If FF, it ramps up to normal volume once - no wavering.
+
+00D2 - 00D3 Used as a pointer to clear echo buffer ram at start of spc code
+
+00EE - 00EF Address of ram to clear (clears $0390 bytes)
+
+0100+x      
+
+01?? - 01CF Stack
+
+0200+x      Default length of notes in channel x/2. Stuck into 0070+x, only use in code
+0201+x      Sound length percent. 32, 65, 7F, 98, B2, CB, E5, or FC. Affects 0071+x
+0210+x      Volume percent? 19, 32, 4C, 65, 72, 7F, 8C, 98, A5, B2, BF, CB, D8, E5, F2, or FC. Affects 0321+x
+0211+x      Voice source # channel (x/2) (may be + #CA)
+0220-0221+x Pitch adjustment for channel x/2
+0230-0231+x This is like an RTS address for the channel instructions, I think. Last loop address?
+0240-0241+x This is used as a pre-determined target address for the channel instructions, I think. Loop address?
+
+0291+x      Sometimes moves note down this many for channel x/2
+02A0+x      Current vibrato 'position' for channel x/2. Bits 0-5 are magnitude percent(or inverse of magnitude percent if bit 6 is set), bit 6 is direction of movement (clear=away from nom, set=towards nom), bit 7 is direction of pitch from note (clear=above, set=below)
+02A1+x      Rate of vibrato 'position' for channel x/2
+02B0+x      Tics to wait till start of vibrato. This is not changed, 00B0+x is increased till it matches this.
+02B1+x      Tics to ramp vibrato magnitude on for channel x/2
+02C0+x      Ramp-on rate of vibrato magnitude for channel x/2
+02C1+x      Target vibrato magnitude for channel x/2
+02D0+x      Current volume wavering 'position'. 00 = volume off, moving in either direction increases volume, 80 = max
+02D1+x      Rate of volume wavering 'position' for channel x/2
+02E0+x      Tics to wait till start of volume wavering. 00C0+x is increased till it matches this.
+
+02F0+x      Transpose note up for channel x/2
+
+0300-0301+x Volume of current channel
+0310-0311+x Volume rate for current channel
+0320+x      Target volume for current channel (equivalent to high byte of volume)
+0321+x      Actual volume for channel at this moment?
+0330-0331+x Panning. 1400 = left, 0000 = right, 0A00 = center.
+0340-0341+x Panning rate for current channel
+0350+x      Target panning for current channel
+0351+x      Bit 7 = Invert left channel volume, Bit 6 = Invert right channel volume?
+0360+x      Current cents for channel x/2
+0361+x      Current note for channel x/2
+0370-0371+x Rate of pitch for current channel
+0380+x      Target note for current channel
+0381+x      Target cents for channel x/2
+
+0390        Used as counter for clearing ram
+
+0392        Sometimes set to $F5 during $F5 processing. Otherwise #00
+
+03B3        Unknown Flags. 8 individual flags, checked to see if any are set.
+
+03F8        Unknown. Checked during $F6 processing
+
+04B1        FIR coefficient option
+
+04BB        Unknown Flag. Checked only during $F5 processing.
+
+0500 - 14FF is echo buffer. Echo must be 1 or 2. If 0, start of main SPC engine will be overwritten (actually probably harmless), if over 2, direct page and other stuff will be overwritten.
+1500 - 56E1 is the main SPC engine. Copied from ROM at CF:8108 (278108). Some sections may be changed
+    1B62 - 1B9F is a jump table of sorts; Song data is interpreted with this. Not changed.
+    1E1D - 1E31 is panning volume multipliers. Not changed AFAIK.
+    1E32 - 1E51 is FIR coefficients. 4 groups of 8 bytes. Seems like it'd be changable, but not changed AFAIK
+    1E66 - 1E7F is the pitch table. (085F 08DE 0965 09F4 0A8C 0B2C 0BD6 0C8B 0D4A 0E14 0EEA 0FCD 10BE)
+
+5800 - 5807 Note Sound Length percents
+5808 - 5817 Note Volume percents?
+
+581E - 5??? Song start addresses for 40. Maximum possible is 80, but usually only 6-8 are used.
+5??? - ???? Song note data is stuck here, right after the end of the song start addresses.
+
+6C00 - 6CE9 (Not certain about end address) 6 byte entries for 18F9. Voice Source #, ADSR1, ADSR2, Gain, and then two bytes stuck in 0220+x (x = 2*channel). Seems to have 1 entry per source #.
+6CEA - 6CFF Unused?
+6D00 - 6DFF is the sample table. Seems to stop at 6D96 (though 6C00 suggests 6D9C). *Must* stop by 6DA8 - that's all the table at 6C00 can support.
+
+???? - F??? Instrument sample data. Pointed to by 6D00 sample table.
+
+
+*Start of newbie friendly text*
+
+There are essentially 2 parts of song handling. I've called them the
+conductor and the channels. The conductor follows a big-picture and
+tells the individual channels where to start playing, while the
+channels all play their parts. When one of the channels reaches the
+end of their part, they notify the conductor, who then moves everyone
+onto the next part.
+
+The conductor does nothing usually, until a channel finishes its
+part. Then the conductor will go through its instructions until it
+reaches a stop, or a pointer to new music data.
+
+The channels will go through all their instructions at once until
+they reach a note (any value from 80 to C9). At this point, they will
+wait a predefined note length before continuing on with their
+instructions.
+
+The following two sections explain the instructions each one handles.
+
+Conductor (0040) - Sets everyone to certain parts in music. Continues when any individual instrument finishes current segment (channel loop counter is 0)
+a) 0000: Stop music.
+b) 0080: Store #80 to 001B then continue. Unknown purpose.
+c) 0081: Store #00 to 001B then continue. Unknown purpose.
+d) 00XX: Decrement loopcounter (0042). If now 80-FF, put XX into it.
+         If loopcounter is now 00, skip argument and goto next instruction. Else use the 2-byte argument as new 0040 and continue.
+e) XXXX: Pointer to new music data for all 8 channels. Load new data for channels, then wait.
+
+
+Music data for individual channels (0030+x). Decrements timer (0070+x) every song tic. If 0, processes instructions till next wait.
+a) End Loop (1 byte, #00). Loop counter is (0080+x), and is initialized to 00, or set by EF
+      If loop counter is >1, decrement loop counter and normal loop (goto 0240+x)
+      If loop counter is 1, decrement loop counter and return from loop (goto 0230+x)
+      If loop counter is 0, tell conductor (0040+x) to go to next part
+b) New default length of notes for this channel (1 byte, #01 - #7F)
+   c) If the byte after a new default length is also #00 - #7F, a value indexed by the top nybble is put into $0201+x (sound length percent), and a value indexed by the bottom nybble is put into $0210+x (volume percent?)
+d) Note to play (1 byte, #80 - #C7. Each number is a note; +1 octave = +C)
+e) Dummy 'note' to trigger note length wait (1 byte, #C8 or #C9)
+   C8 seems to be extend note through this wait, C9 seems to be play nothing
+f) Sound source number (1 byte, #CA - #DF)
+g) Instructions (1 byte command, #E0 - #FE, variable arguments) * means understood and tested
+     Instruction (Argument in bytes): Description
+     E0*(1): Set this channel to sound argument1. Two options: Absolute (00 - 29, at most) or relative (CA - F3, subtract #$CA and add $5F)
+     E1*(1): Set channel panning. 14 = Left, 0A = Center, 00 = Right. 0351+x=arg1, w.0331+x=(arg1 $$ #$1F)*100. 
+     E2*(2): Set panning transition time and target panning for channel. 91+x=arg1, 0350+x=arg2. Also 0340+x = (0331+x - arg2) * 100 / arg1.
+     E3 (3): Set vibrato delay (for each note), vibrato rate, and vibrato magnitude. 02B0+x=arg1; 02A1+x=arg2; B1+x=02C1+x=arg3; 02B1+x=#$00
+     E4 (0): Disable vibrato. B1+x=02C1+x=02B1+x=#$00
+     E5*(1): Set song volume. w.$58=arg1*#100
+     E6*(2): Sets volume transition time and target volume for entire song. 5A=arg1, 5B=arg2, w.$5C=(arg2 - $59)*100/arg1
+     E7*(1): Set speed of song. 1 song tic = 512 ms / speed. w.$52 = arg1*#100
+     E8 (2): Set song speed transition time and target song speed. 54=arg1, 55=arg2, w.56=(arg2 - $53)*100/arg1
+     E9*(1): Transpose notes up for all channels. 50 = arg1
+     EA*(1): Transpose notes up for this channel. 02F0+x = arg1
+     EB (3): Volume 'wavering'. Set delay (for each note), rate, and volume percent max. If FF, volume ramps up once and stops at normal channel volume. 02E0+x=arg1, 02D1+x=arg2, C1+x=arg3
+     EC (0): Clear C1+x
+     ED*(1): Set channel volume. w.0300+x = arg1*#100
+     EE*(2): Set volume transition time and target volume for this channel. 90+x = arg1, 0320+x = arg2, w.0310+x = (arg2-0301+x)*100/arg1
+     EF*(3): Set return to current address (past arguments), loop start to arg1-2 (and go there), loop counter to arg3. If arg3 = 1, this is basically JSR. If arg3 = 0, this is basically JMP
+     F0 (1): Set time to ramp vibrato up from 0 to current vibrato value? 02B1+x = arg1, 02C0+x = B1+x / arg1. B1+x restarts from 0 by next tic when this is run.
+     F1 (3): 0290+x = #$01, 0281+x = arg1, 0280+x = arg2, 0291+x = arg3
+     F2 (3): 0290+x = #$00, 0281+x = arg1, 0280+x = arg2, 0291+x = arg3
+     F3 (0): Clear 0280+x
+     F4*(1): Set cents adjustment up for this channel. 0381+x = arg1
+     F5 (3): Set Echo on channels (bitflags), set left and right echo volume. Echo On channels = arg1, Echo Left Vol=arg2*#100, Echo Right Vol=arg3*#100, Enable echo on FLG
+     F6 (0): Disable Echo? Untested
+     F7*(3): Set echo delay, echo feedback, and FIR coefficient option. Echo Delay = arg1, 4E = arg2, FIR coefficient option = arg3.
+     F8 (3): 68 - 6A = arg1 - arg3. 64=(arg2-EchoLeft)*100/x, 66=(arg3-EchoRight)*100/x.
+     F9 (3): A1+x = arg1, A0+x = arg2, 0380+x = (arg3 + $50 + 02f0+x) AND #$7F, w.0370+x = (0380+x - 0361+x) * 100 / A0+x
+                                             arg3 + transpose all + channel
+             This looks like it slides a note from CurrentNote to Arg3 in Arg2 tics, after a delay of Arg1 tics.
+             NOTE: This is not processed normally. A hook in the main note processing checks if this is the next instruction and processes it immediately while the current note is playing
+     FA*(1): Set relative sound index offset. 5F = arg1
+     FB (2):
+     FC (0):
+     FD (0):
+     FE (0):
+
+Pitches normally used in game:
+
+A4 = C
+A3 = B
+A2 = B b
+A1 = A
+A0 = A b
+9F = G
+9E = G b
+9D = F
+9C = E
+9B = E b
+9A = D
+99 = D b
+98 = C (Center)
+97 = B
+96 = B b
+95 = A
+94 = A b
+93 = G
+92 = G b
+91 = F
+90 = E
+8F = E b
+8E = D
+8D = D b
+8C = C
+
+The game has every instrument tied to a unique sound sample. So when you're talking about the original data, you
+can pretty much just use the words instrument and sample interchangably. Still, it's important to know the
+difference if you intend to mess with them.
+Instruments are stored in 6C00, and are 6 bytes each. They call a sound sample and have some extra data for them.
+If you want more info, check the example code for Kraid's Hideout music.
+Samples are looked up from the sample table at 6D00, and the sample table has 4 bytes per sample. Samples
+themselves are usually around 100 to 800 bytes. BRR encoded. I'm not going to try to explain them nor the sample
+table - if you're skilled enough to work with the samples, you probably already know the information you need.
+
+Instruments 0-16 seem to be for sound effects, and so shouldn't be affected by music changes. Although I see no
+reason not to *use* them for music. The rest can vary depending on the song you load. Many are usually unused.
+The unused instruments are not guaranteed to be the same every time you load them.
+There is no song 00, and I haven't listened to the instruments past song 30.
+
+Instrument sounds:
+0: Shot sound, it sounds like
+1: Grapple sound
+2: Unknown. Buzzing.
+3: 'click'. Maybe missile select.
+4: Not sure. Not usable as a music effect anyways
+5: ambient sound. Maybe. Engine-ish noise
+6: X-ray or elevator sound
+7: Might be powerbomb noise... if so, it's currently in slow-mo
+8: Sounds like crumble block or explosion
+9: static. Sort of.
+A: Musical. Sounds like a string bounce or something
+B: String 'bounce' without decay. Violin like, I guess.
+C: Simple tone, no decay
+D: Sounds like a hollow hit
+E: Water drop?
+F: Oddly short, sounds kind of like water splash
+10: ambient sound, 'humming gears' is the best I can describe it.
+11: Crash sound.
+12: Static (Crash sound without decay). Sounds better than 9 as static
+13: Samus hurt noise
+14: Enemy hurt noise
+15: More ambient sound, sorta like 5
+16: Sounds like another hurt noise, but not quite like Samus.
+
+03 instruments
+17: Plucked string, almost
+18: Held string. Does not sound good
+19: muffled xylophone sound
+1A: Muffled xylophone without decay
+1B: Cymbal tap with fast decay
+1C: Cymbal tap with less decay
+1D: Musical hum, sort of. Fast decay
+1E: Musical hum, sort of. Less decay
+1F: Musical hum, sort of. No decay
+20: Metroid 'skree'.
+21: Metroid 'skree'. Slightly shorter
+22: Metroid 'skree'. Slightly shorter again?
+23: Metroid 'skree'. Still shorter?
+24: Metroid 'skree'. Guess.
+25: Metroid 'skree'. Louder.
+26: Sounds like an earthquake, I guess.
+27: metallic tap.
+28: Same.
+29: Same.
+
+06 instruments
+17: Crystalish sound
+18: Horn of some sort. Resonant.
+19: Vocal. Resonant
+1A: a sort of continuous ocean roar, like the generic sound effect for space.
+1B: Explosion or big drum hit.
+1C: Sounds sort of like a vocal chord. Needs to be cut short to avoid staticy sound after it.
+1D: Thunder/rain?
+1E: Thunder/rain again?
+1F: Rain/Thunder?
+20: Sounds like a slamming door
+21: Above
+22 and on: More slamming doors, then metallic taps
+
+09 instruments
+17: metallic 'tic'
+18: Tribal drum
+19: Electric Guitar pluck?
+1A: Violin short
+1B: Violin like - no decay
+1C: Vocal. Kinda quiet.
+1D: Vocal, no decay, louder
+1E: Ambient, low 'roar'
+1F: Running water
+20: Kind of a dull chime. (grandfather clock)
+21: Same
+22: More dull chimes, then metallic tapping
+
+0C
+17: crystaline chime, 2 tones
+18: Simple horn
+19: Violin, no decay
+1A: Drum. Very distinct pitch
+1B: Dull chime (grandfather clock)
+1C: More chimes, then an earthquake, then metallic tapping
+
+0F
+17: Wooden ticcing sound
+18: Wooden thud
+19: Xylophone
+1A: Drum
+1B: Sort of like a deep string instrument, I guess
+1C: tribal drum
+1D: o_O Not a clue
+1E: Loud buzzing.
+1F: Not sure how to describe it. Between a crash and a tic
+20: Growing vocalish sound
+21: Insant vocalish sound
+22: Insant vocalish sound, no decay
+23: Louder, flat vocalish sound. No decay
+24: Flat vocal sound, decay
+25: Same as 23?
+26: Earthquake
+27: Metalic tapping. Etc.
+
+12
+17: Kinda like the metalic ticcing
+18: Drum. Fairly distinct pitch
+19: Sort of string instrument. Volume ramps up in half a moment
+1A: Same string, instant volume
+1B: Sounds like a woodwind
+1C: Same woodwind, as far as I can tell
+1D: Again, same woodwind
+1E: Metallic ticcing
+1F: Vocal, soft and decays
+20: Loud vocal, no decay
+21: Guitar pluck
+22: Guitar pluck that doesn't decay
+23: Broken glass. XD
+24: Same broken glass
+25: Same
+26: earthquake
+27: Metallic ticcing
+28: Metallic ticcing
+29: Metallic ticcing
+
+15
+17: Crystalish. Two *very* distinct tones.
+18: Vocal. Decays
+19: Vocal. Volume ramps up.
+1A: Vocal. Instant volume, no decay
+1B: String.
+1C: Sounds the same as 1B.
+1D: String, no decay
+1E: Simple drum, fairly distinct tone
+1F: squishy sound.
+20: 1F
+...
+25: Dog bark
+26: Monotone
+27: Metallic ticcing, etc.
+
+18
+17: hollow thwack
+18: quiet thwack + drum hit
+19: solid thwack
+1A: brass horn, decays
+1B: Brass horn. Volume up, loud, no decay
+1C: Same as 1B
+1D: 1B
+1E: Vocal. Decays
+1F: Vocal. Builds up, no decay
+20: Vocal. Instant on, no decay
+21: Weird string, lots of vibrato
+22: Squishy sound
+23-25: Dog bark
+26: Monotone
+27: Metallic ticcing, etc.
+
+1B
+17: Two distinct tones, kinda resonant. Decays. 'Plucky' attack
+18: Electric piano
+19: Electric piano, no decay
+1A: Wood pipe. Very distinct tone
+1B: Crstyalish sound. Very little decay. May need to be sped up / higher pitch
+1C: Dirty sounding horn
+1D: Sort of odd guitar pluck
+1E: Same, but with no decay
+1F: Very airy pipe, no decay, resonant.
+20: Sort of like a metroid 'skree'.
+21: 20
+22: 20
+23: 20
+24: 20
+25: Nice ringing tone, average decay
+26: Same without decay. Not so nice
+27: metallic tic, etc
+
+1E
+17: very ringy crystalish sound. But has a bad-sounding attack
+18: Ambient sound. Low, earthy
+19: Ambient sound. Icky
+1A: Ambient sound. More distinct icky
+1B: Kinda like a low organ sound
+1C-22: Metroid 'skree'!
+23: Dunno how to describe it. Plastic pipe with a distinct pitch?
+24: Metroid skree, v2
+25: Broken glass
+26: Monotone
+27: metallic tapping, etc
+
+21
+17: somewhat crystaline ringing
+18: Kinda like a car horn
+19: Organ
+1A: Drum. Very distinct tone.
+1B-23: sort of like a metroid 'skree', but short
+24: 1B, but lower
+25: 1B, but higher
+26: earthquake
+27: metaliic tapping, etc
+
+24
+17: Snare
+18: Cymbal tap
+19: Electric guitar without decay
+1A: High sound, sort of like a string
+1B: High sound, no decay
+1C: Horn, slightly muffled
+1D: Digitized horn sound
+1E: ambient sound, low 'roar'
+1F-24: short metroid 'skree'
+25: Ridley's roar
+26: Fuzzy static
+27: metallic tapping
+
+27
+17: 1E's ringy crystalish sound
+18: Buzzer
+19: Some sort of organ, very airy
+1A: violin, no decay
+1B: plucked string
+1C: 1B without decay
+1D-25: Kraid's roar
+26: Crocamire's roar
+27: metallic tapping
+
+2A
+17: chime/ding
+18: Piano. Or probably Klavier
+19: Wooden pipe/xylophone?
+1A: Electronic humming
+1B-24: Might be Spore Spawn's opening growl
+25: Uagh
+26: Monotone
+27: metallic tapping
+
+2D
+17: This might be the typewriter noise. Not sure
+18: atmospheric humming
+19: Samus's ship flying to Ceres
+1A: Monotone with decay
+27: metallic tapping
+
+30
+17: Short electronic 'beep'
+18: Humming noise. No decay
+19: The ghost's noise
+1A: Drum. fairly distinct pitch.
+1B: splat. Lemmings must be falling off of cliffs somewhere.
+1C: Short static burst with a waterdrip with a distinct pitch
+1D: monotone with decay, etc
+
+

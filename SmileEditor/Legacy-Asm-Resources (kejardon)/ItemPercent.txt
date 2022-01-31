@@ -1,0 +1,14 @@
+Item Percent Count
+Code starts at 8B:E62F.
+E70D,X: Offsets to measure
+E717,X: Divisors for those offsets ((E70D,X) / E717,X = +% for total)
+X ranges from 0 to 8, 5 total
+
+E721,X: Bits to test 09A4 for
+X ranges from 0 to 14, B total
+
+E737,X: Bits to test 09A8 for
+X ranges from 0 to 8, 5 total
+
+8B:E67F is the start of display code, Item Count should be done before this.
+8B:E708 is the clean up, Count Display should be done before this.

@@ -1,0 +1,235 @@
+
+
+61BB ;Conducter's start address
+61FB, 61CB, 61DB, 61FB, 61EB, 00FF, 61BB ;Conducter's instructions
+
+61CB
+620B, 621B, 624C, 626B, 629F, 62C1, 0000, 0000   ;Starting points for individual channels
+61DB
+62D6, 62EA, 6331, 6343, 6387, 63CE, 0000, 0000
+61EB
+6415, 6430, 649A, 64B6, 650E, 656A, 0000, 0000
+61FB
+6596, 65B9, 65D1, 65F0, 6608, 6649, 0000, 0000
+
+---------
+CHANNEL 0
+---------
+
+6596 (Total length: 1E0)
+FA 26 EF 58 66 01 - ED B4 05 C9 E1 06 E2 A0 0E 50 7F BC BC E1 0E E2 A0 06 BC BC E1 06 E2 50 0E BC 4B BC 00
+Sound index offset = 26
+loop = 6658, 1 loop (basically akin to JSR $6658)
+
+ 6658
+ E7 30 E5 D2 F5 0A 46 32 F7 02 46 00 E0 1E F4 00 EA 01 00
+ 52 = #3000
+ 58 = #D200
+ Echo 1 and 4, Echo Volume 46 left and 32 right
+ Echo delay=2, 4E = #46, FIR option 00
+ Sound = 1E
+ No cents adjustment
+ Transpose up 1 note
+ Return to old routine
+
+Volume = #B400
+Note Length 5
+Wait Length
+Set 0331+x and 0351+x to 06, clear 0330+x
+91+x = A0 and 0350+x = 0E, w.0340+x = 000C?
+Note Length 50, 0201+x = fc, 0210+x = fc
+Note BC
+Note BC
+Set 0331+x and 0351+x to 0E, clear 0330+x
+91+x = A0 and 0350+x = 06, w.0340+x = FFF4?
+Note BC
+Note BC
+Set 0331+x and 0351+x to 06, clear 0330+x
+91+x = 50 and 0350+x = 0E, w.0340+x = 0019?
+Note BC
+Length 4B
+Note BC
+Go to next part
+
+620B (Total length: 168)
+EF 58 66 01 - EF 6B 66 01 - E1 0E E2 1E 0C 23 BC 00
+loop = 6658, 1 loop
+
+ 6658
+
+loop = 666B, 1 loop
+
+ 666B (Length: 140)
+ ED B4 05 C9 E1 0E E2 A0 06 50 7F BC BC E1 06 E2 A0 0E BC BC 00
+ Volume = B400
+ Note Length 5
+ Wait Length
+ Set 0331+x and 0351+x to 0E, clear 0330+x
+ 91+x = A0 and 0350+x = 06, w.0340+x = FFF4?
+ Note Length 50, 0201+x = fc, 0210+x = fc
+ Note BC
+ Note BC
+ Set 0331+x and 0351+x to 06, clear 0330+x
+ 91+x = A0 and 0350+x = 0E, w.0340+x = 000C?
+ Note BC
+ Note BC
+ Return from loop
+
+Set 0331+x and 0351+x to 0E, clear 0330+x
+91+x = 1E and 0350+x = 0C, w.0340+x = FFEF?
+Note length 23
+Note BC
+Go to next part
+
+62D6 (Total length: 1E0)
+EF 58 66 01 - ED B4 E1 05 05 C9 50 7F BC BC BC BC BC 4B BC 00
+loop = 6658, 1 loop
+
+ 6658
+
+Volume = B400
+Set 0331+x and 0351+x to 05, clear 0330+x
+Note Length 5
+Wait Length
+Note Length 50, 0201+x = fc, 0210+x = fc
+Note BC (x5)
+Note Length 4B
+Note BC
+Go to next part
+
+6596 (Total length: 1E0)
+
+6415 (Total length: 47B)
+EF 58 66 01 - EF 6B 66 01 - EF 80 66 02 - E1 0E E2 A0 06 BC BC E1 06 E2 14 08 1B C9 00
+loop = 6658, 1 loop
+
+ 6658
+
+loop = 666B, 1 loop
+
+ 666B (Length: 140)
+
+loop = 6680, 2 loops
+
+ 6680 (Length: 140 x 2)
+ E1 0E E2 A0 06 BC BC E1 06 E2 A0 0E BC BC 00
+ Set 0331+x and 0351+x to 0E, clear 0330+x
+ 91+x = A0 and 0350+x = 06, w.0340+x = FFF4?
+ Note BC
+ Note BC
+ Set 0331+x and 0351+x to 06, clear 0330+x
+ 91+x = A0 and 0350+x = 0E, w.0340+x = 000C?
+ Note BC
+ Note BC
+ Loop (first time) then go back (second time)
+
+Set 0331+x and 0351+x to 0E, clear 0330+x
+91+x = A0 and 0350+x = 06, w.0340+x = FFF4?
+Note BC
+Note BC
+Set 0331+x and 0351+x to 06, clear 0330+x
+91+x = 14 and 0350+x = 08, w.0340+x = 0019?
+Note length 1B
+Wait length
+Go to next part (loops back to top)
+
+
+---------
+CHANNEL 1
+---------
+
+65B9 (Total Length: 1E0)
+E0 19 F4 00 EA 00 ED E6 EE 78 A0 E1 11 E2 F0 0A EF 12 67 01 - EF 9A 66 01
+Instrument 19
+No cents adjustment
+No note transposement for this channel
+Volume = E600
+Volume transition time = 78, Target volume = A0, Volume rate = FF6B
+Set 0331+x and 0351+x to 11, clear 0330+x
+91+x = F0 and 0350+x = 0A, w.0340+x = FFF9?
+loop = 6712, 1 loop
+
+ 6712 (Length: F0)
+ 0C 7F 98 8C 8C 98 8C 8C 99 8D 96 8A 98 8C 8C 98 8C 8C 99 8D 96 8A 00
+ Note length 0C, duration FC, volume FC
+ Note 98
+ Note 8C
+ Note 8C
+ Note 98
+ Note 8C
+ Note 8C
+ Note 99
+ Note 8D
+ Note 96
+ Note 8A
+ Note 98
+ Note 8C
+ Note 8C
+ Note 98
+ Note 8C
+ Note 8C
+ Note 99
+ Note 8D
+ Note 96
+ Note 8A
+ Return from loop
+
+loop = 669A, 1 loop
+
+ 669A (Length: F0)
+ ED A0 EE 78 D2 E1 0A E2 F0 03 98 8C 8C 98 8C 8C 99 8D 96 8A 98 8C 8C 98 8C 8C 99 8D 96 8A 00
+ Volume = A000
+ Volume transition time = 78, Target volume = D2, Volume rate = 006A
+ 0331+x = 0A, 0351+x = 0A, clear 0330+x
+ 91+x = F0, 0350+x = 03, w.0340+x = 0007
+ Note 98
+ Note 8C
+ Note 8C
+ Note 98
+ Note 8C
+ Note 8C
+ Note 99
+ Note 8D
+ Note 96
+ Note 8A
+ Note 98
+ Note 8C
+ Note 8C
+ Note 98
+ Note 8C
+ Note 8C
+ Note 99
+ Note 8D 
+ Note 96
+ Note 8A
+ Return from loop
+
+Interrupted by channel 0 ending (Doesn't actually return from loop)
+
+621B (Total length: 168)
+E0 19 F4 1E EA 00 ED 8C E1 0C 0C 7F 93 87 87 87 87 87 87 87 94 88 88 88 88 88 88 88 ED A0 89 89 89 89 89 89 89 89 ED 82 EE 48 A0 96 8A 8A 97 8B 8B E0 1E F4 00 EA 01 ED B4 E1 06 E2 A0 0E 50 7F
+Setup (+1E cents, volume 8C00, length 0C, length% and vol% fc, everything else uninteresting)
+16 notes
+Volume A000
+8 notes
+Volume 8200, target A0 in 48 tics
+6 notes
+Interrupted by channel 0
+
+62EA (Total length: 1E0?)
+E0 19 F4 1E EA 00 ED D2 EE 78 8C E1 11 E2 F0 0A 06 C9 0C 7F 9B 8F 8F 9B 8F 8F 9C 90 99 8D 9B 8F 8F 9B 8F 8F 9C 90 99 8D ED 8C EE 78 D2 E1 0A E2 F0 03 9B 8F 8F 9B 8F 8F 9C 90 99 8D 9B 8F 8F 9B 8F ... more I didn't copy
+Setup (+1E cents, volume D200, target 8C in 78 tics, pan center, move slightly right in F0 tics)
+Wait 6 tics
+20 notes ($14 notes = F0 tics)
+
+
+65B9
+
+6430
+
+
+
+
+
+Add 2BB285 to convert from escape song offsets to ROM
+

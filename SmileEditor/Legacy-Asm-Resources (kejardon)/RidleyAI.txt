@@ -1,0 +1,4172 @@
+Ceres Ridley is E13F
+Norfair Ridley is E17F
+Apparently most of this code is compatible for either one, though this disassembly is mainly for Norfair Ridley
+
+0020 4FE1 5046 A000 0800 0800 A6   08     0000 0500 F5A0 0100 0000 27B2  0F80 97B2 4180 8AB2 0000 00000000 B2DF 000000000000 2380 8ADF 000000 94B0 02 4CF4 B2F1 0000
+^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ xx   yy     ^^yy xxyy ^^^^ xxyy xxyy xxyy  xxyy xxyy xxyy xxyy ^^yy xxyyxxyy xxyy xxyyxxyyxxyy xxyy xxyy xxyyxx ^^^^ yy ^^^^ ^^^^ ^^^^
+tile pal  hp   dmg  wide high Bank # of   hurt Boss AI   Part      Norm  Grap Hurt Froz XRay die           PB                Tch. Beam        tile  | |    |    |
+get  ptr                      Ptr  "hurt" snd. num  Init Cnt.      Move  AI   AI   AI   or   anim          Pntr              Pntr Pntr        set   | |    |    name pointer
+lgth                               frames                0=>1      AI?                  Rsrv                                                        | |    pointer to enemy resistances
+???                                                                                     AI                                                          | pointer to enemy drop chances
+                                                                                                                                                    background/foreground
+
+Graphic commands (0F92)
+E538: Initialization (draws and avoids crashing)
+17 E5 42 E5 0C 00 83 E9 2F 81
+            0C 00 A5 E9 2F 81
+
+E690: Opening roar and close mouth
+17 E5 AE E6 06 00 83 E9 BE E4 08 00 C7 E9 60 00 E9 E9 08 00 C7 E9 CA E4 01 00 83 E9 2F 81
+            06 00 A5 E9 BE E4 08 00 0B EA 60 00 2D EA 08 00 0B EA CA E4 01 00 A5 E9 2F 81
+
+E6C8: Death roar
+17 E5 DE E6 06 00 83 E9 BE E4 08 00 C7 E9 10 00 E9 E9 CA E4 2F 81
+            06 00 A5 E9 BE E4 08 00 0B EA 10 00 2D EA CA E4 2F 81
+
+E91D: Fly up and start main AI, I guess
+17 E5 45 E9 03 00 83 E9 1F E5 01 00 F4 FF 04 00 4F EA 1F E5 FC FF F8 FF 05 00 71 EA 69 E9 11 00 4F EA 11 00 83 E9 2F 81
+            03 00 A5 E9 1F E5 FF FF F4 FF 04 00 93 EA 1F E5 04 00 F8 FF 05 00 B5 EA 76 E9 11 00 93 EA 11 00 A5 E9 2F 81
+
+E6F0: Turn from left to right
+27 E7 01 00 83 E9 08 00 D7 EA 2F E7 01 00 D7 EA 01 00 A5 E9 2F 81
+
+E706: Turn from right to left
+27 E7 01 00 A5 E9 08 00 D7 EA 1C E7 01 00 D7 EA 01 00 83 E9 2F 81
+
+E73A: Fireballing
+17 E5 B4 E7 D2 E4 AC E7 08 00 83 E9 BE E4 08 00 C7 E9 02 00 E9 E9 4D E8 04 E9 05 00 E9 E9 4D E8 09 E9 05 00 E9 E9 4D E8 09 E9 05 00 E9 E9 4D E8 09 E9 30 00 E9 E9 08 00 C7 E9 D2 E4 AC E7 20 00 83 E9 BE E4 08 00 C7 E9 02 00 E9 E9 4D E8 04 E9 05 00 E9 E9 4D E8 09 E9 05 00 E9 E9 4D E8 09 E9 05 00 E9 E9 4D E8 09 E9 30 00 E9 E9 08 00 C7 E9 CA E4 01 00 83 E9 2F 81
+            D2 E4 20 E8 08 00 A5 E9 BE E4 08 00 0B EA 02 00 2D EA 4D E8 04 E9 05 00 2D EA 4D E8 09 E9 05 00 2D EA 4D E8 09 E9 05 00 2D EA 4D E8 09 E9 30 00 2D EA 08 00 0B EA D2 E4 20 E8 20 00 A5 E9 BE E4 08 00 0B EA 02 00 2D EA 4D E8 04 E9 05 00 2D EA 4D E8 09 E9 05 00 2D EA 4D E8 09 E9 05 00 2D EA 4D E8 09 E9 30 00 2D EA 08 00 0B EA CA E4 01 00 A5 E9 2F 81
+|           |           |           |     |                       |     |                 |     |                 |     |                 |     |                 |           |           |           |     |           |           |     |                 |     |                 |     |                 |     |     |           |           |     |           |
+Check left/right,       Draw facing current direction             Aim fireball            Aim fireball            Aim fireball            Aim fireball            Close mouth             Close mouth+Wait  Open mouth  Open mouth  Aim fireball            Aim fireball            Aim fireball            Aim fireball            Close mouth       Close mouth 
+            Check Norfair/Health          Open mouth                    Fire lead fireball      Fire trailing fireball  Fire trailing fireball  Fire trailing fireball                                                                    Fire lead fireball      Fire trailing fireball  Fire trailing fireball  Fire trailing fireball        End sound
+                                    Play roar sound                                                                                                   Wait                    Check Norfair/Health    Play roar                                                                                                         Wait                                      End AI
+                                                                                                                                                                                                      (Left has an extra aim fireball instruction, 4D E8, here. Removed from these comments to keep Left and Right aligned)
+
+
+
+
+Graphic command routines
+812F: Stop and wait on this command
+E4BE: Put 59 in 781E and JSL to 8090CB. Plays roar sound
+E4CA: STZ $7E:781E (No sound playing?)
+E4D2: 2 byte argument. If in Norfair or Samus is below 30 health, go to next instruction. Else go to argument, and set main AI script timer to 8
+E517: 2 byte argument. Move on to next command if Ridley is facing left, else go to argument.
+E51F: 4 byte argument. Add the following bytes to Ridley's X / Y position.
+E71C: Set 7E:7820 to 0 (Ridley is facing left) and JSR to D3F9 (Updates a bunch of tail values. Includes JSR $D3B4: Copy 7 entries from (X) to 7E:(Y), 7E:(Y+14), 7E:(Y+28), 7E:(Y+3C), etc.)
+E727: Set 7E:7820 to 1 (Ridley is facing forward / turning)
+E72F: Set 7E:7820 to 2 (Ridley is facing right) and JSR to D3F9 (Updates a bunch of tail values. Includes JSR $D3B4: Copy 7 entries from (X) to 7E:(Y), 7E:(Y+14), 7E:(Y+28), 7E:(Y+3C), etc.)
+E84D: Calculate fireball angle and X/Y speeds
+E904: Fires lead fireball ($1995 = 0, LDY #$9642, JSL $868097)
+E909: Fires following fireball ($1995 = E, LDY #$9642, JSL $868097)
+E969: Set Ridley's main AI to A6AF, and vertical speed to FEA0. (Ceres)
+E976: Set Ridley's main AI to B2F3, and vertical speed to FEA0. (Norfair)
+
+Graphic Draw Tiles
+E983: Ridley facing left
+E9A5: Ridley facing right
+E9C7: Ridley facing left, mouth half open
+E9E9: Ridley facing left, mouth open
+EA0B: Ridley facing right, mouth half open
+EA2D: Ridley facing right, mouth open
+EA4F: Ridley facing left, legs half extended
+EA71: Ridley facing left, legs extended
+EA93: Ridley facing right, legs half extended
+EAB5: Ridley facing right, legs extended
+EAD7: Ridley facing forward
+
+
+
+Ridley's RAM
+
+$0FA8 - Pointer to current Main AI assembly
+	A35B: Startup, 1st run. Moves on to next
+	A377: Startup, initial wait. Moves on to next
+	A389: Startup, eyes appear + wait. Moves on to next
+	A3DF: Startup, main body appears. Moves on to next
+	A455: Startup, Ridley roars. Moves on to next
+	A478: Startup, color background in Norfair, start main AI. Moves on to next
+	A354: Clear speeds, that's it (doesn't move on to anything)
+	A6AF: Startup liftoff, facing left (Ceres)
+	A6C8: Startup liftoff, facing left and slowing down (Ceres)
+	A6E8: Ceres main AI? Not disassembling in this doc.
+	B2F3: Startup liftoff, facing right
+	B321: Get new AI script (main battle engine)
+	B3EC: Initailize movement to center
+	B3F8: Move to center side (goes to B321)
+	B441: Chose to do a U swoop
+	B455: Fly to U swoop start
+	B493: U swoop, first dive
+	B4D1: U swoop, dive to half point
+	B516: U swoop, climb after half point
+	B554: U Swoop, still climbing
+	B594: U Swoop End (Chooses BAB7 for next script if Samus is not spinjumping, else B321)
+	B5C4: Consider tailbouncing
+	B5E5: Considering tailbouncing
+	B613: Hover since Samus is spinjumping
+	B6A7: Fly to start Tailbouncing
+	B6DD: Start tailbouncing
+	B70E: Main tailbouncing
+	B7B9: Tailbouncing, hit ground
+        BAB7: Check to do Deathswoop/Powerbomb dodge/Move-to-Center, or attempt to ram/grab Samus
+	BB8F: Ridley in position to grab Samus, no powerbombs
+	BBC4: Ridley is holding Samus, move towards target position then go to next script
+	BBF1: Drop Samus
+	BC2E: Short time after dropping Samus, before returning to B321
+	BD4E: Ridley is dodging a power bomb (may be holding Samus)
+	C538: Move Ridley towards 80,148, then go on
+	C53E: Final roar, go on
+	C551: Move to death spot, wait, then lower lava and go on
+	C588: Explosions for death. After a while, drop Samus if needed and go on
+	C5A8: Disable Ridley and go on
+	C5C8: Wait 20 frames and go on
+	C5DA: Wait 100 frames, then drop items, change music, and set boss bit
+	C600: Wait for deletion
+$0FAA - X speed (1/100 pixels)
+$0FAC - Y speed (1/100 pixels)
+$0FAE - Unused
+$0FB0 - Custom index? Only seen in intro
+$0FB2 - AI script timer/counter
+$0FB4 - Unused
+$0FB6 - Unused
+
+$0FEA - Not sure, used by hatchling in Ceres
+
+7E:178C - 7E:178E    Unknown, Ceres Ridley writes A6A2F2 here in main AI loop
+
+
+Tail commentary:
+2020,X tells if this tail part is rotating (8000) or not(0)
+2024,X tells which direction this tail part is rotating in, clockwise (8000) or counterclockwise (0)
+202A,X is the angle of the current tail part (3FC0 - 4000 - 4040 = left - down - right)
+2014 is used by all tail parts as rotational speed (in 1/100th's of a revolution per frame)
+2016 and 2018 are min (clockwise) and max (counterclockwise) angles. Upon reaching one of these angles, the tail starts rotating in the other direction
+201A and 201C are clockwise and counterclockwise angle targets. Upon reaching one of these angles, the tail will stop, assuming the previous tail segment has stopped.
+
+2022,X is a counter added to by 2014. Until it reaches 201E, this tail part is never moved/rotated? When reached, start rotation of next part (which also must reach this before it begins rotating)
+201E is a threshhold to start rotation (staggers motion along Ridley's tail - without this, Ridley's tail would move all at once and so always be straight)
+
+2026,X tells the distance from the previous tail part to this tail part
+2028,X tells the target distance from the previous tail part to this tail part. 0 if unused. When reached, the tail will slowly return to its original position. NOTE: There are hardcoded limits to tail extension. If those limits are reached, the tail will stay at that limit, neither extending nor returning until this value is lowered or zeroed.
+2012 is the tail extension speed (1/100th's of a pixel per frame)
+202C,X and 202E,X are the current X/Y position of the tail part, inside the room.
+2030,X and 2032,X are the current X/Y distances of this tail part from the previous tail part.
+
+
+
+7E:2000 - 7E:2001    Tail control index, value is 0 through 8. 0 = inactive, 1 = flinging at Samus, 2 = start tailbouncing, 3 = continue start tailbouncing?, 4 = during tailbouncing, 5 = start extending during tailbouncing, 6 = continue extending during tailbouncing, 7 = strict tail bouncing, with extending, 8 = spin tail around madly
+0             CB20: Do nothing, RTS
+1             CBC0: Store CC39 to $12, JMP CBDC
+2   CB33: Store 8 to 7E2014, JSR CB72, store 3 to 7E2000 (next)
+3   CB45: Store 8 to 7E2014, JMP CB72
+4             CBC7: Store CD24 to $12, JMP CBDC
+5             CBCE: Store CDAA to $12, JMP CBDC
+6   CB4E: Store 3 to 7E2014, JSR CB72, store 6 to 7E2000 (this)
+7   CB60: Store 2 to 7E2014, JSR CB72, Store 7 to 7E2000 (this)
+8             CBD5: Store CCBD to $12, JMP CBDC
+
+         CB72: Set 4000 to min (if facing left) or max (if facing right), run CBC7, set 2000 to 4 if nothing is rotating
+                   CBDC: JSR $12, and update each tail section's angular motion, angle, and x/y position
+                        CC39: Fling tail at Samus (or a nearby missile)
+                        CCBD: Spin tail around (at Samus. Or a nearby missile. <_<)
+                        CD24: Set min and max angles with CBFE, check if rotating with CC1E, If all tail parts are rotating, set optional min if one isn't in use yet and 8 tailspeed. Else if none are rotating, disable optional caps, set control to 5 if moving down, if an unknown timer is 0 (always is as far as I know), set tail to rotating at speed 8.
+                        CDAA: Extend tail while tail bouncing
+
+
+7E:2002 - 7E:2003    Unknown. Initialized to 1 by Ceres Ridley, otherwise never seen
+7E:2004 - 7E:2005    Tail fling trigger
+
+7E:200A - 7E:200B    Sort of 1 byte signed with 200B. 1/2 number of revolutions to make when spinning Ridley's tail
+7E:200C - 7E:200D    Ridley's downwards acceleration when tailbouncing, moving down
+7E:200E - 7E:200F    Ridley's downwards acceleration when tailbouncing, moving up
+7E:2010 - 7E:2011    Timer to start tail movement? It seems to always be 0
+7E:2012 - 7E:2013    Tail extension speed. Initialized to F0
+7E:2014 - 7E:2015    Angular speed of tail? Initialized to 1. Set to 1 if dodging a powerbomb, 8 if tailbouncing (?).
+7E:2016 - 7E:2017    Minimum (clockwise) angle. Initialized to 3FF0, 3FF0 if left, 3FC0 if right.
+7E:2018 - 7E:2019    Maximum (counterclockwise) angle. Initialized to 4040, 4040 if left, 4010 if right.
+7E:201A - 7E:201B    Optional clockwise target of 202A. Minus means unused. If used, store #$0C00 to 2028, 202A - 2014 = new 202A unless smaller than 201A. If smaller than 201A: If first tail segment, or previous segment isn't rotating, 202A = 201A, stop rotation, switch direction. Else STZ 2024 and 202A = 2016
+7E:201C - 7E:201D    Optional counterclockwise target of 202A. Minus means unused. If used, store #$0C00 to 2028, 202A + 2014 = new 202A unless larger than 201C. If larger than 201C: If first tail segment, or previous segment isn't rotating, 202A = 201C, stop rotation, switch direction. Else 2024 = #$8000 and 202A = 2018
+7E:201E - 7E:201F    Movement threshold. Initialized to 10, Ceres Ridley sometimes sets to a random number between 7 and 16 (hex)
+;Tail 1 starts here
+7E:2020 - 7E:2021    Initialized to 0. 8000 = Moving and/or rotating.
+7E:2022 - 7E:2023    Initialized to 11. Counter to wait (must reach 201E, 2014 is added every frame 2020,X is set) till this tail segment actually starts rotating, and next tail segment's 2020,X is set to 8000
+7E:2024 - 7E:2025    Which direction this tail segment is rotating. 8000 = clockwise (- angle), 0 = counterclockwise (+ angle)
+7E:2026 - 7E:2027    Distance (sqrt(X^2 + Y^2)) from Ridley to this tail part.
+7E:2028 - 7E:2029    Target distance from Ridley to this tail part. Not actually used for tail part 1, I think
+7E:202A - 7E:202B    Angle of this tail part (3FC0, left, to 4040, right) (Also used by next tail part to calculate its own absolute angle)
+7E:202C - 7E:202D    X position of Tail part 1. Set to Ridley's X position + $2030, +#$FFE0 if facing right
+7E:202E - 7E:202F    Y position of Tail part 1.
+7E:2030 - 7E:2031    X distance from Ridley (possibly modified) to Tail part 1.
+7E:2032 - 7E:2033    Y distance from Ridley to Tail part 1.
+;Tail 2 starts here
+7E:2034 - 7E:2035    Initialized to 0. 8000 = Moving and/or rotating.
+7E:2036 - 7E:2037    Initialized to 11. Counter to wait (must reach 201E, 2014 is added every frame 2020,X is set) till this tail segment actually starts rotating, and next tail segment's 2020,X is set to 8000
+7E:2038 - 7E:2039    Which direction this tail segment is rotating. 8000 = clockwise (- angle), 0 = counterclockwise (+ angle)
+7E:203A - 7E:203B    Distance (sqrt(X^2 + Y^2)) from previous tail part to this tail part.
+7E:203C - 7E:203D    Target distance from previous tail part to this tail part.
+7E:203E - 7E:203F    Angle of this tail part (3FC0, left, to 4040, right). Previous tail part's angle is also added to this angle to get the actual angle.
+7E:2040 - 7E:2041    X position of this tail part
+7E:2042 - 7E:2043    Y position of this tail part
+7E:2044 - 7E:2045    X distance from previous tail part to this tail part
+7E:2046 - 7E:2047    Y distance from previous tail part to this tail part
+;Tail 3 starts here
+7E:2048 - 7E:2049    Initialized to 0. 8000 = Moving and/or rotating.
+7E:204A - 7E:204B    Initialized to 11. Counter to wait (must reach 201E, 2014 is added every frame 2020,X is set) till this tail segment actually starts rotating, and next tail segment's 2020,X is set to 8000
+7E:204C - 7E:204D    Which direction this tail segment is rotating. 8000 = clockwise (- angle), 0 = counterclockwise (+ angle)
+7E:204E - 7E:204F    Distance (sqrt(X^2 + Y^2)) from previous tail part to this tail part.
+7E:2050 - 7E:2051    Target distance from previous tail part to this tail part.
+7E:2052 - 7E:2053    Angle of this tail part (3FC0, left, to 4040, right). Previous tail part's angle is also added to this angle to get the actual angle.
+7E:2054 - 7E:2055    X position of this tail part
+7E:2056 - 7E:2057    Y position of this tail part
+7E:2058 - 7E:2059    X distance from previous tail part to this tail part
+7E:205A - 7E:205B    Y distance from previous tail part to this tail part
+;Tail 4 starts here
+7E:205C - 7E:205D    Initialized to 0. 8000 = Moving and/or rotating.
+7E:205E - 7E:205F    Initialized to 11. Counter to wait (must reach 201E, 2014 is added every frame 2020,X is set) till this tail segment actually starts rotating, and next tail segment's 2020,X is set to 8000
+7E:2060 - 7E:2061    Which direction this tail segment is rotating. 8000 = clockwise (- angle), 0 = counterclockwise (+ angle)
+7E:2062 - 7E:2063    Distance (sqrt(X^2 + Y^2)) from previous tail part to this tail part.
+7E:2064 - 7E:2065    Target distance from previous tail part to this tail part.
+7E:2066 - 7E:2067    Angle of this tail part (3FC0, left, to 4040, right). Previous tail part's angle is also added to this angle to get the actual angle.
+7E:2068 - 7E:2069    X position of this tail part
+7E:206A - 7E:206B    Y position of this tail part
+7E:206C - 7E:206D    X distance from previous tail part to this tail part
+7E:206E - 7E:206F    Y distance from previous tail part to this tail part
+;Tail 5 starts here
+7E:2070 - 7E:2071    Initialized to 0. 8000 = Moving and/or rotating.
+7E:2072 - 7E:2073    Initialized to 11. Counter to wait (must reach 201E, 2014 is added every frame 2020,X is set) till this tail segment actually starts rotating, and next tail segment's 2020,X is set to 8000
+7E:2074 - 7E:2075    Which direction this tail segment is rotating. 8000 = clockwise (- angle), 0 = counterclockwise (+ angle)
+7E:2076 - 7E:2077    Distance (sqrt(X^2 + Y^2)) from previous tail part to this tail part.
+7E:2078 - 7E:2079    Target distance from previous tail part to this tail part.
+7E:207A - 7E:207B    Angle of this tail part (3FC0, left, to 4040, right). Previous tail part's angle is also added to this angle to get the actual angle.
+7E:207C - 7E:207D    X position of this tail part
+7E:207E - 7E:207F    Y position of this tail part
+7E:2080 - 7E:2081    X distance from previous tail part to this tail part
+7E:2082 - 7E:2083    Y distance from previous tail part to this tail part
+;Tail 6 starts here
+7E:2084 - 7E:2085    Initialized to 0. 8000 = Moving and/or rotating.
+7E:2086 - 7E:2087    Initialized to 11. Counter to wait (must reach 201E, 2014 is added every frame 2020,X is set) till this tail segment actually starts rotating, and next tail segment's 2020,X is set to 8000
+7E:2088 - 7E:2089    Which direction this tail segment is rotating. 8000 = clockwise (- angle), 0 = counterclockwise (+ angle)
+7E:208A - 7E:208B    Distance (sqrt(X^2 + Y^2)) from previous tail part to this tail part.
+7E:208C - 7E:208D    Target distance from previous tail part to this tail part.
+7E:208E - 7E:208F    Angle of this tail part (3FC0, left, to 4040, right). Previous tail part's angle is also added to this angle to get the actual angle.
+7E:2090 - 7E:2091    X position of this tail part
+7E:2092 - 7E:2093    Y position of this tail part
+7E:2094 - 7E:2095    X distance from previous tail part to this tail part
+7E:2096 - 7E:2097    Y distance from previous tail part to this tail part
+;Tail tip starts here
+7E:2098 - 7E:2099    Initialized to 0. 8000 = Moving and/or rotating.
+7E:209A - 7E:209B    Initialized to 11. Counter to wait (must reach 201E, 2014 is added every frame 2020,X is set) till this tail segment actually starts rotating, and next tail segment's 2020,X is set to 8000
+7E:209C - 7E:209D    Which direction this tail segment is rotating. 8000 = clockwise (- angle), 0 = counterclockwise (+ angle)
+7E:209E - 7E:209F    Distance (sqrt(X^2 + Y^2)) from previous tail part to this tail part.
+7E:20A0 - 7E:20A1    Target distance from previous tail part to this tail part.
+7E:20A2 - 7E:20A3    Angle of this tail part (3FC0, left, to 4040, right). Previous tail part's angle is also added to this angle to get the actual angle.
+7E:20A4 - 7E:20A5    X position of this tail part 
+7E:20A6 - 7E:20A7    Y position of this tail part
+7E:20A8 - 7E:20A9    X distance from previous tail part to this tail part
+7E:20AA - 7E:20AB    Y distance from previous tail part to this tail part
+;End of tail data
+7E:20AC - 7E:20BF?   Extra unused data written to by tail tip for the non-existent 'next tail part'
+
+7E:7000?- 7E:77FF?   Table of some sort for enemies. Related to graphics, I think.
+
+7E:7006,X is where in vram the tiles are (I think)
+7E:7008,X is which color pallete it uses.
+
+7E:701E,X mirrors 7E:0F78, X
+7E:7020,X mirrors 7E:0F7A, X
+7E:7022,X mirrors 7E:0F7E, X
+7E:7024,X mirrors 7E:0F92, X (Used by Chozo statues for orientation?)
+7E:7026,X mirrors 7E:0F86, X
+7E:7028,X mirrors 7E:0F88, X
+7E:702A,X mirrors 7E:0FB4, X
+7E:702C,X mirrors 7E:0FB6, X
+7E:702E,X-7E:7038,X  is the enemy's name, if it has one. Else #$0000
+
+7E:7800 - 7E:7801    General use timer for main battle AI script
+7E:7802 - 7E:7803    Initialized to 0. 1 = main battle AI is active, FFFF = Ded
+7E:7804 - 7E:7805    Ridley is active? Initialized to 1 by Norfair Ridley, 0 by Ceres Ridley
+7E:7806 - 7E:7807    Used for Hatchling Metroid's graphic draw, initialized to BF31 by Ceres Ridley
+7E:7808 - 7E:7809    Used for Hatchling Metroid's graphic draw, initialized to 1 by Ceres Ridley
+7E:780A - 7E:780B    Pointer to next graphic entry for Ridley's ribs (pointer to next entry, or 
+7E:780C - 7E:780D    Counter for animating Ridley's ribs
+7E:780E - 7E:780F    Wing flap frame
+7E:7810 - 7E:7811    Wing flap speed
+7E:7812 - 7E:7813    Wing flap counter (<0 means advance wingflap frame)
+7E:7814 - 7E:7815    Ridley's current angle of motion (only for U swoops?) (0 = down, increase is counterclockwise)
+7E:7816 - 7E:7817    Ridley's U Swoop speed (sqrt(X^2 + Y^2))
+7E:7818 - 7E:7819    Wing/Tail pallete for Ridley?
+7E:781A - 7E:781B    Ridley's hit counter for Ceres? Initialized to 0
+7E:781C - 7E:781D    Ridley's tail sound counter: If moving at full speed for 10 frames, play spinjump-like sound.
+7E:781E - 7E:781F    Current sound playing?
+7E:7820 - 7E:7821    Direction faced (0 = left, 1 = front, 2 = right). Initialized to 2 by Norfair Ridley, 0 by Ceres Ridley.
+
+7E:7824              General use 'speed' byte set aside for Ridley?
+
+7E:782E - 7E:782F    Target X location when holding Samus
+7E:7830 - 7E:7831    Target Y location when holding Samus
+7E:7832 - 7E:7833    X component of speed to fire fireballs at
+7E:7834 - 7E:7835    Y component of speed to fire fireballs at
+7E:7836 - 7E:7837    Flag? Ridley is holding Samus?
+7E:7838 - 7E:7839    Tail tip damage. Initialized to 78 by Norfair Ridley, F by Ceres Ridley
+7E:783A - 7E:783B    Never initialized, always 0.
+
+7E:783E - 7E:783F    Which wall was hit last frame: 0 = none, 1 = left, 2 = right, 4 = top, 8 = bottom. 4 and 8 take priority over 1 and 2, even though as bits they should allow overlap.
+
+7E:8000 - 7E:8001    Initialized to 40 by Norfair Ridley, FFE0 by Ceres Ridley. Upmost allowed Y position
+7E:8002 - 7E:8003    Initialized to 1A0 by Norfair Ridley, B0 by Ceres Ridley. Downmost allowed Y position
+7E:8004 - 7E:8005    Initialized to 40 by Norfair Ridley, 28 by Ceres Ridley. Leftmost allowed X position
+7E:8006 - 7E:8007    Initialized to E0 by both Ridleys, seperately. Rightmost allowed X position
+7E:8008 - 7E:8009    Unknown timer. Never initialized, always 0, no effect.
+7E:800A - 7E:800B    Ridley's final attack swoop counter?
+7E:800C - 7E:800D    'Counter', used to cause Ridley to start his fireball AI every other tailbounce
+7E:800E - 7E:800F    Timer for death explosions
+7E:8010 - 7E:8011    Index for death explosions
+
+7E:8800 - 7E:8801    JSRed to by Ceres Ridley's main code, initialized to BE9C by Ceres Ridley
+
+7E:8804 - 7E:8805    X position of metroid hatchling
+
+7E:8808 - 7E:8809    Y position of metroid hatchling
+
+7E:C0E2 - 7E:C0FF    Background color pallete
+
+7E:C122 - 7E:C137    Mirror of Ridley's colors while appearing except eyes? (C1E2 - C1F7)
+
+7E:C1E2 - 7E:C1EF    Ridley's color pallete?     \
+7E:C1F0 - 7E:C1F7    Ridley's wing pallete?       |- Exact offset groups are unknown
+7E:C1F8 - 7E:C1FC    Ridley's eye color pallete? /
+
+7E:C2E2 - 7E:C2FF    Unknown, initialized to 0 by Norfair Ridley
+
+7E:C340 - 7E:C37F    Unknown, initialized
+
+7E:C3E2 - 7E:C3FF    Unknown, initialized to 0
+
+
+
+Main AI Scripts
+A35B: Startup, Part 1
+{
+	LDA $0797        ;Room transition flag
+	BNE BRANCH_ALPHA ;Skip until room transition is finished?
+	LDA #$A377
+	STA $0FA8        ;New AI script
+	LDA #$0200
+	LDY $079F        ;Region number
+	CPY #$0002       ;Check if Norfair
+	BNE BRANCH_BETA
+	LDA #$00AA
+BRANCH_BETA:             ;Norfair: A = AA. Ceres: A = 200
+	STA $0FB2        ;Variable use timer
+A377_SCRIPT:             ;Startup, invisibility timer script?
+	DEC $0FB2
+	BPL BRANCH_ALPHA
+	LDA #$A389
+	STA $0FA8        ;New AI script
+	STZ $0FB0        ;Variable use index
+	STZ $0FB2        ;Timer?
+BRANCH_ALPHA
+	RTS
+}
+
+A389: Startup, Eyes appear
+{
+	LDA $0FB0        ;Variable use index (should be 0 first time coming here)
+	BMI BRANCH_ALPHA ;Never branches, I think
+	TAY
+	INC $0FB2        ;Variable use timer?
+	LDA $0FB2
+	CMP #$0001       ;Run script every 1 frame
+	BCC BRANCH_ALPHA ;
+	STZ $0FB2
+	TYX              ;value is from $0FB0
+	LDA $E269, X     ;1 byte values from F to 0 (10 values), then 30 more 00's, and finally an FF (41 values total)
+	AND #$00FF
+	CMP #$00FF
+	BEQ BRANCH_BETA  ;Branches at X = 40
+	STA $12
+	ASL A
+	CLC
+	ADC $12
+	ASL A            ;Multiplied by 6
+	TAY
+	INX
+	STX $0FB0        ;$0FB0 = $0FB0 + 1
+	LDX #$01F8
+	LDA $E2AA, Y     ;Y = 6*(eye color index)
+	STA $7EC000, X   ;Setting Ridley's eye color pallete?
+	LDA $E2AC, Y
+	STA $7EC002, X
+	LDA $E2AE, Y
+	STA $7EC004, X
+BRANCH_ALPHA
+	RTS
+BRANCH_BETA
+	STZ $0FB0        ;Zero out custom value
+	LDA #$A3DF
+	STA $0FA8        ;New AI script
+	LDA #$0001
+	STA $7E7804      ;Activate Ridley
+	RTS
+}
+
+A3DF:
+{
+	INC $0FB2        ;Variable use timer, initialized to 0
+	LDA $0FB2
+	CMP #$0002       ;Run script every 2 frames
+	BCC BRANCH_ALPHA
+	STZ $0FB2        ;reset timer
+	LDY $0FB0        ;Custom value, starts as 0
+	LDA #$0122
+	STA $12
+	LDA #$01E2       ;Ridley's color pallete index
+	STA $14
+	LDA #$000B       ;Run inside Beta loop B (11) times
+BRANCH_BETA
+	PHA
+	LDA $E30A, Y
+	LDX $12
+	STA $7EC000, X   ;Mirror of Ridley's colors while appearing?
+	LDX $14
+	STA $7EC000, X   ;Update Ridley's colors
+	INY
+	INY
+	INC $12
+	INC $12
+	INC $14
+	INC $14
+	PLA
+	DEC A
+	BNE BRANCH_BETA
+	CPY #$0160       ;Y = #$0160 after $10 loops through here (20 frames)
+	BCS BRANCH_GAMMA
+	STY $0FB0
+BRANCH_ALPHA
+	RTS
+BRANCH_GAMMA
+	LDA $079F        ;Region
+	CMP #$0002       ;Norfair
+	BNE BRANCH_DELTA
+	LDA #$0002
+	STA $0F9A        ;Layer setting 2 (not sure what that means) if in Norfair
+BRANCH_DELTA
+	LDA $0F86
+	AND #$FBFF
+	STA $0F86        ;Enable Samus/Enemy interaction
+	LDY #$0000
+	STY $0FB0        ;Clear index
+	LDA #$A455
+	STA $0FA8        ;Next main AI script
+	LDA #$0004
+	STA $0FB2        ;Set timer to 4
+	LDA #$0005
+	JSL $808FC1      ;Change music control to this
+	RTS
+}
+
+A455:
+{
+	DEC $0FB2        ;Was initialized to 4
+	BPL BRANCH_ALPHA
+	LDA #$E690       ;Ridley roars
+	JSR $D467        ;STA to GraphicAI instruction (0F92), delay (0F94) = 1, STZ $0F90
+	STZ $0FB2        ;Pointless. It must be 0 because it's here.
+	LDA #$A478
+	STA $0FA8        ;Next main AI script
+	LDA $079F
+	CMP #$0002       ;Check if Norfair
+	BEQ BRANCH_ALPHA
+	LDA #$00FC
+	STA $0FB2        ;Set timer to FC if in Ceres
+BRANCH_ALPHA
+	RTS
+}
+
+A478:
+{
+	LDA $079F
+	CMP #$0002       ;Check if Norfair
+	BNE BRANCH_ALPHA
+	DEC $0FB2
+	BPL BRANCH_$132477 ;RTS
+	LDA #$0002
+	STA $0FB2        ;Every 2 frames
+	LDA $0FB0
+	INC A
+	STA $0FB0        ;Increment Index
+	DEC A	
+	JSR $A4D6        ;Adjust background colors if necessary
+	{
+		ASL A
+		TAX               ;X = 2*(old $0FB0)
+		LDY $A4EB, X      ;Pointer to new background colors. Ends at a 0000
+		BNE BRANCH_ULTIMA
+		SEC
+		RTS
+	BRANCH_ULTIMA
+		LDX #$00E2
+		LDA #$000E
+		JSL $A9D2E4       ;Copy 2*A bytes from (Y) to 7E:C000,X. Specifically, colors the background.
+		CLC
+		RTS
+	}
+	BCC BRANCH_$132477 ;Loops till no more backgrounds to change
+	LDA #$01B8
+	STA $197A        ;New lava height
+	LDA #$FFA0
+	STA $197C        ;Lava speed
+	LDA #$0020
+	STA $1980        ;Delay before lava begins moving?
+	BRA BRANCH_BETA
+BRANCH_ALPHA
+	DEC $0FB2
+	BPL BRANCH_$132477 ;RTS
+BRANCH_BETA
+	STZ $0FB0
+	LDA #$E91D       ;Fly up, start main AI?
+	JSR $D467        ;STA to GraphicAI instruction (0F92), delay (0F94) = 1, STZ $0F90
+	LDA #$0008
+	STA $7E7810      ;Wing flap speed
+	STA $7E7812      ;Wing flap counter
+	JSR $D3D9        ;Set all tail parts to moving
+	{
+		LDA #$8000
+		STA $7E2020
+		STA $7E2034
+		STA $7E2048
+		STA $7E205C
+		STA $7E2070
+		STA $7E2084
+		STA $7E2098
+		RTS
+	}
+	LDA #$0001
+	STA $7E2000      ;Set tail control index
+	LDA #$A354
+	STA $0FA8        ;Next main AI script
+	RTS
+}
+
+A6AF:
+{
+	LDA $0FAC        ;Ridley's Y speed
+	CLC
+	ADC #$FFF0       ;1/10 pixel per frame^2 acceleration upwards
+	STA $0FAC
+	LDA $0F7E        ;Y position
+	CMP #$0070       ;7 blocks from roof
+	BMI BRANCH_ALPHA
+	RTS
+BRANCH_ALPHA
+	LDA #$A6C8       ;New AI script
+	STA $0FA8
+A6C8:
+	LDA $0FAC        ;Ridley's Y speed
+	CLC
+	ADC #$0014       ;5/40 pixel per frame^2 acceleration downwards
+	STA $0FAC
+	LDA $0F7E        ;Ridley's Y position
+	CMP #$0050       ;5 blocks from roof
+	BPL BRANCH_BETA
+	LDA #$A6E8       ;New AI script
+	STA $0FA8
+	LDA #$0001
+	STA $7E7802      ;Main battle AI is active
+BRANCH_BETA
+	RTS
+}
+
+B2F3:
+{
+	LDX #$0040
+	LDY #$0100
+	STX $12
+	STY $14
+	LDX #$0000
+	LDY #$000E
+	JSR $D523        ;Accelerates Ridley towards the desired X/Y ($12/$14). No deceleration boost ($1A), Y is index value to find acceleration divisor ($18), X is enemy's index
+	{
+		LDA #$0000
+		STA $1A
+		LDA $D61F, Y     ;F entries, 1 byte each, counts from 10 to 1
+		AND #$00FF
+		STA $18
+		JSR $D5A9        ;Accelerates Ridley towards the desired X position ($12). Deceleration boost in $1A, acceleration divisor in $18, X is enemy's index
+		{
+			LDA $0F7A, X     ;Ridley's X position
+			SEC
+			SBC $12
+			BEQ BRANCH_ALPHA ;RTS if at $12
+			BPL BRANCH_BETA  ;Go here if right of $12
+			EOR #$FFFF
+			INC A            ;Absolute distance from $12
+			STA $4204
+			SEP #$20
+			LDA $18
+			STA $4206        ;Divided by $18
+			REP #$20
+			XBA
+			XBA
+			NOP
+			NOP
+			LDA $4214
+			BNE BRANCH_GAMMA
+			INC A
+		BRANCH_GAMMA
+			STA $16          ;Result put in $16, minimum of 1
+			LDA $0FAA, X
+			BPL BRANCH_DELTA ;Branch if moving towards $12
+			CLC
+			ADC $1A          ;Deceleration boost
+			CLC
+			ADC #$0008       ;Extra deceleration boost, I guess
+			ADC $16
+		BRANCH_DELTA
+			ADC $16          ;Acceleration gradient result (Closer to $12 = more acceleration)
+			CMP #$0500       ;Max speed allowed is 5 pixels per frame
+			BMI BRANCH_EPSILON
+			LDA #$0500       ;Cap at 5 pixels per frame
+		BRANCH_EPSILON
+			STA $0FAA, X     ;Update speed
+		BRANCH_ALPHA
+			RTS
+		BRANCH_BETA
+			STA $4204        ;Distance from $12
+			SEP #$20
+			LDA $18
+			STA $4206        ;Divided by $18
+			REP #$20
+			XBA
+			XBA
+			NOP
+			NOP
+			LDA $4214
+			BNE BRANCH_ZETA
+			INC A
+		BRANCH_ZETA
+			STA $16          ;Result put in $16, minimum of 1
+			LDA $0FAA, X
+			BMI BRANCH_THETA ;Branch if moving towards $12
+			SEC
+			SBC $1A          ;Deceleration boost
+			SEC
+			SBC #$0008       ;Extra deceleration boost, I guess
+			SBC $16
+		BRANCH_THETA
+			SBC $16          ;Acceleration gradient result (Closer to $12 = more acceleration)
+			CMP #$FB00       ;Max speed (er, min velocity) allowed is -5 pixels per frame
+			BPL BRANCH_IOTA
+			LDA #$FB00       ;Cap at -5 pixels per frame
+		BRANCH_IOTA
+			STA $0FAA, X     ;Update speed
+			RTS
+		}
+		LDA $0F7E, X     ;Ridley's Y position
+		SEC
+		SBC $14
+		BEQ BRANCH_ALPHA ;RTS if at $14
+		BPL BRANCH_BETA  ;Go here if below $14
+		EOR #$FFFF
+		INC A            ;Absolute distance from $14
+		STA $4204
+		SEP #$20
+		LDA $18          ;Divided by $18
+		STA $4206
+		REP #$20
+		XBA
+		XBA
+		NOP
+		NOP
+		LDA $4214
+		BNE BRANCH_GAMMA
+		INC A
+	BRANCH_GAMMA
+		STA $16          ;Result put in $16, minimum of 1
+		LDA $0FAC, X
+		BPL BRANCH_DELTA ;Branch if moving towards $14
+		CLC
+		ADC $1A          ;Deceleration boost
+		CLC
+		ADC #$0008       ;Extra deceleration boost, I guess
+		ADC $16
+	BRANCH_DELTA
+		ADC $16          ;Acceleration gradient result (Closer to $14 = more acceleration)
+		CMP #$0500       ;Max speed allowed is 5 pixels per frame
+		BMI BRANCH_EPSILON
+		LDA #$0500       ;Cap at 5 pixels per frame
+	BRANCH_EPSILON
+		STA $0FAC, X     ;Update speed
+	BRANCH_ALPHA
+		RTS
+	BRANCH_BETA
+		STA $4204        ;Distance from $14
+		SEP #$20
+		LDA $18          ;Divided by $18
+		STA $4206
+		REP #$20
+		XBA
+		XBA
+		NOP
+		NOP
+		LDA $4214
+		BNE BRANCH_ZETA
+		INC A
+	BRANCH_ZETA
+		STA $16          ;Result put in $16, minimum of 1
+		LDA $0FAC, X
+		BMI BRANCH_THETA ;Branch if moving towards $14
+		SEC
+		SBC $1A          ;Deceleration boost
+		SEC
+		SBC #$0008       ;Extra deceleration boost, I guess
+		SBC $16
+	BRANCH_THETA
+		SBC $16          ;Acceleration gradient result (Closer to $14 = more acceleration)
+		CMP #$FB00       ;Max speed (er, min velocity) allowed is -5 pixels per frame
+		BPL BRANCH_IOTA
+		LDA #$FB00       ;Cap at -5 pixels per frame
+	BRANCH_IOTA
+		STA $0FAC, X     ;Update speed
+		RTS
+	}
+	LDA #$0008
+	STA $16          ;X size of target area
+	STA $18          ;Y size of target area
+	JSL $A9EF06      ;Really nice collision detection routine. I'll have to steal *this* one. Checks an enemy with index of X colliding with $12/$14 with a size of $16/$18
+	{
+		LDA $16
+		CLC
+		ADC $0F82, X     ;Ridley's width
+		INC A
+		STA $1A          ;So, $1A = Ridley's width + 9
+		LDA $12          ;Still an X position from earlier: 40
+		SEC
+		SBC $0F7A, X     ;Ridley's position
+		BPL BRANCH_ALPHA
+		EOR #$FFFF
+		INC A
+	BRANCH_ALPHA             ;A = absolute distance between Ridley and $12 (#$0040)
+		CMP $1A
+		BCS BRANCH_BETA  ;Branch if Ridley isn't near #$0040
+		LDA $18
+		CLC
+		ADC $0F84, X     ;Ridley's height
+		INC A
+		STA $1A          ;So, $1A = Ridley's height + 9
+		LDA $14          ;Still a Y position from earlier: 100
+		SEC
+		SBC $0F7E, X     ;Ridley's position
+		BPL BRANCH_GAMMA
+		EOR #$FFFF
+		INC A
+	BRANCH_GAMMA             ;A = absolute distance between Ridley and $14 (#$0100)
+		CMP $1A
+	BRANCH_BETA              ;Carry Set: No collision. Carry Clear: Collision
+		RTL
+	}
+	BCC BRANCH_ALPHA
+	RTS
+BRANCH_ALPHA
+	LDA #$0001
+	STA $7E7802      ;Ridley's main battle AI is active
+	LDA #$B321       ;Next main AI script
+	STA $0FA8
+B321:
+	JSR $B335        ;Get new AI script
+	{
+		LDA $0A1F        ;Samus's movement type
+		AND #$00FF
+		CMP #$0003       ;Spin jump
+		BNE BRANCH_ALPHA
+		LDA #$B3CC
+		STA $12          ;Pointer to a set of new AI scripts to run: 8/8 B5C4
+		RTS
+	BRANCH_ALPHA
+		LDA $0F8C        ;HP
+		BNE BRANCH_BETA
+		LDA #$B3DC       ;Pointer to a set of new AI scripts to run: 8/8 BAB7
+		STA $12
+		LDA $7E800A
+		INC A
+		STA $7E800A      ;Death swoop counter
+		RTS
+	BRANCH_BETA
+		CMP #$3840       ;Compare HP to 14400
+		BPL BRANCH_GAMMA
+		LDY #$B38C       ;Pointer to a set of new AI scripts to run: 4/8 B6A7 and 4/8 B441
+		STY $12
+		RTS
+	BRANCH_GAMMA
+		JSR $BD20        ;Check if Y is below #$0160
+		BCC BRANCH_DELTA ;Branch if above
+		LDY #$B3BC       ;Pointer to a set of new AI scripts to run: 8/8 B6A7
+		STY $12
+		RTS
+	BRANCH_DELTA
+		JSR $BCF1        ;CLC if spin jump, grappling, or spin back from hurt
+		BCC BRANCH_EPSILON
+		LDY #$B3AC       ;Pointer to a set of new AI scripts to run: 6/8 BAB7 and 2/8 B6A7
+		STY $12
+		RTS
+	BRANCH_EPSILON
+		LDY #$B38C       ;Pointer to a set of new AI scripts to run: 4/8 B6A7 and 4/8 B441
+		LDA $0F8C        ;HP
+		CMP #$2328       ;Compare HP to 9000
+		BPL BRANCH_ZETA  ;A previous check confirmed over 14400 hp. Ergo, this always branches. Not that it much matters
+		LDY #$B39C       ;Pointer to a set of new AI scripts to run if below 9000 HP: 4/8 B441, 4/8 B6A7 
+	BRANCH_ZETA
+		STY $12
+		RTS
+	}
+	JSL $808111      ;RNG
+	AND #$0007
+	ASL A
+	TAY
+	LDA ($12), Y     ;Grab 1 of 8 random AI scripts,
+	STA $0FA8        ;set as current main AI script,
+	JMP ($0FA8)      ;and run it
+}
+
+
+B3EC: Initailize movement to center
+{
+	LDA #$B3F8
+	STA $0FA8        ;Next main AI script
+	LDA #$0080
+	STA $0FB2        ;AI script timer
+B3F8: Move to center side
+	DEC $0FB2
+	BMI BRANCH_ALPHA
+	LDX #$00C0
+	LDA $7E7820      ;Direction facing
+	BEQ BRANCH_BETA  ;Branch if facing left
+	LDX #$0060
+BRANCH_BETA
+	STX $12
+	LDY #$0100
+	STY $14
+	JSR $B42E        ;Y = 4, 8, A, or C, depending on general speed byte
+	LDX #$0000
+	JSR $D523        ;Accelerates Ridley towards the desired X/Y ($12/$14). No deceleration boost ($1A), Y is index value to find acceleration divisor ($18), X is enemy's index
+	LDA #$0008
+	STA $16
+	STA $18
+	JSL $A9EF06      ;Checks an enemy with index of X colliding with $12/$14 with a size of $16/$18, CLC if collided
+	BCC BRANCH_ALPHA
+	RTS
+BRANCH_ALPHA
+	LDA #$B321
+	STA $0FA8        ;Next main AI script
+	RTS
+}
+
+
+B441: Chose to do a U swoop
+{
+	LDA #$B455       ;Main AI loop for
+	STA $0FA8
+	LDA #$000A
+	STA $7E7800      ;Initialize timer
+	LDA #$0000
+	STA $7E7814      ;Initialize movement direction
+B455: Fly to U swoop start
+	LDX #$00C0
+	LDA $7E7820      ;Facing direction (0 = left, 2 = right)
+	BEQ BRANCH_ALPHA
+	LDX #$0040
+BRANCH_ALPHA
+	STX $12          ;X = Target X position = C0 if facing left, 40 if facing right
+	LDY #$0080
+	STY $14          ;Target Y position = 80
+	LDX #$0000
+	LDY #$0001
+	JSR $D523        ;Accelerates Ridley towards the desired X/Y ($12/$14). No deceleration boost ($1A), Y is index value to find acceleration divisor ($18), X is enemy's index
+	LDA #$0008
+	STA $16          ;Target area X size
+	STA $18          ;Target area Y size
+	JSL $A9EF06      ;Checks an enemy with index of X colliding with $12/$14 with a size of $16/$18, CLC if collided
+	BCS BRANCH_BETA
+	LDA #$B493
+	STA $0FA8        ;Next main AI loop
+	LDA #$0020
+	STA $7E7800      ;Initialize timer
+	LDA #$0000
+	STA $7E7814      ;Initialize movement direction
+BRANCH_BETA
+	RTS
+}
+
+B493: U swoop, first dive
+{
+	LDA $7E7820      ;Facing direction (0 = left, 2 = right)
+	BNE BRANCH_ALPHA
+	LDA #$FFE0
+	STA $12          ;Angular speed
+	LDA #$FE00
+	STA $14          ;Target angle of motion
+	BRA BRANCH_BETA
+BRANCH_ALPHA
+	LDA #$0020
+	STA $12          ;Angular speed
+	LDA #$0200
+	STA $14          ;Target angle of motion
+BRANCH_BETA
+	LDA #$0480
+	STA $16          ;Target U Swoop speed (sqrt(X^2 + Y^2))
+	JSR $D800        ;Update Ridley's U Swoop speed and U Swoop angle, and calculate current X and Y speed
+	{
+		LDA $16          ;Target U Swoop speed
+		CMP $7E7816      ;U Swoop speed (sqrt(X^2 + Y^2))
+		BEQ BRANCH_ALPHA
+		BPL BRANCH_BETA
+		LDA $7E7816
+		SEC
+		SBC #$0020       ;Acceleration is fixed at 20
+		CMP $16
+		BPL BRANCH_GAMMA
+		LDA $16
+	BRANCH_GAMMA
+		STA $7E7816
+		BRA BRANCH_ALPHA
+	BRANCH_BETA
+		LDA $7E7816
+		CLC
+		ADC #$0020       ;Acceleration is fixed at 20
+		CMP $16
+		BMI BRANCH_THETA
+		LDA $16
+	BRANCH_THETA
+		STA $7E7816
+	BRANCH_ALPHA
+		LDA $12          ;Angular speed
+		BMI BRANCH_DELTA
+		CLC
+		ADC $7E7814      ;Angle of motion (0 = down, increase moves counterclockwise, 1 loop = 10000)
+		CMP $14          ;Target angle of motion
+		BMI BRANCH_EPSILON
+		BRA BRANCH_ZETA
+	BRANCH_DELTA
+		CLC
+		ADC $7E7814      ;Angle of motion (0 = down, increase moves counterclockwise, 1 loop = 10000)
+		CMP $14          ;Target angle of motion
+		BPL BRANCH_EPSILON
+	BRANCH_ZETA
+		LDA $14
+	BRANCH_EPSILON
+		STA $7E7814
+		XBA
+		AND #$00FF
+		STA $12          ;$12 = high byte of current angle of motion
+		LDA $7E7816
+		JSL $86C26C      ;A * sin ($12 * 360/256)
+		STA $0FAA        ;Ridley's X speed
+		LDA $7E7816
+		JSL $86C272      ;A * cos ($12 * 360/256)
+		STA $0FAC        ;Ridley's Y speed
+		RTS
+	}
+	LDA $7E7800      ;Timer for current main AI script
+	BEQ BRANCH_GAMMA
+	DEC A
+	STA $7E7800
+	RTS
+BRANCH_GAMMA
+	LDA #$B4D1       ;Next main AI script
+	STA $0FA8
+	LDA #$0014
+	STA $7E7800      ;New timer
+	RTS
+}
+
+B4D1: U swoop, dive to half point
+{
+	LDA $7E7820      ;Direction facing. 0 = Left, 2 = Right
+	BNE BRANCH_ALPHA
+	LDA #$FEC0
+	STA $12          ;Angular speed
+	LDA #$C000
+	STA $14          ;Target angle of motion
+	BRA BRANCH_BETA
+BRANCH_ALPHA
+	LDA #$0140
+	STA $12          ;Angular speed
+	LDA #$4000
+	STA $14          ;Target angle of motion
+BRANCH_BETA
+	LDA #$0500
+	STA $16          ;Target U Swoop speed (sqrt(X^2 + Y^2))
+	JSR $D800        ;Update Ridley's U Swoop speed and U Swoop angle, and calculate current X and Y speed
+	LDA $7E7800      ;Timer for current main AI script
+	BEQ BRANCH_GAMMA
+	DEC A
+	STA $7E7800
+	RTS
+BRANCH_GAMMA
+	LDA #$B516
+	STA $0FA8        ;Next main AI script
+	LDA #$0010
+	STA $7E7800      ;New timer
+	LDA #$0001
+	STA $7E2004      ;Tail fling trigger
+	RTS
+}
+
+B516: U swoop, climb after half point
+{
+	LDA $7E7820      ;Direction facing. 0 = Left, 2 = Right
+	BNE BRANCH_ALPHA
+	LDA #$FE00
+	STA $12          ;Angular speed
+	LDA #$8800
+	STA $14          ;Target angle of motion
+	BRA BRANCH_BETA
+BRANCH_ALPHA
+	LDA #$0200
+	STA $12          ;Angular speed
+	LDA #$7800
+	STA $14          ;Target angle of motion
+BRANCH_BETA
+	LDA #$0300
+	STA $16          ;Target U Swoop speed (sqrt(X^2 + Y^2))
+	JSR $D800        ;Update Ridley's U Swoop speed and U Swoop angle, and calculate current X and Y speed
+	LDA $7E7800      ;Current main AI script timer
+	BEQ BRANCH_GAMMA
+	DEC A
+	STA $7E7800
+	RTS
+BRANCH_GAMMA
+	LDA #$B554
+	STA $0FA8        ;Next main AI script
+	LDA #$0020
+	STA $7E7800      ;New timer
+	RTS
+}
+
+B554: U Swoop, still climbing
+{
+	LDA $7E7820      ;Direction facing. 0 = Left, 2 = Right
+	BNE BRANCH_ALPHA
+	LDA #$FC00
+	STA $12          ;Angular speed
+	LDA #$8800
+	STA $14          ;Target angle of motion
+	BRA BRANCH_BETA
+BRANCH_ALPHA
+	LDA #$0400
+	STA $12          ;Angular speed
+	LDA #$7800
+	STA $14          ;Target angle of motion
+BRANCH_BETA
+	LDA #$0300
+	STA $16          ;Target U Swoop speed (sqrt(X^2 + Y^2))
+	JSR $D800        ;Update Ridley's U Swoop speed and U Swoop angle, and calculate current X and Y speed
+	LDA $7E7800      ;Current main AI script timer
+	BEQ BRANCH_GAMMA
+	DEC A
+	STA $7E7800
+	RTS
+BRANCH_GAMMA
+	LDA #$B594
+	STA $0FA8        ;Next main AI script
+	LDA #$0020
+	STA $7E7800      ;New timer
+	JMP $D955
+	...
+D955:
+	LDA $7E7820      ;Direction facing. 0 = Left, 1 = Forward, 2 = Right
+	BEQ BRANCH_ALPHA
+	DEC A
+	BEQ BRANCH_BETA
+	LDA $0F79        ;Find which side of the room Ridley is on: plus = left, minus = right
+	BPL BRANCH_BETA
+	LDA #$E706
+	BRA BRANCH_GAMMA
+BRANCH_ALPHA
+	LDA $0F79
+	BMI BRANCH_BETA
+	LDA #$E6F0
+BRANCH_GAMMA
+	STA $0F92        ;If on the same side of room as facing, end up here and put in new graphic AI to turn around
+	LDA #$0002
+	STA $0F94        ;Graphic AI delay = 1 frame
+	STZ $0F90        ;Unknown
+BRANCH_BETA
+	RTS
+}
+
+B594: U Swoop End
+{
+	STZ $12          ;Angular speed
+	LDA #$8000
+	STA $14          ;Target angle of motion
+	LDA #$01C0
+	STA $16          ;Target U Swoop speed (sqrt(X^2 + Y^2))
+	JSR $D800        ;Update Ridley's U Swoop speed and U Swoop angle, and calculate current X and Y speed
+	LDA $7E7800      ;Main AI script timer
+	BEQ BRANCH_ALPHA
+	DEC A
+	STA $7E7800
+	RTS
+BRANCH_ALPHA
+	JSR $BCF1        ;CLC if spin jump, grappling, or spin back from hurt
+	LDY #$B321       ;Choose a new AI script
+	BCC BRANCH_BETA
+	LDY #$BAB7       ;Powerbomb dodge...?
+BRANCH_BETA
+	STY $0FA8        ;New main AI script
+	RTS
+}
+
+B5C4: Consider Tailbouncing
+{
+	LDA #$000B
+	STA $7E201E      ;Movement threshold
+	LDA #$0180
+	STA $7E2012      ;Tail extension rate
+	LDA #$B5E5
+	STA $0FA8        ;Next main AI script
+	LDA $05E5        ;Random number
+	AND #$001F
+	CLC
+	ADC #$0020       ;20 - 3F
+	STA $0FB2        ;Variable use timer
+B5E5: Considering tailbouncing
+	LDA $7E7820      ;Facing direction. 0 = left, 1 = forward, 2 = right
+	ASL A
+	TAY
+	LDA $B60D, Y     ;00C0, 0080, or 0040
+	STA $12
+	JSR $B641        ;Fly towards $12 (X position) / Samus's Y position. If Samus is not spin jumping, SEC before RTS. Else CLC and randomly fireball if allowed.
+	{
+		LDA $0AFA        ;Samus's Y position
+		CMP #$0160
+		BMI BRANCH_ALPHA
+		LDA #$0160
+	BRANCH_ALPHA             ;Maximum cap is 160
+		STA $14
+		LDX #$0000
+		JSR $B42E        ;Y = 4, 8, A, or C, depending on general speed byte
+		{
+			LDA $7E7824      ;General speed byte
+			ASL A
+			TAY
+			LDA $B439, Y     ;0004, 0008, 000A, 000C
+			TAY
+			RTS
+		}
+		JSR $D523        ;Accelerates Ridley towards the desired X/Y ($12/$14). No deceleration boost ($1A), Y is index value to find acceleration divisor ($18), X is enemy's index
+		LDA #$0001
+		STA $7E2004      ;Tail fling trigger
+		LDA $0A1F        ;Samus's movement type
+		AND #$00FF
+		CMP #$0003       ;Spin jump
+		BNE BRANCH_BETA
+		LDA $05E5        ;Random number
+		AND #$00FF
+		CMP #$0080
+		BCC BRANCH_GAMMA ;50% chance of not fireballing
+		LDA $7E781E      ;Current sound playing?
+		BNE BRANCH_GAMMA
+		LDA $7E7820      ;Facing direction
+		DEC A
+		BEQ BRANCH_GAMMA ;Branch if facing forward
+		LDA #$E73A       ;Fireballing AI
+		JSR $D467        ;STA to GraphicAI instruction (0F92), delay (0F94) = 1, STZ $0F90
+	BRANCH_GAMMA
+		CLC
+		RTS
+	BRANCH_BETA
+		SEC
+		RTS
+	}
+	BCC BRANCH_ALPHA ;Branch if Samus is spinjumping
+	JMP $B68B
+	...
+B68B:
+	LDA #$00F0
+	STA $7E2012      ;Tail extension rate
+	LDA #$0010
+	STA $7E201E      ;Tail movement threshold
+	LDA #$0001
+	STA $7E2000      ;Tail control index
+	LDA #$B6A7
+	STA $0FA8        ;Next AI script
+	RTS
+
+BRANCH_ALPHA
+	DEC $0FB2        ;Timer
+	BPL BRANCH_BETA
+	LDA #$B613
+	STA $0FA8        ;Next AI script
+	LDA #$0080
+	STA $0FB2        ;Timer
+	JMP $D955        ;Turn around if facing away from the center of the room (facing a wall)
+BRANCH_BETA
+	RTS
+}
+
+B613: Hover since Samus is spinjumping
+{
+	LDA $7E7820      ;Direction facing
+	ASL A
+	TAY
+	LDA $B63B, Y     ;0040, 0080, or 00C0
+	STA $12
+	JSR $B641        ;Fly towards $12 (X position) / Samus's Y position. If Samus is not spin jumping, SEC before RTS. Else CLC and randomly fireball if allowed.
+	BCC BRANCH_ALPHA
+	JMP $B68B
+	{
+		LDA #$00F0
+		STA $7E2012      ;Tail extension speed
+		LDA #$0010
+		STA $7E201E      ;Tail movement threshold
+		LDA #$0001
+		STA $7E2000      ;Tail control index
+		LDA #$B6A7
+		STA $0FA8        ;Set next main AI script
+	}
+BRANCH_ALPHA
+	DEC $0FB2
+	BPL BRANCH_BETA
+	LDA #$B5E5       ;Considering tail bouncing
+	STA $0FA8        ;Use as next AI script
+	LDA #$0080
+	STA $0FB2
+	JMP $D955        ;Turn around if facing away from the center of the room (facing a wall)
+BRANCH_BETA
+	RTS
+}
+
+
+B6A7: Fly to start Tail bouncing
+{
+	LDA $0F7E        ;Ridley's Y position
+	CMP #$0120
+	BMI BRANCH_$B6CE
+	LDA $7E7820      ;Facing direction
+	ASL A
+	TAY
+	LDA $B6C8, Y     ;00B0, 0080, 0060
+	STA $12          ;Target X
+	LDA #$0120
+	STA $14          ;Target Y
+	LDX #$0000
+	LDY #$0000
+	JMP $D523        ;Accelerates Ridley towards the desired X/Y ($12/$14). No deceleration boost ($1A), Y is index value to find acceleration divisor ($18), X is enemy's index
+
+	...
+B6CE:
+	JSR $D955        ;Turn around if facing away from the center of the room (facing a wall)
+	LDA #$B6DD
+	STA $0FA8        ;Next main AI script
+B6DD: Start Tail bouncing
+	LDA #$0020
+	STA $0FB2        ;Timer
+	LDA $0F7A        ;Ridley's X position
+	STA $12
+	LDA #$0120       ;Target Y position
+	STA $14
+	LDX #$0000
+	LDY #$0000
+	JSR $D523        ;Accelerates Ridley towards the desired X/Y ($12/$14). No deceleration boost ($1A), Y is index value to find acceleration divisor ($18), X is enemy's index
+	DEC $0FB2
+	BPL BRANCH_ALPHA
+	JSR $CB33  ;  $134B33 IN ROM
+	{
+		LDA #$0008
+		STA $7E2014      ;Rotational speed of tail parts
+		JSR $CB72        ;
+		{
+			LDA $7E7820      ;Direction facing
+			BNE BRANCH_ALPHA
+			LDA #$4000       ;Setup left
+			STA $7E201C      ;Optional counterclockwise target
+			LDA #$FFFF
+			STA $7E201A      ;Optional clockwise target
+			BRA BRANCH_BETA
+		BRANCH_ALPHA
+			LDA #$4000       ;Setup right
+			STA $7E201A      ;Optional clockwise target
+			LDA #$FFFF
+			STA $7E201C      ;Optional counterclockwise target
+		BRANCH_BETA
+			JSR $CBC7  ;  $134BC7 IN ROM
+			{
+				LDA #$CD24
+				STA $12
+				BRA $CBDC
+			CBDC:
+				PHB
+				PEA #$7E7E
+				PLB
+				PLB
+				PEA #$CBE7       ;Points to just before the LDA #$0007
+				JMP ($0012)      ;Effectively JSR ($0012)
+				{
+				}
+				LDA #$0007
+				LDX #$0000
+			BRANCH_BETA
+				PHA
+				JSR $D09F        ;Run once for each tail segment
+				{
+					LDA $2020, X     ;Check if this segment is rotating?
+					BMI BRANCH_$D0C5
+					LDA $202A, X     ;Angle of tail part
+					JMP $D16D
+				D0AA:
+					STZ $2020, X     ;Not rotating
+					STZ $2022, X     ;Clear counter
+					LDA $2024, X
+					EOR #$8000       ;Change direction
+					STA $2024, X
+					RTS
+				D0BA:
+					LDA $2022, X     ;'Counter' for movement?
+					CLC
+					ADC $2014        ;Angular speed?
+					STA $2022, X
+					RTS
+				D0C5:
+					LDA $2022, X
+					CMP $201E        ;Threshhold for rotation?
+					BCC BRANCH_$D0BA ;Branch if threshold hasn't been reached?
+					CMP #$FFFF
+					BEQ BRANCH_ALPHA ;Branch if threshold has already been reached earlier?
+					LDA #$FFFF
+					STA $2022, X     ;At limit now?
+					LDA #$8000
+					STA $2034, X     ;Tell next part to start rotating
+					LDA $2024, X     ;Which way to rotate: 8000 = negative speed = clockwise, 0000 = positive speed = counterclockwise
+					STA $2038, X     ;Copy to next part's direction
+				BRANCH_ALPHA
+					LDA $2024, X     ;Angular direction
+					BMI BRANCH_BETA
+					LDA $201C        ;Optional counterclockwise target for angle
+					BMI BRANCH_GAMMA ;Branch if unused
+					LDA #$0C00
+					STA $2028, X     ;Target extension distance
+					LDA $202A, X     ;Angle of tail part
+					CLC
+					ADC $2014        ;Add speed
+					CMP $201C        ;Compare to optional maximum
+					BMI BRANCH_DELTA ;Branch if below optional maximum
+					TXA
+					BEQ BRANCH_EPSILON
+					LDA $200C, X
+					BNE BRANCH_ZETA
+				BRANCH_EPSILON           ;Goes here if previous tail part isn't moving (or if first part)
+					LDA $201C        ;Load optional counterclockwise target
+					STA $202A, X     ;Set angle of tail part
+					JMP $D0AA        ;Stop rotation and change direction
+				BRANCH_GAMMA
+					LDA $202A, X     ;Angle of tail part
+					CLC
+					ADC $2014        ;Add speed
+					CMP $2018        ;Check with maximum
+					BMI BRANCH_DELTA ;Branch if below maximum
+				BRANCH_ZETA
+					LDA #$8000
+					STA $2024, X     ;Set direction to clockwise
+					LDA $2018        ;Load cap
+					BRA BRANCH_DELTA
+				BRANCH_BETA
+					LDA $201A
+					BMI BRANCH_IOTA
+					LDA #$0C00
+					STA $2028, X     ;Target extension distance
+					LDA $202A, X     ;Angle of tail part
+					SEC
+					SBC $2014
+					DEC A
+					CMP $201A
+					BPL BRANCH_KAPPA
+					TXA
+					BEQ BRANCH_LAMBDA
+					LDA $200C, X
+					BNE BRANCH_MU
+				BRANCH_LAMBDA
+					LDA $201A
+					STA $202A, X     ;Angle of tail part
+					JMP $D0AA
+				BRANCH_IOTA
+					LDA $202A, X     ;Angle of tail part
+					SEC
+					SBC $2014
+					DEC A
+					CMP $2016
+					BPL BRANCH_KAPPA
+				BRANCH_MU
+					LDA #$0000
+					STA $2024, X
+					LDA $2016        ;Minimum allowed angle
+					BRA BRANCH_DELTA
+				BRANCH_KAPPA
+					INC A
+				BRANCH_DELTA
+					STA $202A, X     ;Set angle of this tail part
+				D16D:
+					AND #$00FF
+					STA $12          ;Angle
+					TXA
+					BEQ BRANCH_THETA
+					LDA $12
+					CLC
+					ADC $2016, X     ;Additional angle between previous tail part and this one
+					AND #$00FF
+					STA $12
+				BRANCH_THETA
+					LDA $2026, X     ;Distance from previous tail part to this one, in 1/100th of a pixel
+					XBA
+					AND #$00FF
+					JSL $A9C460      ;A = (sin($12) * A) / 256. X is preserved
+					STA $2030, X     ;X distance from previous tail part (Ridley if Tail 1) to this tail part
+					LDA $2026, X     ;Distance from 1 tail part to next
+					XBA
+					AND #$00FF
+					JSL $A9C465      ;A = (cos($12) * A) / 256. X is preserved
+					STA $2032, X     ;Y distance from previous tail part (Ridley if Tail 1) to this tail part
+					RTS
+				}
+				TXA
+				CLC
+				ADC #$0014
+				TAX
+				PLA
+				DEC A
+				BNE BRANCH_BETA
+				PLB
+				RTS
+			}
+			LDA $7E2020
+			ORA $7E2034
+			ORA $7E2048
+			ORA $7E205C
+			ORA $7E2070
+			ORA $7E2084
+			ORA $7E2098
+			BEQ BRANCH_GAMMA ;Branch if no tail parts are rotating
+			RTS
+		BRANCH_GAMMA
+			LDA #$0004
+			STA $7E2000      ;Set tail control index
+			RTS
+		}
+		LDA #$0003
+		STA $7E2000      ;Tail control index
+		RTS
+	}
+	JSR $B90F        ;Set speeds for tailbouncing
+	{
+		LDA $05E5        ;Random number
+		AND #$0003
+		ASL A
+		TAY
+		LDA $B965, Y     ;B975, B981, B98D, B999. Options for absolute X speed from tail bounces
+		STA $12
+		LDA $B96D, Y     ;B9A5, B9B1, B9BD, B9C9. Options for Y speed from tail bounces
+		STA $14
+		LDA $7E7824      ;General speed byte (max is 3)
+		CLC
+		ADC #$0002       ;*cough*incinc*cough*
+		ASL A
+		TAY
+		LDA $B94D, Y     ;20, 30, 40, 50
+		STA $7E200E
+		LDA $B959, Y     ;40, 80, 400, 500
+		STA $7E200C      ;For below: Each pair of parenthesis are the 4 speed choices for a single one of the above randomly chosen pointers.
+		LDA ($14), Y     ;(FCE0, FC20, FA80, F980), (FC80, FBC0, FA60, F960), (FC60, FB80, FA40, F940), (FC40, FB60, FA20, F920)
+		STA $0FAC        ;Ridley's Y speed
+		LDA ($12), Y     ;(A0, A8, B0, B8), (C0, C8, D0, D8), (E0, E8, F0, F8), (100, 108, 110, 118)
+		LDX $0FAA        ;Ridley's X speed
+		BPL BRANCH_ALPHA
+		EOR #$FFFF
+		INC A
+	BRANCH_ALPHA             ;Keep sign from old X speed, magnitude from lookup
+		STA $0FAA
+		RTS
+	}
+	LDA #$B70E
+	STA $0FA8        ;Next AI script
+	LDA $05E5        ;Random number
+	AND #$003F
+	ADC #$0080
+	STA $0FB2        ;AI script timer. In this specific case, the timer is decremented every frame Ridley is moving up from tailbouncing.
+BRANCH_ALPHA
+	RTS
+}
+
+B70E: Tailbouncing main (moving down)
+{
+	JSR $B859        ;Attempt to grab Samus
+	{
+		JSR $BCF1        ;Check for spinjumping or spinback
+		{
+			LDA $0A1F
+			AND #$00FF       ;Samus's movement type
+			PHX
+			TAX
+			BIT $BD03, X     ;0's are: Spin jump, grappling, spinback, grabbed by draygon.
+			BMI BRANCH_ALPHA
+			PLX
+			CLC              ;CLC if spinjumping or spinback
+			RTS
+		BRANCH_ALPHA
+			PLX
+			SEC              ;else SEC
+			RTS
+		}
+		BCS BRANCH_ALPHA
+		RTS
+	BRANCH_ALPHA
+		LDX #$0004
+		LDY #$0004
+		STX $16
+		STY $18          ;Size of target is 8x8 pixels
+		LDA $7E7820      ;Direction facing
+		ASL A
+		TAY
+		LDA $B9D5, Y     ;000C, 0000, FFF4
+		CLC
+		ADC $0F7A        ;Ridley's X position
+		STA $12          ;Target grab X position
+		LDA $7E783A      ;Unknown, not used aside for this
+		TAY
+		LDA $B9DB, Y     ;0023, 002E, 0038
+		CLC
+		ADC $0F7E        ;Ridley's Y position
+		STA $14          ;Target grab Y position
+		JMP $DF29        ;Efficient collision detection for Samus and $12/$14 (size of $12/$14 is $16/$18). SEC if collision
+	}
+	BCC BRANCH_ALPHA ;Branch if failed to grab Samus
+	JSR $B84D        ;Store 1 to 7E:2000 and 7E:2014
+	JMP $B889        ;
+	{
+		LDA $0FAC        ;Ridley's Y speed
+		BMI BRANCH_ALPHA
+		EOR #$FFFF
+		INC A
+	BRANCH_ALPHA             ;Negative value
+		CMP #$FE00
+		BMI BRANCH_BETA  ;Branch if moving less than 2 pixels per frame
+		LDA #$FE00
+	BRANCH_BETA
+		STA $0FAC        ;Set Ridley to moving upwards, and at most 2 pixels per frame
+		JSR $B84D        ;Store 1 to 7E:2000 and 7E:2014
+		LDA #$BB8F
+		STA $0FA8        ;Set next main AI script
+		JMP $BB8F        ;'Samus grabbed' AI script, I'm assuming
+	}
+
+BRANCH_GAMMA
+	RTS
+BRANCH_ALPHA
+	LDA $0FAC        ;Ridley's Y speed
+	CLC
+	ADC $7E200C      ;40, 50, 400, or 500, depending on Ridley's speed. From previous AI script.
+	CMP #$0600       ;6 pixels per frame
+	BMI BRANCH_BETA
+	LDA #$0600       ;Cap at 6 pixels per frame
+BRANCH_BETA
+	STA $0FAC        ;Store as Ridley's speed, moving down
+	JSR $B7E7        ;
+	{
+		LDA $7E20A4      ;Tail tip X position
+		TAX
+		LDA $7E20A6      ;Tail tip Y position
+		CLC
+		ADC #$0010
+		TAY
+		JSL $A6D4F9      ;Check for collisions with blocks
+		BCS BRANCH_ALPHA
+		LDA $7E2090      ;Tail part 6 X position
+		TAX
+		LDA $7E2092      ;Tail part 6 Y position
+		CLC
+		ADC #$0012
+		TAY
+		JSL $A6D4F9
+		BCS BRANCH_ALPHA
+		LDA $7E207C      ;Tail part 5 X position
+		TAX
+		LDA $7E207E      ;Tail part 5 Y position
+		CLC
+		ADC #$0012
+		TAY
+		JSL $A6D4F9
+		BCS BRANCH_ALPHA
+		LDA $7E2068      ;Tail part 4 X position
+		TAX
+		LDA $7E206A      ;Tail part 4 Y position
+		CLC
+		ADC #$0012
+		TAY
+		JSL $A6D4F9
+		BCS BRANCH_ALPHA
+		LDA $7E2054      ;Tail part 3 X position
+		TAX
+		LDA $7E2056      ;Tail part 3 Y position
+		CLC
+		ADC #$0012
+		TAY
+		JSL $A6D4F9
+		BCS BRANCH_ALPHA
+		NOP
+	BRANCH_ALPHA
+		RTS
+	}
+	BCC BRANCH_GAMMA ;Branch if no collisions with ground
+	LDA $7E20A4      ;Tail tip X position
+	STA $12
+	LDA $7E20A6      ;Tail tip Y position
+	CLC
+	ADC #$000C
+	STA $14
+	LDA #$0009
+	LDY #$E509
+	JSL $868097      ;Create sprite: smoke where tail tip hit the ground
+	LDA #$0076
+	JSL $8090CB      ;Play sound
+	LDA #$000D
+	STA $183E        ;Room shake type
+	LDA #$0004
+	STA $1840        ;Room shake duration
+	JSR $B8A9        ;
+	{
+		LDA $0FAA        ;Ridley X speed
+		BNE BRANCH_ALPHA ;Branch if moving
+		LDA #$00C0
+		BIT $0F79        ;Low byte of Ridley's X position
+		BPL BRANCH_BETA  ;Branch if Ridley is on the left half of the room
+		EOR #$FFFF
+		INC A
+	BRANCH_BETA              ;Set Ridley to moving towards the center
+		STA $0FAA        ;Set Ridley's speed to 0.C pixels per frame
+	BRANCH_ALPHA
+		LDA $0F7A        ;Ridley's X position
+		SEC
+		SBC $0AF6        ;Samus's X position
+		EOR $0FAA        ;Ridley's X speed
+		BMI BRANCH_GAMMA ;Branch if Ridley is moving towards Samus
+		LDA $0F7A        ;Ridley's X position
+		CMP $7E8004      ;Leftmost allowed X position
+		BMI BRANCH_DELTA
+		CMP $7E8006      ;Rightmost allowed X position
+		BPL BRANCH_EPSILON
+		LDA $05E5        ;Random number
+		CMP #$0555       ;... 1 / 30 chance?
+		BCC BRANCH_ZETA
+	BRANCH_THETA
+		LDA $0FAA
+		EOR #$FFFF
+		INC A
+		STA $0FAA        ;Reverse Ridley's X speed
+	BRANCH_ZETA
+		RTS              ;Summary: If Ridley is within the room boundaries and moving away from Samus, 2F/30 times reverse directions
+	BRANCH_GAMMA
+		LDA $0F7A        ;Ridley's X position
+		CMP $7E8004      ;Leftmost allowed X position
+		BMI BRANCH_DELTA
+		CMP $7E8006      ;Rightmost allowed X position
+		BPL BRANCH_EPSILON
+		LDA $05E5
+		CMP #$0555       ;1/30 chance
+		BCC BRANCH_THETA ;Switch directions (If Ridley is within the room boundaries and moving towards Samus, 1/30 times reverse directions
+		RTS
+	BRANCH_DELTA
+		LDA $0FAA        ;Ridley is at the left room boundary. Reverse Ridley's X speed if moving left
+		BMI BRANCH_THETA
+		RTS
+	BRANCH_EPSILON
+		LDA $0FAA        ;Ridley is at the right room boundary. Reverse Ridley's X speed if moving right
+		BPL BRANCH_THETA
+		RTS
+	}
+	JSR $B90F        ;Set speeds for tailbouncing (depends on random and speed)
+	LDX #$D37C
+	LDY #$2026       ;Set standard distances between tail parts
+	JSR $D3B4        ;Copy 7 entries from (X) to 7E:(Y), 7E:(Y+14), 7E:(Y+28), 7E:(Y+3C), etc.
+	LDA #$0C00
+	STA $7E2028
+	STA $7E203C
+	STA $7E2050
+	STA $7E2064
+	STA $7E2078
+	STA $7E208C
+	STA $7E20A0      ;Set target extension distance to C pixels for all tail parts
+	LDA #$0004
+	STA $7E2000      ;Set tail control index
+	LDA $7E800C      ;Not used before... a timer?
+	INC A
+	CMP #$0002
+	BMI BRANCH_DELTA
+	LDA $7E7820      ;Direction facing
+	DEC A
+	BEQ BRANCH_EPSILON ;Branch if facing forward
+	LDA #$E73A       ;Fireballing AI
+	JSR $D467        ;STA to GraphicAI instruction (0F92), delay (0F94) = 1, STZ $0F90
+BRANCH_EPSILON
+	LDA #$0000
+BRANCH_DELTA
+	STA $7E800C
+	LDA #$B7B9
+	STA $0FA8        ;Store next AI script
+	RTS
+}
+
+B7B9: Tailbouncing, Hit Ground (moving up)
+{
+	JSR $BD20        ;Check if Y is below #$0160
+	BCC BRANCH_ALPHA ;Branch if above
+	DEC $0FB2        ;AI script timer/counter (80 to BF)
+	BMI BRANCH_ALPHA ;Branch if it was at 0
+	LDA $0FAC        ;Ridley's Y speed
+	CLC
+	ADC $7E200E      ;20, 30, 40, or 50, depending on general speed byte. From tailbounce speed setup
+	STA $0FAC        ;Ridley's Y speed
+	BMI BRANCH_BETA  ;Branch if still moving up
+	LDA #$0000
+	STA $0FAC        ;Stop Y movement
+	LDA #$B70E
+	STA $0FA8        ;Go back to main tailbouncing, moving down
+BRANCH_BETA
+	RTS
+BRANCH_ALPHA
+	JSR $B84D        ;Store 1 to 7E:2000 and 7E:2014
+	LDA #$B321
+	STA $0FA8        ;Decide what to do next
+	RTS
+}
+
+
+BAB7: Check to do Deathswoop/Powerbomb dodge/Move, or attempt to ram/grab Samus
+Deathswoop/Powerbomb dodge/Move if:
+Samus is spinjumping, Ridley has collided with a wall, Samus is behind or above Ridley
+{
+	JSR $BCF1        ;Check for spinjumping or spinback (CLC if so)
+	BCC BRANCH_$BA85
+	{
+		LDA $7E800A      ;Death swoop counter
+		CMP #$000A       ;10 swoops
+		BMI BRANCH_ALPHA ;Branch if not time to die yet
+		JSL $A6DFB7      ;Even though it's JSL, it's Ridley-specific.
+		{
+			LDA $0F8C        ;Health
+			BNE BRANCH_ALPHA ;Branch if not 0 (doesn't happen)
+			LDA $7E7802      ;AI status
+			BMI BRANCH_ALPHA ;Branch if already set to dead
+			LDA #$FFFF
+			STA $7E7802      ;Set to dead
+			LDA $0F86
+			ORA #$0400
+			STA $0F86        ;Disable interaction with Samus
+			LDA #$C538
+			STA $0FA8        ;Set next AI script (Ridley specific)
+		BRANCH_ALPHA
+			RTL
+		}
+		LDA #$C53E
+		STA $0FA8        ;Set next AI script
+		JMP $C53E        ;and run it. When that RTSes, it goes to Ridley's main AI loop.
+
+	BRANCH_ALPHA
+		LDA $0CEE        ;Powerbomb timer
+		BEQ BRANCH_BETA
+		LDA #$BD4E
+		STA $0FA8        ;Set next AI script to dodge powerbombs
+		JMP $BD4E        ;and run it. When that RTSes, it goes to Ridley's main AI loop.
+
+	BRANCH_BETA
+		LDA #$B3EC
+		STA $0FA8        ;Set the next AI script
+		LDA #$0001
+		STA $7E2004      ;Trigger for flinging Ridley's tail?
+		RTS              ;Returns to Ridley's main AI loop.
+	}
+
+	LDA $7E783E      ;Check collisions with walls (0 = none)
+	BNE BRANCH_$BA85 ;Deathswoop / Powerbomb / Else if collided with walls
+	LDA $7E7820      ;Direction facing
+	ASL A
+	TAY
+	LDA $BB48, Y     ;0000, 0000, 8000
+	STA $12
+	LDA $0F7A        ;Ridley's X position
+	SEC
+	SBC $0AF6        ;Samus's X position
+	STA $14
+	EOR $12
+	BPL BRANCH_ALPHA ;Branch if Ridley is facing Samus
+	LDA $14
+	BPL BRANCH_BETA
+	EOR #$FFFF
+	INC A
+BRANCH_BETA              ;Absolute distance between Samus and Ridley
+	CMP #$0020       ;2 blocks
+	BPL BRANCH_$BA85 ;Deathswoop / Powerbomb / Else if farther than 2 blocks away
+BRANCH_ALPHA             ;Ridley is facing Samus, or is less than 2 blocks away
+	LDA $0F7E        ;Ridley's Y position
+	CLC
+	ADC #$0023
+	SEC
+	SBC $0AFA        ;Samus's Y position
+	BPL BRANCH_$BA85 ;Deathswoop / Powerbomb / Else if Ridley is below Samus
+	                 ;Ridley attempts to ram Samus with the following code
+	LDX #$FFF0
+	LDA $7E7820      ;Direction facing
+	BEQ BRANCH_GAMMA
+	LDX #$0010       ;X = 10 if facing right
+BRANCH_GAMMA
+	TXA
+	CLC
+	ADC $0AF6        ;Samus's X position
+	STA $12
+	LDA $0AFA        ;Samus's Y position
+	CLC
+	ADC #$FFFC
+	STA $14
+	LDX #$0000
+	LDA $7E7824      ;General speed byte
+	ASL A
+	TAY
+	LDA $BB4E, Y     ;0001, 0003, 0007, 000A
+	TAY
+	JSR $D523        ;Accelerates Ridley towards the desired X/Y ($12/$14). No deceleration boost ($1A), Y is index value to find acceleration divisor ($18), X is enemy's index
+	LDA $7E7820      ;Direction facing
+	ASL A
+	TAY
+	LDA $B9D5, Y     ;000C, 0000, FFF4
+	CLC
+	ADC $0F7A        ;Ridley's X position
+	STA $12
+	LDA #$0023
+	CLC
+	ADC $0F7E        ;Ridley's Y position
+	STA $14
+	LDA #$0008
+	STA $16
+	LDA #$000C
+	STA $18
+	JSR $DF29        ;Efficient collision detection for Samus and $12/$14 (size of $12/$14 is $16/$18). SEC if collision
+	BCS BRANCH_$BB56
+	RTS
+	...
+BB56:
+	LDA $0FAC        ;Ridley's Y speed
+	EOR #$FFFF
+	INC A
+	STA $0FAC        ;Switch direction
+	LDA $0F8C        ;Health
+	BEQ BRANCH_ALPHA
+	LDA $0CEE        ;Power bomb timer
+	LDA $0CEE        ;We heard you the first time
+	BEQ BRANCH_BETA  ;Branch if no power bomb is active
+	JSR $BC68        ;Grab Samus
+	{
+		JSR $BA54        ;Set displacement for Ridley grabbing Samus
+		{
+			LDA $7E7820      ;Direction facing
+			ASL A
+			TAY
+			LDA $B9D5, Y     ;000C, 0000, FFF4
+			ADC $0F7A        ;Ridley's X position
+			SEC
+			SBC $0AF6        ;Samus's X position
+			EOR #$FFFF
+			INC A
+			STA $7E7828      ;X displacement for Ridley grabbing Samus
+			LDA $7E783A      ;Unknown, only used for this
+			TAY
+			LDA $B9DB, Y     ;0023, 002E, 0038
+			CLC
+			ADC $0F7E        ;Ridley's Y position
+			SEC
+			SBC $0AFA        ;Samus's Y position
+			EOR #$FFFF
+			INC A
+			STA $7E782A      ;Y displacement for Ridley grabbing Samus
+			RTS
+		}
+		LDA $0F86
+		ORA #$0400
+		STA $0F86        ;Make Ridley intangible to Samus
+		LDA #$0001
+		STA $7E7836      ;Set Ridley holding Samus flag
+		DEC A
+		JSL $90F084      ;Put #$E713 into $0A42(Handle only Samus's projectiles and sound termination, the rest of Samus becomes static), #$E8DC into $0A44(Zeroes Samus' contact damage, runs minimap, the rest of Samus becomes static)
+		SEC              ;Close claws
+		JMP $DA8B        ;Writes to VRAM for Ridley's claws
+		...
+	DA8B:
+		LDX #$DAD0
+		BCC BRANCH_ALPHA
+		LDX #$DAD4       ;Get pointer to source address
+	BRANCH_ALPHA
+		LDY $0330
+		LDA #$B000
+		STA $00D3, Y
+		STA $00DA, Y     ;Set source banks to B0
+		LDA $0000, X
+		STA $00D2, Y
+		LDA $0002, X
+		STA $00D9, Y     ;Get and set source addresses
+		LDA #$7AC0
+		STA $00D5, Y
+		LDA #$7BC0
+		STA $00DC, Y     ;Target addresses (F580 and F780 in VRAM)
+		LDA #$0080
+		STA $00D0, Y
+		STA $00D7, Y     ;80 bytes each
+		TYA
+		CLC
+		ADC #$000E
+		TAY
+		STY $0330
+		LDA #$0000
+		STA $00D0, Y
+		RTS
+	}
+	LDA #$BD4E
+	STA $0FA8        ;Next AI script
+	JMP $BD4E        ;and run it
+
+BRANCH_ALPHA
+	LDA $7E7836      ;Check if Ridley is holding Samus
+	BNE BRANCH_GAMMA
+	JSR $BC68        ;If not, grab Samus now
+BRANCH_GAMMA
+	JSL $A6DFB7      ;Set 7802 to dead, disable Samus/Ridley interaction, next AI script is C538
+	LDA #$C538
+	STA $0FA8        ;Redundant
+	JMP $C538        ;Run next AI script
+
+BRANCH_BETA
+BB8F:                    ;Ridley in position to grab Samus, no powerbombs
+	LDA $7E7820      ;Check direction facing
+	ASL A
+	TAY
+	LDA $BBEB, Y     ;0040, 0000, 00D0
+	STA $7E782E      ;Target X when holding Samus
+	LDA $0F7E        ;Ridley's Y position
+	CLC
+	ADC #$FFC0       ;Up 4 blocks
+	CMP #$0100
+	BPL BRANCH_DELTA
+	LDA #$0100       ;Minimum value is 1 screen
+BRANCH_DELTA
+	STA $7E7830      ;Target Y when holding Samus
+	LDA $7E7836      ;Check if Ridley is grabbing Samus
+	BNE BRANCH_EPSILON
+	JSR $BC68        ;If not, grab Samus now
+BRANCH_EPSILON
+	LDA #$BBC4
+	STA $0FA8
+BBC4: Move towards target position while holding Samus
+	LDA #$0020
+	STA $0FB2        ;Custom use timer
+	LDA $7E782E      ;0040, 0000, or 00D0
+	STA $12
+	LDA $7E7830      ;Ridley's old Y position + 4 blocks, or #$0100, whichever is larger.
+	STA $14
+	LDX #$0000
+	LDY #$0000
+	JSR $D523        ;Accelerates Ridley towards the desired X/Y ($12/$14). No deceleration boost ($1A), Y is index value to find acceleration divisor ($18), X is enemy's index
+	DEC $0FB2        ;Custom use timer
+	BPL BRANCH_ZETA
+	LDA #$BBF1
+	STA $0FA8        ;Next AI script
+	LDA #$0020
+	STA $0FB2        ;Set timer to 20
+BRANCH_ZETA
+	RTS
+}
+
+
+BBF1: Drop Samus
+{
+	DEC $0FB2        ;Variable use timer. Starts as 20 in this case
+	BMI BRANCH_ALPHA
+	LDA $7E782E      ;Target X position
+	STA $12
+	LDA #$0100
+	STA $14
+	LDX #$0000
+	LDY #$0000
+	JMP $D523        ;Accelerates Ridley towards the desired X/Y ($12/$14). No deceleration boost ($1A), Y is index value to find acceleration divisor ($18), X is enemy's index
+
+BRANCH_ALPHA
+	LDA #$0008
+	STA $7E201E      ;Tail movement threshold
+	LDA #$00F0
+	STA $7E2012      ;Tail extension rate
+	JSR $BC84        ;Let go of Samus
+	{
+		LDA #$0001
+		STA $7E2004      ;Tail fling trigger
+		STA $7E2000      ;Tail control index
+		LDA $7E7802      ;Main AI status (1 = active, FFFF = dead)
+		BMI BRANCH_ALPHA ;Branch if dead
+		JSR $BCF1        ;Check for spinjumping or spinback (CLC if so)
+		LDA #$0006
+		BVS BRANCH_BETA  ;Branch if currently morphed
+		LDA #$000A
+	BRANCH_BETA
+		STA $7E783C      ;Disable Ridley/Samus interaction for this many frames
+	BRANCH_ALPHA
+		LDA #$0000
+		STA $7E7836      ;Ridley is no longer holding Samus
+		INC A
+		JSL $90F084      ;Put #$E695 into $0A42, #$E725 into $0A44. Restores normal Samus controls/processing.
+		CLC              ;Open claws
+		JMP $DA8B        ;Write to VRAM for Ridley's claws
+	}
+	LDA #$BC2E
+	STA $0FA8        ;Set next main AI script
+	LDA #$0040
+	STA $0FB2        ;Set main AI script timer
+	RTS
+}
+
+
+BC2E: Wait after dropping Samus
+{
+	DEC $0FB2        ;Main AI script timer
+	BMI BRANCH_ALPHA
+	LDA $7E7820      ;Direction facing
+	ASL A
+	TAY
+	LDA $BC62, Y     ;00B0, 0000, 0050
+	STA $12
+	LDA #$00E0
+	STA $14
+	LDX #$0000
+	LDY #$0000
+	JSR $D523        ;Accelerates Ridley towards the desired X/Y ($12/$14). No deceleration boost ($1A), Y is index value to find acceleration divisor ($18), X is enemy's index
+	RTS
+BRANCH_ALPHA
+	LDA #$0010
+	STA $7E201E      ;Tail movement threshold
+	LDA #$00F0
+	STA $7E2012      ;Tail extension rate
+	LDA #$B321
+	STA $0FA8        ;Next main AI script
+	RTS
+}
+
+
+BD4E: Dodge a powerbomb
+{
+	LDA $0CEE        ;Powerbomb timer
+	BEQ BRANCH_ALPHA
+	LDA #$0002
+	STA $7E7802      ;Main battle AI is momentarily paused?
+	LDY #$0050
+	LDA $0CE2        ;X position of powerbomb explosion
+	CMP #$0080
+	BPL BRANCH_BETA
+	LDY #$00C0
+BRANCH_BETA
+	STY $12
+	LDY #$00C0
+	LDA $0CE4        ;Y position of powerbomb explosion
+	CMP #$0100
+	BPL BRANCH_GAMMA
+	LDY #$0180
+BRANCH_GAMMA
+	STY $14
+	LDX #$0000
+	JSR $B42E        ;Y = 4, 8, A, or C, depending on general speed byte
+	JMP $D523        ;Accelerates Ridley towards the desired X/Y ($12/$14). No deceleration boost ($1A), Y is index value to find acceleration divisor ($18), X is enemy's index
+
+BRANCH_ALPHA
+	LDA #$0001
+	STA $7E7802      ;Resume main battle AI
+	LDY #$B321
+	LDA $7E7836      ;Holding Samus flag
+	BEQ BRANCH_DELTA
+	LDY #$BB8F       ;Go to normal holding Samus AI
+BRANCH_DELTA
+	STY $0FA8        ;Next main AI script
+	RTS
+}
+
+
+C538: Move to death spot
+{
+	JSR $C601        ;Move to death spot, CLC when near it
+	{
+		LDX #$0080
+		STX $12
+		LDY #$0148
+		STY $14
+		LDX #$0000
+		LDY #$0000
+		LDA #$0010
+		JSR $D526        ;Accelerates Ridley towards the desired X/Y ($12/$14). A is deceleration boost, Y is index value to find acceleration divisor ($18), X is enemy's index
+		LDA #$0004
+		STA $16
+		STA $18
+		JSL $A9EF06      ;Check if Ridley is near $12/$14. CLC if so
+		RTS
+	}
+	BCC BRANCH_ALPHA
+	RTS
+BRANCH_ALPHA
+C53E: Die
+	LDA #$E6C8
+	JSR $D467        ;STA to GraphicAI instruction (0F92), delay (0F94) = 1, STZ $0F90
+	LDA #$C551
+	STA $0FA8        ;Next main AI script
+	LDA #$0020
+	STA $0FB2        ;Main AI script timer
+	RTS
+}
+
+
+C551: Move to death spot, wait for timer, then move lava
+{
+	JSR $C601        ;Move to death spot, CLC when near it
+	DEC $0FB2        ;Timer
+	BPL BRANCH_$C550 ;points to an RTS
+	STZ $0FAA
+	STZ $0FAC        ;Stop Ridley's speed
+	LDA #$0210
+	STA $197A        ;New lava height
+	LDA #$0040
+	STA $197C        ;Lava speed
+	LDA #$0001
+	STA $1980        ;Delay before lava begins moving
+	LDA #$0000
+	STA $7E800E      ;Prep for later
+	STA $7E8010      ;Prep for later
+	LDA #$C588
+	STA $0FA8
+	LDA #$00A0
+	STA $0FB2        ;Timer
+C588: Spawn explosions
+	JSR $C623        ;
+	{
+		LDA $7E800E      ;Timer between explosions
+		DEC A
+		BMI BRANCH_ALPHA ;Branches immediately
+		STA $7E800E
+		RTS
+	BRANCH_ALPHA
+		LDA #$0004
+		STA $7E800E
+		LDA $7E8010      ;Explosion index
+		INC A
+		CMP #$000A
+		BMI BRANCH_BETA
+		LDA #$0000
+	BRANCH_BETA
+		STA $7E8010
+		ASL A
+		ASL A
+		TAY
+		LDA $C66E, Y     ;FFE8, FFEC, 0010, 001E, 000E, FFFE, FFFE, FFE1, FFFC, 0013
+		CLC
+		ADC $0F7A        ;Ridley's X position
+		STA $12
+		LDA $C670, Y     ;FFE8, 0014, FFE2, FFFD, FFF3, 0012, FFE0, 0008, FFF6, 0013
+		CLC
+		ADC $0F7E        ;Ridley's Y position
+		STA $14
+		LDA #$0003
+		LDY #$E509
+		JSL $868097      ;Draw an explosion
+		LDA #$0024
+		JSL $8090B7      ;Play an explosion sound
+		RTS
+	}
+	DEC $0FB2
+	BPL BRANCH_$C550 ;RTS
+	LDA $7E7836      ;Check if Ridley is holding Samus
+	BEQ BRANCH_ALPHA
+	JSR $BC84        ;Let go of Samus
+BRANCH_ALPHA
+	LDA #$C5A8
+	STA $0FA8        ;Next main AI script
+	STZ $0FAA
+	STZ $0FAC        ;Stop movement
+	JMP $C932        ;Spawns the individual parts of Ridley to fly off
+	...
+C932:
+	LDX #$C9E7
+	JSL $A09275     ;Dunno. Not doing right now
+	LDX #$C9D7
+	JSL $A09275
+	LDX #$C9C7
+	JSL $A09275
+	LDX #$C9B7
+	JSL $A09275
+	LDX #$C9A7
+	JSL $A09275
+	LDX #$C997
+	JSL $A09275
+	LDX #$C987
+	JSL $A09275
+	LDX #$C9F7
+	JSL $A09275
+	LDX #$CA07
+	JSL $A09275
+	LDX #$CA27
+	JSL $A09275
+	LDX #$CA17
+	JSL $A09275
+	LDX #$CA37
+	JSL $A09275
+	RTS
+}
+
+
+C5A8: Disable Ridley
+{
+	JSR $C623        ;Keep playing explosions
+	LDA #$0000
+	STA $7E7804      ;Ridley is now inactive
+	LDA $0F86
+	ORA #$0100
+	STA $0F86        ;Make Ridley invisible
+	LDA #$C5C8
+	STA $0FA8        ;Next main AI script
+	LDA #$0020
+	STA $0FB2        ;Main AI script timer
+	RTS
+}
+
+
+C5C8: Wait 20 frames
+{
+	DEC $0FB2        ;Main AI script timer
+	BPL BRANCH_$C550 ;an RTS from a looong time ago
+	LDA #$C5DA
+	STA $0FA8        ;Next main AI script
+	LDA #$0100
+	STA $0FB2        ;Main AI script timer
+	RTS
+}
+
+
+C5DA: Wait another 100 frames, then drop items/change music/set boss bit
+{
+	DEC $0FB2        ;Main AI script timer
+	BPL BRANCH_ALPHA
+	LDA #$0001
+	JSL $8081A6      ;Set boss bits in A for current area (7E:D828,X)
+	JSL $A0B9A5      ;Drop items. Not gonna bother documenting
+	LDA #$0003
+	JSL $808FC1      ;Change to elevator music
+	LDA $0F86
+	ORA #$0200
+	STA $0F86        ;Delete Ridley
+	LDA #$C600
+	STA $0FA8        ;Next main AI script
+BRANCH_ALPHA
+C600:
+	RTS
+}
+
+
+A6:A0F5
+Ridley_Initialization:
+{
+	LDX $079F       ;Region number
+	LDA $7ED828, X  ;Boss bit table
+	AND #$0001      ;First boss bit of current Region (Ridley, in this case)
+	BEQ BRANCH_ALPHA ;Branch if still alive
+	LDA $0F86       ;Property bits of Ridley (assumed to be first enemy)
+	AND #$FFFF      ;Useless
+	ORA #$0700      ;Set Delete enemy, Delete enemy, and Disable enemy/Samus interaction
+	STA $0F86       ;Store in property bits
+	RTL
+BRANCH_ALPHA            ;Setup for Ridley when alive
+	PHB
+	PEA #$7E7E
+	PLB
+	PLB             ;Set bank to 7E (ram)
+	LDA #$0000
+	LDX #$0FFE
+BRANCH_BETA
+	STA $2000, X    ;Forget the LDA earlier, STZ would make more sense
+	DEX
+	DEX
+	BPL BRANCH_BETA ;Clears all RAM between 7E:2000 and 7E:2FFF
+	PLB
+	JSL $90A7E2     ; Clear automap and set entire room to explored (horribly inefficient yet hardcoded stuff)
+	STZ $0FB4       ; Speed in SMILE
+	STZ $0FB6       ; Speed 2 in SMILE
+	LDA #$E538      ; Starting graphicAI. Necessary to avoid crashing, I guess
+	JSR $D467       ; STA to GraphicAI instruction (0F92), delay (0F94) = 1, STZ $0F90
+	LDA #$0E00
+	STA $0F96       ; Pallete
+	STA $7E7818     ; Wing pallete, I guess
+	LDA $0F88       ; Property bits 2
+	ORA #$0004      ; Enable multiple hitboxes
+	STA $0F88
+	LDA #$0000
+	STA $7E7802     ;Ridley's main battle AI is not active yet
+	STA $7E781A     ;Ridley's hit counter for Ceres?
+	STZ $183E       ; Screen shaking type
+	STZ $1840       ; Screen shaking duration
+	JSR $D2D6       ; Initializes a ton of variables from 7E:2012 to 7E:20A7. I'm *guessing* they're for his tail.
+                        ; Uses JSR $D3B4: Copy 7 entries from (X) to 7E:(Y), 7E:(Y+14), 7E:(Y+28), 7E:(Y+3C), etc.
+	JSR $D9FD       ; Store DA71 to 7E:780A, 1 to 7E:780C
+	LDA $079F       ; Region
+	CMP #$0002      ; Check if Norfair
+	BEQ BRANCH_GAMMA
+	JMP $A1EE       ; Probably Ceres initialization
+BRANCH_GAMMA
+	LDA $0F86       ; Property bits
+	ORA #$1400      ; Enable Plasma block and Disable enemy/Samus interaction
+	STA $0F86
+	LDA #$0060
+	STA $0F7A       ; X position
+	LDA #$018A
+	STA $0F7E       ; Y position
+	LDA #$B2F3
+	LDA #$A35B      ; haha
+	STA $0FA8       ; Current main AI script
+	STZ $0FAA       ; Custom, X speed in 1/100ths of a pixel
+	STZ $0FAC       ; Custom, Y speed in 1/100ths of a pixel
+	LDA #$0005
+	STA $0F9A       ; Visibility Layer
+	LDA #$0000
+	STA $7E7802     ; Already been set to 0. Redundant. Ridley's main battle AI is not active yet.
+	INC A
+	STA $7E7804     ;Activate Ridley?
+	LDA #$0040
+	STA $7E8000     ;Upmost Y position allowed
+	LDA #$01A0
+	STA $7E8002     ;Downmost Y position allowed
+	LDA #$0040
+	STA $7E8004     ;Leftmost X position allowed
+	LDA #$00E0
+	STA $7E8006     ;Rightmost X position allowed
+	LDA #$0002
+	STA $7E7820     ;Facing direction
+	LDA #$0078
+	STA $7E7838     ;Tail tip damage
+	LDY #$E1CF
+	LDX #$0140
+	LDA #$0020
+	JSL $A9D2F6     ;Copy 2*A bytes from (Y) to 7E:C200,X
+	LDX #$00E2
+	LDX #$0000      ;again, haha
+	LDY #$000F
+	LDA #$0000
+BRANCH_DELTA
+	STA $7EC2E2, X  ;Unknown
+	STA $7EC3E2, X  ;Unknown
+	INX
+	INX
+	DEY
+	BNE BRANCH_DELTA
+	RTL
+$1321EE ALTERNATE ENTRY POINT ; Ceres Ridley Initialization
+	LDA $0F86
+	ORA #$1400      ;Enable Plasma block and Disable enemy/Samus interaction
+	STA $0F86
+	LDA #$00BA
+	STA $0F7A       ;X position
+	LDA #$00A9
+	STA $0F7E       ;Y position
+	LDA #$0000
+	STA $093F       ;Unknown
+	STA $7E7820     ;Facing direction
+	STA $7E7804     ;Set Ridley as inactive?
+	INC A
+	STA $7E2002     ;Unknown
+	LDA #$000F
+	STA $7E7838     ;Tail tip damage
+	LDA #$A35B
+	STA $0FA8       ;Current main AI script
+	STZ $0FAA       ;X speed
+	STZ $0FAC       ;Y speed
+	LDA #$FFE0
+	STA $7E8000     ;Upmost Y position allowed
+	LDA #$00B0
+	STA $7E8002     ;Downmost Y position allowed
+	LDA #$0028
+	STA $7E8004     ;Leftmost X position allowed
+	LDA #$00E0
+	STA $7E8006     ;Rightmost X position allowed
+	LDY #$E16F
+	LDX #$0140
+	LDA #$0020
+	JSL $A9D2F6     ;Copy 2*A bytes from (Y) to 7E:C200,X
+	LDX #$01E2
+	LDY #$000F
+	LDA #$0000
+BRANCH_EPSILON
+	STA $7EC200, X  ;Clear color pallete data?
+	INX
+	INX
+	DEY
+	BNE BRANCH_EPSILON
+	LDA #$BF31
+	STA $7E7806     ;Used for hatchling Metroid's graphic draw.
+	LDA #$0001
+	STA $7E7808     ;Used for hatchling Metroid's graphic draw.
+	LDA #$BE9C
+	STA $7E8800     ;Ceres Ridley hurt AI script?
+	LDA #$0005
+	STA $7E780E     ;Wing flap frame
+	LDA #$0000
+	JSL $808FC1     ;Change music control to this
+	RTL
+
+
+$132288 ALTERNATE ENTRY POINT ;Ceres Ridley's Main AI
+	LDA #$7FFF
+	STA $0F8C        ;Ridley's health
+	PEA #$A293       ;Right before the LDA $093F
+	JMP ($0FA8)      ;Basically JSR ($0FA8) instead, run main AI script
+	LDA $093F        ;Unknown, initialized to 0
+	BNE BRANCH_ZETA
+	LDA $7E7804      ;Check if Ridley is active?
+	BEQ BRANCH_THETA
+	JSR $D4DA        ;Make wings/tail flash when hit
+	JSR $D86B        ;Handles movement and main body wall collisions
+	JSR $D97D        ;Handle wing flapping
+	JSR $A2BD        ;1/100 chance of setting 7E:201E to 7-16 (all hex numbers)
+	{
+		LDA $05E5        ;Random number
+		CMP #$FF00
+		BCC BRANCH_MU
+		LDA $05E5
+		AND #$000F
+		ADC #$0007
+		STA $7E201E      ;Tail movement threshold
+	BRANCH_MU
+		RTS
+	}
+	JSR $CAF5        ;Handles something and tail movement
+	JSR $D4B5        ;Determine and set Ridley's color pallete
+	{
+		LDA $7E7802      ;Check if Ridley's main battle AI is active
+		BEQ BRANCH_ALPHA
+		LDA $7E781A      ;Ridley's hit counter for Ceres?
+		CMP #$0032       ;50 in decimal
+		BCC BRANCH_ALPHA
+		LDY #$0000
+		CMP #$0046       ;70 in decimal
+		BCC BRANCH_BETA
+		LDY #$0001
+		CMP #$005A       ;90 in decimal
+		LDY #$0002
+	BRANCH_BETA
+		STY $12
+		JMP $D495        ;Set Ridley's color pallete
+		...
+	$A6D495:
+		LDA $7EC400      ;Unknown
+		BNE BRANCH_ALPHA
+		LDA $12
+		ASL A
+		ASL A
+		ASL A
+		SEC
+		SBC $12
+		ASL A
+		ASL A            ;Multiplied by 28 in decimal
+		CLC
+		ADC #$E46A
+		TAY
+		LDX #$01E2
+		LDA #$000E
+		JSL $A9D2E4      ;Copy 2*A bytes from (Y) to 7E:C000,X
+	BRANCH_ALPHA
+		RTS
+	}
+	JSR $DA0C        ;No idea. Doesn't have any noticable effect, adds two entries to 7E00D0,X table
+	JSR $DB2A        ;Draw tail
+	JSR $DAD8        ;Drawing routine for Ridley's wings
+	BRA BRANCH_THETA
+BRANCH_ZETA
+	RTL
+
+$1322D3 ALTERNATE ENTRY POINT ;This is Ceres Ridley's hurt AI
+                              ;I think only power bombs can manage to get here.
+	JSR $D4DA        ;Make wings/tail flash when hit
+	JSR $DB2A        ;Draw tail
+	JSR $DAD8        ;Drawing routine for Ridley's wings
+
+BRANCH_THETA
+	JSR $BE93        ;basically JSR ($7E8800)
+	{
+		LDA $7E8800
+		STA $12
+		JMP ($0012)
+	}
+	LDA $7E7804      ;Check if Ridley is active?
+	BEQ BRANCH_IOTA
+	LDA #$A600
+	STA $178D
+	LDA #$A2F2
+	STA $178C        ;Long pointer: A6A2F2
+	RTL
+
+BRANCH_IOTA
+	LDA $093F        ;Unknown, initialized to 0 on for Ceres
+	BNE BRANCH_KAPPA
+	JSR $BF1A        ;Draw the metroid hatchling!
+	{
+		LDA #$7806
+		JSR $DBCB        ;Calculate graphic to use. JSR to with an address (in ram) of a pointer followed by a counter, data at pointer (to rom) should be a counter (frame duration) followed by a graphic pointer, OR a pointer to code.
+		{
+			STA $00
+			INC A
+			INC A
+			STA $03
+			SEP #$20
+			LDA #$7E
+			STA $02
+			STA $05          ;00 = 7E7806 (initialized as BF31), 03 = 7E7808 (initialized as 1)
+			REP #$20
+			LDA [$00]
+			BMI BRANCH_ALPHA
+			PLA
+			RTS
+		BRANCH_ALPHA
+			TAX
+			LDA $0000, X
+			BMI BRANCH_BETA
+			CMP [$03]
+			BNE BRANCH_GAMMA
+			INX
+			INX
+			INX
+			INX
+			LDA $0000, X
+			BPL BRANCH_DELTA
+		BRANCH_BETA
+			STA $06
+			INX
+			INX
+			PEA #$DBEE       ;Points to just before the LDA $0000,X just above
+			JMP ($0006)
+		BRANCH_DELTA
+			LDA #$0001
+			STA [$03]
+			TXA
+			STA [$00]
+			LDY $0002, X
+			RTS
+		BRANCH_GAMMA
+			LDA [$03]
+			INC A
+			STA [$03]
+			LDY $0002, X
+			RTS
+		}
+		LDA $7E8804      ;Metroid's X position
+		STA $12
+		LDA $7E8808      ;Metroid's Y position
+		STA $14
+		STZ $16
+		JMP $DC13        ;General use draw, $16 has pallete, Y is pointer to sprite data.
+	}
+BRANCH_KAPPA
+	LDA $0FEA        ;Unknown, door's custom ram
+	BEQ BRANCH_LAMBDA
+	LDA $1840        ;Shaking duraton?
+	AND #$0003
+	TAX
+	LDA $A321, X
+	CLC
+	ADC $0FBA        ;Door's X position
+BRANCH_NU
+	STA $14
+	LDA $0FBE        ;Door's Y position
+	STA $12
+	LDA #$0400
+	STA $16
+	LDY #$A329
+	JSL $81879F      ;Dunno this routine, but it draws the door
+BRANCH_LAMBDA
+	RTL
+
+$1323?? ALTERNATE ENTRY POINT
+
+	JSR $9C6B  ;  $131C6B IN ROM
+	TAX
+	ORA $0FAC9C
+	RTS
+
+
+
+$1324D6 ALTERNATE ENTRY POINT
+
+	ASL A
+	TAX
+	LDY $A4EB, X
+
+	BNE BRANCH_ULTIMA
+
+	SEC
+	RTS
+
+BRANCH_ULTIMA
+
+	LDX #$00E2
+	LDA #$000E
+	JSL $A9D2E4  ;  $14D2E4 IN ROM
+	CLC
+	RTS
+}
+
+;A6:B227
+Ridley_Main_AI:
+	LDA $7E8008      ;Unknown, oddly. It wasn't initialized.
+	SEC
+	SBC #$0004
+	BPL BRANCH_ALPHA
+	LDA #$0000
+BRANCH_ALPHA
+	STA $7E8008      ;A timer or counter, I guess?
+	JSR $BCB4        ;Displayed below. Handles Enemy/Samus interaction bit.
+	{
+		LDA $7E7802      ;Check if main battle AI is running
+		BMI BRANCH_ALPHA ;There's a minus option? Dunno when this would branch
+		BEQ BRANCH_BETA  ;Branch if main battle AI is not running
+		JSR $DE7A        ;Displayed below. Checks if Ridley is on screen
+		{
+			LDA $0F7E
+			BMI BRANCH_ALPHA ;Negative Y position? What, at start of battle?
+			CLC
+			ADC #$0020
+			SEC
+			SBC $0915
+			BMI BRANCH_ALPHA ;Branch if 2 blocks above screen
+			CMP #$0120
+			BPL BRANCH_ALPHA ;or 2 blocks below screen (note: 1 screen = E blocks)
+			LDA $0F7A
+			BMI BRANCH_ALPHA ;Negative X position. As impossible as negative Y position
+			CLC
+			ADC #$0020
+			SEC
+			SBC $0911
+			BMI BRANCH_ALPHA ;Branch if 2 blocks left of screen - impossible
+			CMP #$0140
+			BPL BRANCH_ALPHA ;Branch if 2 blocks right of screen - impossible
+			CLC ;Clear if on screen
+			RTS
+		BRANCH_ALPHA
+			SEC ;Set if off screen
+			RTS
+		}
+		BCC BRANCH_GAMMA
+		LDA $0F86
+		ORA #$0400       ;Disable interaction with Samus if off-screen
+		STA $0F86
+		RTS
+	BRANCH_GAMMA
+		LDA $0F86
+		AND #$FBFF       ;Enable interaction with Samus if on-screen
+		STA $0F86
+	BRANCH_BETA
+		LDA $7E783C      ;Disable Ridley/Samus interaction for this many frames
+		BEQ BRANCH_ALPHA
+		DEC A
+		STA $7E783C
+		BNE BRANCH_ALPHA
+		LDA $7E7802
+		BMI BRANCH_ALPHA ;This check is useless, it exists earlier already
+		LDA $0F86
+		AND #$FBFF
+		STA $0F86        ;Enable Enemy/Samus interaction
+	BRANCH_ALPHA
+		RTS
+	}
+	JSR $BD2C        ;Power Bomb Check/Reaction
+	{
+		LDA $7E7802      ;Check if Ridley's main battle AI is active
+		BMI BRANCH_ALPHA ;Not sure when this would branch
+		BEQ BRANCH_ALPHA ;Branch if main AI inactive
+		CMP #$0002
+		BEQ BRANCH_ALPHA
+		LDA $0CEE        ;Powerbomb timer
+		BEQ BRANCH_ALPHA
+		LDA $7E7836      ;Ridley is grabbing Samus?
+		BNE BRANCH_ALPHA
+		JSR $B84D        ;Store 1 to 7E:2000 and 7E:2014
+		LDY #$BAB7
+		STY $0FA8        ;Apparently this is Current Main AI script
+	BRANCH_ALPHA
+		RTS
+	}
+	PEA #$B243       ;Note: This points to just before the LDA.
+	JMP ($0FA8)      ;In effect, this is JSR ($0FA8). When it reaches an RTS, it returns to LDA $7E7804
+	LDA $7E7804      ;Checks if Ridley is active?
+	BEQ BRANCH_BETA
+	JSR $D4DA        ;Make wings/tail flash when hit
+	{
+		PHX
+		LDX #$0E00       ;Normal pallete
+		LDA $0F9C        ;Hit
+		BEQ BRANCH_ALPHA
+		DEC A
+		BEQ BRANCH_ALPHA
+		LDA $0E44        ;Flashing counter, I guess
+		INC A
+		AND #$0002
+		BEQ BRANCH_ALPHA
+		LDX #$0000       ;White (hurt) pallete
+	BRANCH_ALPHA
+		TXA
+		STA $7E7818      ;Wing/Tail pallete
+		PLX
+		RTS
+	}
+	JSR $D86B        ;Handles movement and main body wall collisions
+	{
+		LDA #$0000
+		STA $7E783E      ;Wall collision. 0 = none, 1 = left, 2 = right, 4 = top, 8 = bottom. 4 and 8 take priority over 1 and 2
+		LDX $0E54
+		LDA $0FAA, X     ;Subpixel speed (1 byte)
+		SEP #$20
+		CLC
+		ADC $0F7D, X     ;high byte of subpixel X
+		STA $0F7D, X
+		REP #$20
+		AND #$FF00
+		XBA
+		BPL BRANCH_ALPHA
+		ORA #$FF00
+	BRANCH_ALPHA
+		ADC $0F7A, X     ;X position
+		CMP $7E8004      ;Minimum X position
+		BPL BRANCH_BETA
+		JSR $D914        ;Cause room shaking, only happens in Ceres. Has unreachable code for Norfair room shaking
+		{
+			LDA $079F        ;Region
+			CMP #$0002
+			BEQ BRANCH_ALPHA
+			LDA $0FAA, X     ;X Speed
+			BPL BRANCH_BETA
+			EOR #$FFFF
+			INC A
+			BRANCH_BETA
+			STA $12
+			LDA $0FAC, X     ;Y Speed
+			BPL BRANCH_GAMMA
+			EOR #$FFFF
+			INC A
+		BRANCH_GAMMA
+			CMP $12
+			BCS BRANCH_DELTA
+			LDA $12
+		BRANCH_DELTA             ;Get the absolute greater of the two speeds
+			CMP #$0280       ;and compare to 2 1/2 pixels per frame
+			BCC BRANCH_ALPHA
+			LDA $079F
+			CMP #$0002
+			BEQ BRANCH_EPSILON
+			LDA #$0021       ;Ceres room shake value
+			BRA BRANCH_ZETA
+		BRANCH_EPSILON
+			LDA #$0018       ;Norfair room shake value. Never used
+		BRANCH_ZETA
+			STA $183E        ;Room shake type
+			LDA #$000C
+			STA $1840        ;Room shake duration
+		BRANCH_ALPHA
+			RTS
+		}
+		LDA $7E8004
+		STA $0F7A, X     ;Cap X position
+		STZ $0FAA, X     ;Stop speed
+		LDA #$0001
+		STA $7E783E      ;Mark as hit left wall?
+		BRA BRANCH_GAMMA
+	BRANCH_BETA
+		CMP $7E8006      ;Maximum X position
+		BMI BRANCH_ZETA
+		STZ $0FAA, X     ;Stop speed
+		LDA #$0002
+		STA $7E783E      ;Mark as hit right wall?
+		LDA $7E8006
+	BRANCH_ZETA
+		STA $0F7A, X     ;Update (or cap if hit right wall) X position
+	BRANCH_GAMMA
+		LDA $0FAC, X     ;Y speed
+		SEP #$20
+		CLC
+		ADC $0F81, X     ;High byte of subpixel Y position
+		STA $0F81, X
+		REP #$20
+		AND #$FF00
+		XBA
+		BPL BRANCH_DELTA
+		ORA #$FF00
+	BRANCH_DELTA
+		ADC $0F7E, X     ;Y position
+		CMP $7E8000      ;Min Y position
+		BPL BRANCH_EPSILON
+		LDA $7E8000
+		STA $0F7E, X     ;Cap Y position
+		STZ $0FAC, X     ;Stop Y speed
+		LDA $7E783E      ;Please Nintendo, quit being stupid
+		LDA #$0004
+		STA $7E783E      ;Hit top wall
+		RTS
+	BRANCH_EPSILON
+		CMP $7E8002      ;Max Y position
+		BMI BRANCH_THETA
+		STZ $0FAC, X     ;Stop Y speed
+		LDA $7E783E
+		LDA #$0008
+		STA $7E783E      ;Hit bottom wall
+		LDA $7E8002
+	BRANCH_THETA
+		STA $0F7E, X     ;Update (or cap if hit bottom wall) Y position
+		RTS
+	}
+	JSR $D97D        ;Handle wing flapping
+	{
+		JSR $D9A8        ;Calculate wing flap speed
+		{
+			LDA $0FAA        ;X Speed
+			BPL BRANCH_ALPHA
+			EOR #$FFFF
+			INC A
+		BRANCH_ALPHA
+			STA $12
+			LDA $0FAC        ;Y Speed
+			BPL BRANCH_BETA
+			EOR #$FFFF
+			INC A
+		BRANCH_BETA
+			CLC
+			ADC $12
+			BNE BRANCH_GAMMA
+			STA $7E7810
+			RTS
+		BRANCH_GAMMA             ;Ridley is moving (and not exactly along a diagonal)
+			SEC
+			SBC $12
+			CMP $12
+			BPL BRANCH_DELTA
+			LDA $12
+		BRANCH_DELTA             ;Get greater of two speeds
+			ASL A
+			ASL A
+			AND #$0F00
+			XBA
+			ASL A
+			CMP #$000E
+			BCC BRANCH_EPSILON
+			LDA #$000E
+		BRANCH_EPSILON           ;At this point, A = 2*max(#$000E, SpeedInPixels*4)
+			TAX
+			LDA $D9ED, X     ;0C, 0E, 10, 12, 1C, 20, 28, 30
+			BIT $0FAC
+			BMI BRANCH_ZETA
+			LSR A
+		BRANCH_ZETA              ;If Ridley is moving upwards, double it.
+			STA $7E7810      ;Wing flapping speed?
+			RTS
+		}
+		LDA $7E7812      ;Wing flap counter, I suppose
+		SEC
+		SBC $7E7810      ;Wing flap speed
+		STA $7E7812
+		BPL BRANCH_ALPHA ;If counter < 0, advance wing flap frame
+		LDA #$0020
+		STA $7E7812
+		LDA $7E780E      ;Wing flap frame
+		INC A
+		CMP #$000A
+		BCC BRANCH_BETA
+		LDA #$0000
+	BRANCH_BETA
+		STA $7E780E      ;Update Wing flap frame
+	BRANCH_ALPHA
+		RTS
+	}
+	JSR $CAF5        ;Run Tail AI: Sound, control AI, X/Y positions, tail extension, hurt Samus
+	{
+		JSR $D2AA        ;Play swishing sound if tail is moving quickly
+		{
+			LDA $7E2014      ;Tail parts angular speed
+			CMP #$0008
+			BMI BRANCH_ALPHA
+			LDA $7E781C      ;A simple timer, seems to be specifically for this routine.
+			INC A
+			STA $7E781C
+			CMP #$0010
+			BMI BRANCH_BETA
+			LDA $7E781E      ;Check if a sound is currently playing
+			BNE BRANCH_ALPHA
+			LDA #$0021       ;Sounds like a spinjump sound
+			JSL $80914D      ;Play sound
+		BRANCH_ALPHA
+			LDA #$0000
+			STA $7E781C
+		BRANCH_BETA
+			RTS
+		}
+		LDA $7E2000      ;Tail control index
+		ASL A
+		TAX
+		JSR ($CB21, X)   ;CB20, CBC0, CB33, CB45, CBC7, CBCE, CB4E, CB60, CBD5 (See 7E:2000 in Ridley's ram)
+		PHB
+		PEA #$7E7E
+		PLB
+		PLB
+		JSR $CEBA        ;Update tail positions
+		{
+			LDA $0F7E        ;Ridley Y position
+			CLC
+			ADC $2032        ;Ridley to Tail 1 Adjustment
+			CLC
+			ADC #$0010       ;Hardcoded adjustment
+			STA $202E        ;Tail 1 Y position
+			CLC
+			ADC $2046        ;Tail 1 to Tail 2 Adjustment
+			STA $2042        ;Tail 2 Y position
+			CLC
+			ADC $205A        ;etc
+			STA $2056
+			CLC
+			ADC $206E
+			STA $206A
+			CLC
+			ADC $2082
+			STA $207E
+			CLC
+			ADC $2096
+			STA $2092
+			CLC
+			ADC $20AA
+			STA $20A6
+			LDA $7820        ;Facing direction
+			DEC A
+			BEQ BRANCH_ALPHA
+			INC A
+			ASL A
+			TAX
+			LDA $A6CF54, X
+			ADC $2030        ;Ridley to Tail 1 Adjustment, sorta
+		BRANCH_ALPHA             ;A depends on 7820: 0 => $2030 + #$20, 1 => #$0, 2 => $2030 + #$FFE0
+			CLC
+			ADC $0F7A        ;Ridley X position
+			STA $202C        ;Tail 1 X position
+			LDA $7820
+			DEC A
+			BNE BRANCH_BETA
+			LDA $0F7A
+			STA $2040
+			STA $2054
+			STA $2068
+			STA $207C
+			STA $2090
+			STA $20A4        ;If $7820 = 1, all tail X positions are the same as Ridley's X position
+			BRA BRANCH_GAMMA ;and RTS
+		BRANCH_BETA
+			LDA $202C        ;Tail 1 X position
+			CLC
+			ADC $2044        ;Tail 1 to Tail 2 adjustment
+			STA $2040        ;Tail 2 X position
+			CLC
+			ADC $2058        ;etc.
+			STA $2054
+			CLC
+			ADC $206C
+			STA $2068
+			CLC
+			ADC $2080
+			STA $207C
+			CLC
+			ADC $2094
+			STA $2090
+			CLC
+			ADC $20A8
+			STA $20A4
+		BRANCH_GAMMA
+			RTS
+			}
+		JSR $CF5A         ;Tail extending
+		{
+			LDA $203C        ;Target extension distance
+			BEQ BRANCH_ALPHA
+			CMP $203A        ;Distance from tail 1 to tail 2
+			BPL BRANCH_BETA
+			LDA #$0000
+			STA $203C
+		BRANCH_BETA
+			LDA $203A
+			CLC
+			ADC $2012        ;Extension speed (Initialized to F0)
+			CMP #$1800       ;Cap at 18 pixels
+			BMI BRANCH_GAMMA
+			LDA #$1800
+		BRANCH_GAMMA
+			STA $203A
+			BRA BRANCH_DELTA
+		BRANCH_ALPHA
+			LDA #$0800       ;Default distance is 8 pixels
+			CMP $203A
+			BPL BRANCH_DELTA
+			LDA $203A
+			SEC
+			SBC #$0080       ;Pullback speed is 1/2 pixel a frame
+			STA $203A
+		BRANCH_DELTA
+			LDA $2050        ;Same for Tail 2
+			BEQ BRANCH_EPSILON
+			CMP $204E
+			BPL BRANCH_ZETA
+			LDA #$0000
+			STA $2050
+		BRANCH_ZETA
+			LDA $204E
+			CLC
+			ADC $2012
+			CMP #$1800
+			BMI BRANCH_THETA
+			LDA #$1800
+		BRANCH_THETA
+			STA $204E
+			BRA BRANCH_IOTA
+		BRANCH_EPSILON
+			LDA #$0800
+			CMP $204E
+			BPL BRANCH_IOTA
+			LDA $204E
+			SEC
+			SBC #$0080
+			STA $204E
+		BRANCH_IOTA
+			LDA $2064        ;Same for Tail 3
+			BEQ BRANCH_KAPPA
+			CMP $2062
+			BPL BRANCH_LAMBDA
+			LDA #$0000
+			STA $2064
+		BRANCH_LAMBDA
+			LDA $2062
+			CLC
+			ADC $2012
+			CMP #$1600       ;16 pixel max distance cap
+			BMI BRANCH_MU
+			LDA #$1600
+		BRANCH_MU
+			STA $2062
+			BRA BRANCH_NU
+		BRANCH_KAPPA
+			LDA #$0800
+			CMP $2062
+			BPL BRANCH_NU
+			LDA $2062
+			SEC
+			SBC #$0080
+			STA $2062
+		BRANCH_NU
+			LDA $2078        ;Same for Tail 4
+			BEQ BRANCH_XI
+			CMP $2076
+			BPL BRANCH_OMICRON
+			LDA #$0000
+			STA $2078
+		BRANCH_OMICRON
+			LDA $2076
+			CLC
+			ADC $2012
+			CMP #$1600
+			BMI BRANCH_PI
+			LDA #$1600
+		BRANCH_PI
+			STA $2076
+			BRA BRANCH_RHO
+		BRANCH_XI
+			LDA #$0800
+			CMP $2076
+			BPL BRANCH_RHO
+			LDA $2076
+			SEC
+			SBC #$0080
+			STA $2076
+		BRANCH_RHO
+			LDA $208C        ;Same for Tail 5
+			BEQ BRANCH_SIGMA
+			CMP $208A
+			BPL BRANCH_TAU
+			LDA #$0000
+			STA $208C
+		BRANCH_TAU
+			LDA $208A
+			CLC
+			ADC $2012
+			CMP #$1200       ;12 pixel max distance cap
+			BMI BRANCH_UPSILON
+			LDA #$1200
+		BRANCH_UPSILON
+			STA $208A
+			BRA BRANCH_PHI
+		BRANCH_SIGMA
+			LDA #$0800
+			CMP $208A
+			BPL BRANCH_PHI
+			LDA $208A
+			SEC
+			SBC #$0080
+			STA $208A
+		BRANCH_PHI
+			LDA $20A0        ;Same for Tail tip
+			BEQ BRANCH_CHI
+			CMP $209E
+			BPL BRANCH_PSI
+			LDA #$0000
+			STA $20A0
+		BRANCH_PSI
+			LDA $209E
+			CLC
+			ADC $2012
+			CMP #$0500       ;5 pixel max distance cap
+			BMI BRANCH_OMEGA
+			LDA #$0500
+		BRANCH_OMEGA
+			STA $209E
+			BRA BRANCH_ALTIMA
+		BRANCH_CHI
+			LDA #$0500       ;and also min distance cap. <_<
+			CMP $209E
+			BPL BRANCH_ALTIMA
+			LDA $209E
+			SEC
+			SBC #$0080
+			STA $209E
+		BRANCH_ALTIMA
+			RTS
+		}
+		PLB
+		LDA $0F86
+		AND #$0400       ;Enemy/Samus interaction
+		ORA $18A8        ;Samus Invincibility
+		ORA $7E7836      ;Ridley is holding Samus
+		BNE BRANCH_ALPHA
+		JMP $DFD9        ;Tail/Samus interaction
+		{
+			LDA #$000E
+			STA $16
+			STA $18
+			LDA $7E20A4      ;Tail tip X position
+			STA $12
+			LDA $7E20A6      ;Tail tip Y position
+			STA $14
+			JSR $DF29        ;Surprisingly efficient collision detection. I'm going to have to steal this code.
+			{
+				LDA $0AF6        ;Samus's X position
+				SEC
+				SBC $12          ;Tail tip X position
+				BPL BRANCH_ALPHA
+				EOR #$FFFF
+				INC A
+			BRANCH_ALPHA             ;Absolute X distance between Samus and Tail tip
+				SEC
+				SBC $0AFE        ;Samus X Radius
+				BCC BRANCH_BETA
+				CMP $16          ;#$000E
+				BCS BRANCH_GAMMA
+			BRANCH_BETA
+				LDA $0AFA        ;Samus Y position
+				SEC
+				SBC $14          ;Tail tip Y position
+				BPL BRANCH_DELTA
+				EOR #$FFFF
+				INC A
+			BRANCH_DELTA             ;Absolute Y distance between Samus and Tail tip
+				SEC
+				SBC $0B00        ;Samus Y Radius
+				BCC BRANCH_EPSILON
+				CMP $18          ;#$000E
+				BCC BRANCH_EPSILON
+			BRANCH_GAMMA
+				CLC              ;No collision
+				RTS
+			BRANCH_EPSILON
+				SEC              ;Collision
+				RTS
+			}
+			BCC BRANCH_ALPHA
+			LDA $7E7838      ;Tail tip damage
+			JSL $A0A45E      ;Divide A (damage) by suit damage divisor.
+			JSL $91DF51      ;Deal damage to Samus. Should not be negative or #$12C (300)
+			LDA #$0060
+			STA $18A8        ;Samus's invincibility time
+			LDA #$0005
+			STA $18AA        ;Samus's pushback timer
+			LDY #$0000
+			LDA $0AF6        ;Samus's X position
+			SEC
+			SBC $7E20A4      ;Tailtip X position
+			BMI BRANCH_BETA
+			INY
+		BRANCH_BETA
+			STY $0A54        ;Direction to push Samus
+		BRANCH_ALPHA
+			RTS
+		}
+	BRANCH_ALPHA
+		RTS
+	}
+	JSR $E088        ;Tail tip kills projectiles
+	{
+		LDA $0F86
+		AND #$0400       ;Check Enemy/Samus interaction
+		BEQ BRANCH_ALPHA
+		RTS              ;Do nothing if disabled
+	BRANCH_ALPHA
+		LDA #$000E
+		STA $16
+		STA $18
+		LDA $7E20A4      ;Tail tip X position
+		STA $12
+		LDA $7E20A6      ;Tail tip Y position
+		STA $14
+		JSR $DEA6        ;Check Tail/Projectile collisions
+		{
+			LDA $0CCE        ;Check projectile counter
+			BNE BRANCH_ALPHA
+			CLC              ;Leave if no projectiles
+			RTS
+		BRANCH_ALPHA
+			LDY #$0000
+		BRANCH_THETA
+			LDA $0C18, Y     ;Check projectile types
+			BPL BRANCH_BETA
+			XBA
+			AND #$000F
+			CMP #$0003
+			BPL BRANCH_BETA  ;Skip projectile if powerbomb (3) or bomb (5)
+			LDA $0B64, Y     ;Projectile X position
+			SEC
+			SBC $12          ;Tail tip X position
+			BPL BRANCH_GAMMA
+			EOR #$FFFF
+			INC A
+		BRANCH_GAMMA             ;Get absolute X distance between projectile and tail
+			SEC
+			SBC $0BB4, Y     ;Projectile X radius
+			BCC BRANCH_DELTA
+			CMP $16          ;Tail tip X radius
+			BCS BRANCH_BETA
+		BRANCH_DELTA
+			LDA $0B78, Y     ;Projectile Y position
+			SEC
+			SBC $14          ;Tail tip Y position
+			BPL BRANCH_EPSILON
+			EOR #$FFFF
+			INC A
+		BRANCH_EPSILON           ;Get absolute Y distance between projectile and tail
+			SEC
+			SBC $0BC8, Y     ;Projectile Y radius
+			BCC BRANCH_ZETA
+			CMP $18          ;Tail tip Y radius
+			BCC BRANCH_ZETA
+		BRANCH_BETA              ;No collision
+			INY
+			INY              ;Next projectile
+			CPY #$000A       ;Max = 5 projectiles (10 slots, but top 5 are for bombs)
+			BMI BRANCH_THETA ;Check next projectile
+			CLC              ;No collisions
+			RTS
+		BRANCH_ZETA
+			LDA $12
+			STA $0B64, Y
+			LDA $14
+			STA $0B78, Y     ;Move projectile to tail tip?
+			LDA $0C04, Y
+			ORA #$0010       ;Kill projectile
+			STA $0C04, Y
+			SEC              ;Collision
+			RTS
+		}
+		BCS BRANCH_$136126
+		LDA #$000A
+		STA $16
+		STA $18
+		LDA $7E2090      ;Tail part 6 X position
+		STA $12
+		LDA $7E2092      ;Tail part 6 Y position
+		STA $14
+		JSR $DEA6        ;Check Tail/Projectile collisions for tail part 6
+		BCS BRANCH_$136126
+		RTS
+		...
+	BRANCH_$136126
+		LDA $0B64, Y     ;Projectile X position (now tail X position)
+		STA $12
+		LDA $0B78, Y     ;Projectile Y position (now tail Y position)
+		STA $14
+		LDA $0C19, Y     ;Projectile type
+		AND #$000F
+		LDY #$000C
+		DEC A
+		BNE BRANCH_ALPHA
+		LDA #$003D
+		JSL $809049      ;Sound for missile collisions (dud hit? Not checked)
+		LDY #$0006       ;Dud explosion instead of yellow smoke
+	BRANCH_ALPHA
+		TYA
+		LDY #$E509
+		JSL $868097      ;Spawn animation (yellow smoke, unless missile, then dud explosion)
+		RTS
+	}
+	JSR $DB2A        ;Draw tail
+	{
+		LDA $0F86
+		AND #$0100       ;Ridley is invisible? Not sure when this happens
+		BEQ BRANCH_ALPHA
+		RTS
+	BRANCH_ALPHA
+		LDA $7E20A4      ;Tail tip X position
+		STA $12
+		LDA $7E20A6      ;Tail tip Y position
+		STA $14
+		LDA $7E20A2      ;Angle of tail tip.
+		CLC
+		ADC $7E208E      ;Angle of tail part 6
+		CLC
+		ADC #$0008
+		AND #$00F0
+		LSR A
+		LSR A
+		LSR A
+		TAX
+		LDY $DCBA, X     ;Graphic entry for different rotations for tail tip. Format: First 2 bytes = number of tiles, bytes 3-4 = X offset byte, 5 = Y offset, byte 6-7 = character + flip + priority
+		JSR $DBC2        ;General use draw, 7E7818 has pallete, Y is pointer to sprite data.
+		{
+			LDA $7E7818      ;Wing/Tail pallete
+			STA $16
+			JMP $DC13
+			...
+		$A6DC13
+			LDA $0000, Y
+			INY
+			INY
+			STA $18          ;Number of tiles, I'm guessing
+			LDX $0590        ;OAM 'stack' pointer
+			CLC
+		BRANCH_EPSILON
+			LDA $0001, Y     ;Sprite's Y position offset from tail
+			AND #$FF00
+			BPL BRANCH_ALPHA
+			ORA #$00FF
+		BRANCH_ALPHA
+			XBA
+			CLC
+			ADC $14          ;Tail's Y position
+			SEC
+			SBC $0915        ;Scroll Y offset
+			BMI BRANCH_BETA
+			CMP #$00E0       ;Bottom of screen
+			BPL BRANCH_BETA  ;Skip (go to Beta) if off screen
+			STA $1A          ;Sprite's Y position on screen
+			LDA $0000, Y     ;Sprite's X position offset from tail (2 bytes)
+			ADC $12          ;Tail's X position
+			SEC
+			SBC $0911        ;Scroll X position
+			STA $0370, X     ;X Coordinate of sprite (1 byte)
+			AND #$0100
+			BEQ BRANCH_GAMMA
+			LDA $81859F, X
+			STA $1C
+			LDA ($1C)
+			ORA $81839F, X
+			STA ($1C)        ;Set extra bit for X position if necessary
+		BRANCH_GAMMA
+			LDA $0000, Y
+			BPL BRANCH_DELTA
+			LDA $81859F, X
+			STA $1C
+			LDA ($1C)
+			ORA $8183A1, X
+			STA ($1C)        ;Set extra bit for Size(?) if necessary
+		BRANCH_DELTA
+			LDA $1A          ;Sprite's Y position on screen
+			STA $0371, X     ;Y coordinate of sprite (1 byte)
+			LDA $0003, Y     ;Character, flip, priority (can, but should not, contain pallete choice)
+			ORA $16          ;Pallete
+			STA $0372, X     ;Sprite's Character, pallete, priority, flip.
+			TXA
+			CLC
+			ADC #$0004
+			AND #$01FF
+			TAX              ;Move to next OAM slot
+		BRANCH_BETA
+			TYA
+			CLC
+			ADC #$0005
+			TAY              ;Move to next sprite to draw
+			DEC $18          ;Decrement sprite counter
+			BNE BRANCH_EPSILON ;If more sprites to draw, loop for next sprite
+			STX $0590        ;Else update the OAM 'stack' pointer
+			RTS
+		}
+		LDA $7E2092      ;Tail part 6 Y position
+		STA $14
+		LDA $7E2090      ;Tail part 6 X position
+		STA $12
+		LDY #$DC9E       ;Small tail graphic
+		JSR $DBC2        ;General use draw, 7E7818 has pallete, Y is pointer to sprite data.
+		LDA $7E207C      ;Tail part 5 X position
+		STA $12
+		LDA $7E207E      ;Tail part 5 Y position
+		STA $14
+		LDY #$DC9E       ;Small tail graphic
+		JSR $DBC2        ;General use draw, 7E7818 has pallete, Y is pointer to sprite data.
+		LDA $7E2068      ;Tail part 4 X position
+		STA $12
+		LDA $7E206A      ;Tail part 4 Y position
+		STA $14
+		LDY #$DC97       ;Medium tail graphic
+		JSR $DBC2        ;General use draw, 7E7818 has pallete, Y is pointer to sprite data.
+		LDA $7E2054      ;Tail part 3 X position
+		STA $12
+		LDA $7E2056      ;Tail part 3 Y position
+		STA $14
+		LDY #$DC97       ;Medium tail graphic
+		JSR $DBC2        ;General use draw, 7E7818 has pallete, Y is pointer to sprite data.
+		LDA $7E2040      ;Tail part 2 X position
+		STA $12
+		LDA $7E2042      ;Tail part 2 Y position
+		STA $14
+		LDY #$DC90       ;Large tail graphic
+		JSR $DBC2        ;General use draw, 7E7818 has pallete, Y is pointer to sprite data.
+		LDA $7E202C      ;Tail part 1 X position
+		STA $12
+		LDA $7E202E      ;Tail part 1 Y position
+		STA $14
+		LDY #$DC90       ;Large tail graphic
+		LDA $7E7818      ;Pallete for Wing/Tail
+		STA $16
+		JMP $DC13        ;General use draw, $16 has pallete, Y is pointer to sprite data.
+	}
+	JSR $DAD8        ;Drawing routine for Ridley's wings
+	{
+		LDA $7E7820      ;Facing direction
+		BEQ BRANCH_ALPHA ;Facing left
+		DEC A
+		BEQ BRANCH_BETA  ;Facing front
+		LDA #$000A       ;Facing right
+	BRANCH_ALPHA
+		CLC
+		ADC $7E780E      ;Wing flap frame
+		ASL A
+		TAX
+		LDY $DB02, X     ;Pointer table: DD4A, DD6A, DD85, DD96, DDA7, DDC2, then backwards down to DD6A, DDE2, DE02, DE1D, DE2E, DE3F, DE5A, back down to DE02
+		LDA $7E7818      ;Wing/Tail pallete
+		STA $16
+		LDA $0F7A        ;Ridley X Position
+		STA $12
+		LDA $0F7E        ;Ridley Y Position
+		STA $14
+		JMP $DC13        ;General use draw, $16 has pallete, Y is pointer to sprite data.
+	BRANCH_BETA
+		RTS
+	}
+	JSR $DA0C        ;Animate Ridley's ribs
+	{
+		LDA $7E780C      ;Some sort of timer/counter, initialized to 1
+		DEC A
+		STA $7E780C
+		BNE BRANCH_$135A0B ;An RTS
+		LDA $7E780A      ;Pointer to new graphic data to update
+	BRANCH_BETA
+		TAX
+		LDA $0000, X
+		BPL BRANCH_ALPHA ;Positive means New graphic data
+		STA $7E780A      ;Negative means pointer to next New graphic data
+		BRA BRANCH_BETA
+	BRANCH_ALPHA
+		STA $7E780C
+		LDY $0330        ;'Stack' index for graphics to update
+		LDA #$B000
+		STA $00D3, Y
+		STA $00DA, Y     ;Set source banks to B0
+		LDA $0002, X
+		STA $00D2, Y
+		LDA $0004, X
+		STA $00D9, Y     ;Get and set source addresses
+		LDA #$7220
+		STA $00D5, Y
+		LDA #$7320
+		STA $00DC, Y     ;Set target VRAM (E440 and E640)
+		LDA #$0040
+		STA $00D0, Y
+		STA $00D7, Y     ;Size is 40 bytes
+		TYA
+		CLC
+		ADC #$000E
+		TAY
+		STY $0330
+		LDA #$0000
+		STA $00D0, Y
+		TXA
+		CLC
+		ADC #$0006
+		STA $7E780A      ;Go to next New graphic data
+		RTS
+	}
+	LDA $7E7836      ;Check if Ridley is holding Samus
+	BEQ BRANCH_BETA
+	JSR $B9E1        ;If holding Samus, move Samus to within Ridley's claws
+	{
+		LDA $7E7828      ;X Displacement for Ridley grabbing Samus
+		BEQ BRANCH_ALPHA
+		STA $12
+		BPL BRANCH_BETA
+		EOR #$FFFF
+		INC A
+	BRANCH_BETA              ;Absolute value of 7E7828, other than 0
+		SEC
+		SBC #$0004
+		BPL BRANCH_GAMMA
+		LDA #$0000
+		BRA BRANCH_DELTA
+	BRANCH_GAMMA
+		BIT $12
+		BPL BRANCH_DELTA
+		EOR #$FFFF
+		INC A
+	BRANCH_DELTA
+		STA $7E7828      ;Basically, as a signed value, reduce by 4 every frame, minimum of 0
+	BRANCH_ALPHA
+		LDA $7E782A      ;Y Displacement for Ridley grabbing Samus
+		BEQ BRANCH_EPSILON
+		STA $12
+		BPL BRANCH_ZETA
+		EOR #$FFFF
+		INC A
+	BRANCH_ZETA
+		SEC
+		SBC #$0004
+		BPL BRANCH_THETA
+		LDA #$0000
+		BRA BRANCH_IOTA
+	BRANCH_THETA
+		BIT $12
+		BPL BRANCH_IOTA
+		EOR #$FFFF
+		INC A
+	BRANCH_IOTA
+		STA $7E782A      ;Same, as a signed value, reduce by 4 every frame, minimum of 0
+	BRANCH_EPSILON
+		LDA $7E7820      ;Facing direction
+		ASL A
+		TAY
+		LDA $B9D5, Y     ;Normal Ridley to Samus X distance
+		ADC $0F7A        ;Ridley's X position
+		CLC
+		ADC $7E7828      ;X displacement
+		STA $0AF6        ;Samus's X position
+		LDA $7E783A      ;Unknown, only used for this
+		TAY
+		LDA $B9DB, Y     ;Normal Ridley to Samus Y distance
+		CLC
+		ADC $0F7E        ;Ridley's Y position
+		CLC
+		ADC $7E782A      ;Y displacement
+		STA $0AFA        ;Samus's Y position
+		RTS
+	}
+BRANCH_BETA
+	JSR $D474        ;Determine and set Ridley's speed and color pallete
+	{
+		LDA #$0000
+		LDY $0F8C        ;Ridley's health
+		CPY #$2328       ;9000 (of 18000)
+		BCS BRANCH_ALPHA
+		INC A
+		CPY #$1518       ;5400 (of 18000)
+		BCS BRANCH_ALPHA
+		INC A
+		CPY #$0708       ;1800 (of 18000)
+		BCS BRANCH_ALPHA
+		INC A
+	BRANCH_ALPHA
+		STA $7E7824      ;General Speed modifier, 0 - 3
+		DEC A
+		STA $12
+		BMI BRANCH_BETA
+		LDA $7EC400      ;Unknown
+		BNE BRANCH_BETA
+		LDA $12
+		ASL A
+		ASL A
+		ASL A
+		SEC
+		SBC $12
+		ASL A
+		ASL A            ;Multiplied by 28 in decimal
+		CLC
+		ADC #$E46A
+		TAY
+		LDX #$01E2
+		LDA #$000E
+		JSL $A9D2E4      ;Copy 2*A bytes from (Y) to 7E:C000,X
+	BRANCH_BETA
+		RTS
+	}
+	RTL
+}
+
+E84D: Fireball angle/speed calculation
+{
+	PHX
+	PHY
+	LDA $7E7820      ;Facing direction
+	BNE BRANCH_ALPHA ;Branch if facing right
+	LDA #$FFE7       ;-19 pixels
+	CLC
+	ADC $0F7A        ;Ridley's X position
+	STA $12
+	LDA $0AF6        ;Samus's X position
+	SEC
+	SBC $12
+	STA $12          ;$12 = Samus_X - Ridley_X + 19
+	LDA #$FFD5       ;-2B pixels
+	CLC
+	ADC $0F7E        ;Ridley's Y position
+	STA $14
+	LDA $0AFA        ;Samus's Y position
+	SEC
+	SBC $14
+	STA $14          ;$14 = Samus_Y - Ridley_Y + 2B
+	JSL $A0C0AE      ;Rough angle calculation given X (in $12) and Y (in $14). Angle 0 = up (-Y), 40 = right (X), 80 = down (Y), C0 = left (-X)
+	SEC
+	SBC #$0080       ;Now FF80 = up, FFC0 = right, 0 = down, 40 = left, 80 = up
+	EOR #$FFFF       ;Now FF80 = up, FFC0 = left, 0 = down, 40 = right, 80 = up
+	INC A
+	AND #$00FF       ;Now 0 = down, 40 = right, 80 = up, C0 = left
+	CMP #$00B0
+	BCS BRANCH_BETA
+	CMP #$0040
+	BCC BRANCH_GAMMA
+	LDA #$00B0       ;If between 40 and B0, use B0 (Left up-left)
+	BRA BRANCH_DELTA
+BRANCH_BETA
+	CMP #$00EB
+	BCC BRANCH_DELTA
+BRANCH_GAMMA
+	LDA #$00EB       ;If above EB or below 40, use EB (Down down-left)
+BRANCH_DELTA
+	STA $12
+	BRA BRANCH_EPSILON
+BRANCH_ALPHA
+	LDA #$0019       ;19 pixels
+	CLC
+	ADC $0F7A        ;Ridley's X position
+	STA $12
+	LDA $0AF6        ;Samus's X position
+	SEC
+	SBC $12
+	STA $12          ;Samus_X - Ridley_X - 19
+	LDA #$FFD5       ;2B pixles
+	CLC
+	ADC $0F7E        ;Ridley's Y position
+	STA $14
+	LDA $0AFA        ;Samus's Y position
+	SEC
+	SBC $14
+	STA $14          ;Samus_Y - Ridley_Y + 2B
+	JSL $A0C0AE      ;Rough angle calculation given X (in $12) and Y (in $14). Angle 0 = up (-Y), 40 = right (X), 80 = down (Y), C0 = left (-X)
+	SEC
+	SBC #$0080       ;Now FF80 = up, FFC0 = right, 0 = down, 40 = left, 80 = up
+	EOR #$FFFF       ;Now FF80 = up, FFC0 = left, 0 = down, 40 = right, 80 = up
+	INC A
+	AND #$00FF       ;Now 0 = down, 40 = right, 80 = up, C0 = left
+	CMP #$0050
+	BCC BRANCH_ZETA
+	CMP #$00C0
+	BCS BRANCH_THETA
+	LDA #$0050       ;If between 50 and C0, use 50 (Right up-right)
+	BRA BRANCH_IOTA
+BRANCH_ZETA
+	CMP #$0015
+	BCS BRANCH_IOTA
+BRANCH_THETA
+	LDA #$0015       ;If below 15 or above C0, use 15 (down down-right)
+BRANCH_IOTA
+	STA $12
+BRANCH_EPSILON           ;$12 contains angle
+	LDA #$0500
+	JSL $86C26C      ;Calculates A * sin ($12 * 360/256), result in A.
+	STA $7E7832      ;X component of speed
+	LDA #$0500
+	JSL $86C272      ;Calculates A * cos ($12 * 360/256), result in A.
+	STA $7E7834      ;Y component of speed
+	PLY
+	PLX
+	RTL
+}
+
+Tail Routines
+CD24: Tail bouncing
+{
+	JSR $CBFE
+	{
+		LDA $7820        ;Direction facing
+		ASL A
+		TAX
+		LDA $A6CC12, X   ;3FF0, 3FF0, 3FC0
+		STA $2016        ;Minimum Angle
+		LDA $A6CC18, X   ;4040, 4040, 4010
+		STA $2018        ;Maximum Angle
+		RTS
+	}
+	JSR $CC1E
+	{
+		LDA $2020        ;0 = not rotating?, 8000 = rotating?
+		AND $2034
+		AND $2048
+		AND $205C
+		AND $2070
+		AND $2084
+		AND $2098
+		BEQ BRANCH_ALPHA
+		SEC
+		RTS
+	BRANCH_ALPHA
+		CLC              ;Don't branch if all tail parts are rotating
+		RTS
+	}
+	BCC BRANCH_ALPHA ;Skip 
+	LDA $05E5        ;Random number
+	AND #$00FF
+	CMP #$00F0       ;1/10 chance of skipping distance check
+	BCS BRANCH_BETA
+	LDA $0AF6        ;Samus X
+	SEC
+	SBC $000F7A      ;Ridley X. o_O
+	BPL BRANCH_GAMMA
+	EOR #$FFFF
+	INC A
+BRANCH_GAMMA             ;Absolute X distance
+	CMP #$0080       ;Half a screen
+	BCS BRANCH_ALPHA
+BRANCH_BETA              ;All tail parts are rotating, + 1/10 chance or Ridley is within 1/2 a screen of Samus.
+	LDA $201C        ;Optional maximum
+	AND $201A        ;Optional minimum
+	BPL BRANCH_ALPHA
+	LDA #$3F00
+	STA $201A
+	LDA #$0008
+	STA $2014        ;Tail parts' angular speed
+	RTS
+BRANCH_ALPHA
+	LDA $2020        ;I think these are all flags for each tail segment. Minus means that tail part is moving angularly?
+	ORA $2034
+	ORA $2048
+	ORA $205C
+	ORA $2070
+	ORA $2084
+	ORA $2098
+	BEQ BRANCH_DELTA ;Branch if none are rotating
+	RTS
+BRANCH_DELTA
+	BIT $0FAC        ;Ridley's Y speed
+	BMI BRANCH_EPSILON
+	LDA #$0005
+	STA $2000        ;Tail control index
+BRANCH_EPSILON
+	LDA #$FFFF
+	STA $201A
+	STA $201C        ;Disable optional caps
+	LDA $2010
+	BNE BRANCH_ZETA
+BRANCH_THETA
+	STA $2014        ;Angular speed of Ridley's tail parts
+	RTS
+BRANCH_ZETA
+	DEC A
+	STA $2010        ;Some sort of timer?
+	BNE BRANCH_THETA
+	LDA #$8000
+	STA $2020        ;Set first tail part to rotating
+	JSR $CE65        ;Set angles to 40XX, XX is previous angle (fifth part is actually first part's 40XX)
+	{
+		LDA $202A        ;Angle of first tail part
+		AND #$00FF
+		ORA #$4000
+		STA $202A
+		LDA $203E        ;Angle of second tail part
+		AND #$00FF
+		ORA #$4000
+		STA $203E
+		LDA $2052        ;Angle of third tail part
+		AND #$00FF
+		ORA #$4000
+		STA $2052
+		LDA $2066        ;Angle of fourth tail part
+		AND #$00FF
+		ORA #$4000
+		STA $2066
+		LDA $202A        ;Angle of first tail part
+		AND #$04FF
+		ORA #$4000
+		STA $207A        ;Angle of fifth tail part
+		LDA $208E        ;Angle of sixth tail part
+		AND #$00FF
+		ORA #$4000
+		STA $208E
+		LDA $20A2        ;Angle of tail tip
+		AND #$00FF
+		ORA #$4000
+		STA $20A2
+		RTS
+	}
+	LDA #$0008
+	STA $2014
+	RTS
+}
+
+CC39: Fling tail at Samus:
+Setup max angles (CBFE), then if tail is 'prepped' (all tail parts rotating, target angle not set yet, $2004 (trigger?) is set), target an angle.
+Target angle is first projectile near tail tip, in a 8x8 tile square centered on tail tip, or Samus. Max rotational speed, 8.
+If no tail parts are currently moving, start the first one moving.
+
+{
+	JSR $CBFE        ;Set min and max tail angles based on direction
+	JSR $CC1E        ;SEC if all tail parts are rotating, else CLC
+	BCC BRANCH_ALPHA
+	JSR $CC7D        ;
+	{
+		LDA $2004        ;Tail fling trigger
+		BEQ BRANCH_ALPHA
+		LDA $201C
+		AND $201A
+		BMI BRANCH_BETA  ;Branch if optional limits are unused
+	BRANCH_ALPHA
+		LDA $2002        ;Main battle AI flag (0 = inactive, 1 = active, FFFF = dead)
+		BEQ BRANCH_GAMMA
+		LDA $05E5        ;RNG
+		AND #$00FF
+		CMP #$00F0
+		BCS BRANCH_BETA  ;Branch 1/10 times
+		LDA $0AF6        ;Samus X position
+		SEC
+		SBC $0F7A        ;Ridley X position
+		BPL BRANCH_DELTA
+		EOR #$FFFF
+		INC A
+	BRANCH_DELTA             ;Absolute distance
+		CMP #$0080       ;1/2 a screen
+		BCS BRANCH_GAMMA
+		LDA #$0000
+		BRA BRANCH_EPSILON
+	BRANCH_BETA              ;If Norfair, only here if 2004 is set and angle targets are currently unused
+		LDA $2004
+		DEC A
+	BRANCH_EPSILON
+		JSR $D19D        ;Target an angle (towards a missile or Samus) for tail. Note: Actual angle is actually twice the angle chosen, since each tail segment doubles it. Also, tail circles 2*A amount of times first
+		{
+			AND #$00FF
+			XBA
+			STA $200A        ;Revolutions to make
+			LDA $7820        ;Direction facing
+			DEC A
+			BEQ BRANCH_ALPHA ;Branch if facing forward
+			LDA $7802        ;Main battle AI
+			BEQ BRANCH_ALPHA ;Branch if inactive
+			JSR $D242        ;Target a missile/super missile if available
+			{
+				LDA $20A4        ;Tail tip X position
+				STA $12
+				LDA $20A6        ;Tail tip Y position
+				STA $14
+				LDA #$0040       ;Tail tip detection area
+				STA $16          ;X size
+				STA $18          ;Y size
+				LDA $0CCE        ;Samus's projectile counter
+				BNE BRANCH_ALPHA ;Branch if there are projectiles
+				CLC
+				RTS
+			BRANCH_ALPHA
+				LDY #$0000       ;Start loop, projectile 0 (of 4)
+			BRANCH_IOTA
+				LDA $0C19, Y
+				AND #$000F       ;Projectile type
+				DEC A
+				BEQ BRANCH_BETA  ;Branch if missile
+				DEC A
+				BNE BRANCH_GAMMA ;Branch if not super missile
+			BRANCH_BETA              ;Missiles and super missiles go here
+				LDA $0B64, Y     ;X position of projectile
+				SEC
+				SBC $12          ;Ridley's tail X position
+				BPL BRANCH_DELTA
+				EOR #$FFFF
+				INC A
+			BRANCH_DELTA             ;Absolute distance
+				SEC
+				SBC $0BB4, Y     ;Projectile X size
+				BCC BRANCH_EPSILON
+				CMP $16          ;Tail tip X size
+				BCS BRANCH_GAMMA ;Branch if miss
+			BRANCH_EPSILON
+				LDA $0B78, Y     ;Y position of projectile
+				SEC
+				SBC $14          ;Y position of Ridley's tail
+				BPL BRANCH_ZETA
+				EOR #$FFFF
+				INC A
+			BRANCH_ZETA              ;Absolute distance
+				SEC
+				SBC $0BC8, Y     ;Projectile Y size
+				BCC BRANCH_THETA
+				CMP $18          ;Tail tip Y size
+				BCC BRANCH_THETA ;Branch if hit
+			BRANCH_GAMMA
+				INY
+				INY              ;Next projectile
+				CPY #$000A
+				BMI BRANCH_IOTA  ;Branch if still between projectiles 0 - 4
+				CLC
+				RTS
+			BRANCH_THETA
+				LDA $0B64, Y
+				STA $12
+				LDA $0B78, Y
+				STA $14          ;Put projectile X/Y into $12/$14
+				SEC
+				RTS
+			}
+			BCC BRANCH_BETA  ;Branch if no missile/supermissile targets
+			LDA $12
+			SBC $202C        ;Tail part 1 X position
+			STA $12
+			LDA $14
+			SEC
+			SBC $202E        ;Tail part 1 Y position
+			STA $14
+			BRA BRANCH_GAMMA
+		BRANCH_ALPHA
+			RTS
+		BRANCH_BETA
+			LDA $0AF6        ;Samus X position
+			SEC
+			SBC $202C        ;Tail part 1 X position
+			STA $12
+			LDA $0AFA        ;Samus Y position
+			CLC
+			ADC #$0018       ;+18 pixels
+			SEC
+			SBC $202E        ;Tail part 1 Y position
+			STA $14
+		BRANCH_GAMMA
+			PHB
+			PHK
+			PLB
+			JSL $A0C0AE      ;Rough angle calculation given X (in $12) and Y (in $14). Angle 0 = up (-Y), 40 = right (X), 80 = down (Y), C0 = left (-X)
+			PLB
+			SEC
+			SBC #$0080
+			EOR #$FFFF
+			INC A
+			AND #$00FF       ;0 = down (Y), 40 = right (X), 80 = up (-Y), C0 = left (-X)
+			STA $12
+			LDA $7820        ;Direction facing
+			BNE BRANCH_DELTA ;Branch if facing right
+			LDA $12
+			CMP #$0018       ;down down-right
+			BCC BRANCH_EPSILON
+			CMP #$00E8       ;down down-left
+			BCS BRANCH_EPSILON
+			LDA #$00E8
+		BRANCH_EPSILON           ;Caps are E8 - 18, if 19 - E7, use E8 instead.
+			CLC
+			ADC #$3F00
+			SEC
+			SBC $200A        ;Number of revolutions to spin tail
+			CMP $202A        ;Angle of tail part 1
+			BCS BRANCH_ZETA
+			STA $201A        ;Optional lower (clockwise) target
+			LDA #$0008
+			STA $2014
+		BRANCH_ZETA
+			RTS
+		BRANCH_DELTA             ;Facing right
+			LDA $12
+			CMP #$0018       ;down down-right
+			BCC BRANCH_THETA
+			CMP #$00E8       ;down down-left
+			BCS BRANCH_THETA
+			LDA #$0018
+		BRANCH_THETA             ;Caps are E8 - 18, if 19-E7, use 18 instead.
+			CLC
+			ADC #$4000
+			CLC
+			ADC $200A        ;Number of revolutions to spin tail
+			CMP $202A        ;Angle of tail part 1
+			BCC BRANCH_IOTA
+			STA $201C        ;Optional upper (counterclockwise) target
+			LDA #$0008
+			STA $2014
+		BRANCH_IOTA
+			RTS
+		}
+		PLA
+	BRANCH_GAMMA
+		STZ $2004
+		RTS
+	}
+BRANCH_ALPHA
+	LDA $2020
+	ORA $2034
+	ORA $2048
+	ORA $205C
+	ORA $2070
+	ORA $2084
+	ORA $2098
+	BEQ BRANCH_BETA  ;Branch if no tail parts are rotating
+	RTS
+BRANCH_BETA
+	LDA #$8000
+	STA $2020        ;Start first tail part rotating
+	LDA #$FFFF
+	STA $201A
+	STA $201C        ;Disable target angles
+	LDA #$0002
+	LDY $0AF6
+	CPY #$0070
+	BCS BRANCH_GAMMA
+	LDA #$0001
+BRANCH_GAMMA
+	STA $2014        ;Rotation speed = 2 if Samus is on the right half of the screen, 1 if on the left. Why?
+	RTS
+}
+
+CCBD: Swing tail in circles
+{
+	JSR $CBFE        ;Set min and max tail angles based on direction
+	JSR $CC1E        ;SEC if all tail parts are rotating, else CLC
+	BCC BRANCH_ALPHA
+	JSR $CD0C        ;
+	{
+		LDA $2004        ;Tail fling trigger
+		BEQ BRANCH_ALPHA
+		LDA $201C
+		AND $201A        ;Target limits
+		BPL BRANCH_ALPHA
+		LDA #$0001
+		JSR $D19D        ;Target an angle (towards a missile or Samus) for tail. Note: Actual angle is actually twice the angle chosen, since each tail segment doubles it. Also, tail circles 2*A amount of times first
+		PLA
+		STZ $2004
+	BRANCH_ALPHA
+		RTS
+	}
+BRANCH_ALPHA
+	LDA $7E2020
+	ORA $7E2034
+	ORA $7E2048
+	ORA $7E205C
+	ORA $7E2070
+	ORA $7E2084
+	ORA $7E2098
+	BEQ BRANCH_BETA  ;Branch if all tail parts are still
+	RTS
+BRANCH_BETA
+	LDA #$8000
+	STA $7E2020      ;Set first part to rotating
+	LDA #$FFFF
+	STA $7E201A
+	STA $7E201C      ;Disable target angles
+	LDA #$0002
+	LDY $0AF6
+	CPY #$0070
+	BCS BRANCH_GAMMA
+	LDA #$0001
+BRANCH_GAMMA
+	STA $7E2014      ;Rotation speed = 2 if Samus is on the right half of the screen, 1 if on the left. Why?
+	RTS
+}
+
+
+CDAA: Extend tail. Happens only while tail bouncing, moving downwards, and no tail parts currently rotating
+
+{
+	JSR $CBFE        ;Set min and max tail angles based on direction
+	JSR $CC1E        ;SEC if all tail parts are rotating, else CLC
+	BCC BRANCH_ALPHA ;Always branches?
+
+{                        ;All this code NEVER HAPPENS! Just go to Branch_Alpha
+	LDA $05E5        ;Random number
+	AND #$00FF
+	CMP #$00F0       ;1/10 chance of branching
+	BCS BRANCH_BETA
+	LDA $0AF6        ;Samus's X position
+	SEC
+	SBC $000F7A      ;Ridley's X position
+	BPL BRANCH_GAMMA
+	EOR #$FFFF
+	INC A
+BRANCH_GAMMA             ;Absolute distance
+	CMP #$0080       ;1/2 a screen
+	BCS BRANCH_ALPHA
+BRANCH_BETA
+	LDA $201C
+	AND $201A
+	BPL BRANCH_ALPHA ;Branch if both target angles are used
+	LDA #$3F00
+	STA $201A        ;Set lower (clockwise) target angle
+	LDA #$0008
+	STA $2014
+	RTS
+}
+
+BRANCH_ALPHA
+	LDA $2020
+	ORA $2034
+	ORA $2048
+	ORA $205C
+	ORA $2070
+	ORA $2084
+	ORA $2098
+	BEQ BRANCH_DELTA ;Branch if no tail parts are rotating. Always branches?
+	RTS
+BRANCH_DELTA
+	BIT $0FAC        ;Ridley's Y movement
+	BMI BRANCH_EPSILON ;Branch if moving up. Never branches?
+	LDA #$0006
+	STA $2000
+	LDA #$0A00
+	STA $2028
+	STA $203C
+	STA $2050
+	STA $2064
+	STA $2078
+	STA $208C
+	STA $20A0        ;Set all tail parts' target extension distance to A pixels
+	LDA #$4000
+	STA $202A
+	STA $203E
+	STA $2052
+	STA $2066
+	STA $207A
+	STA $208E
+	STA $20A2        ;Set all tail parts' angles to straight down
+	LDA #$8000
+	STA $2020        ;Start tail part 1 rotating
+BRANCH_EPSILON
+	LDA #$FFFF
+	STA $201A
+	STA $201C        ;Disable target angles
+	LDA $2010        ;Some sort of timer? Always 0 / never used?
+	BNE BRANCH_ZETA
+	JMP BRANCH_THETA ; ... 
+BRANCH_ZETA
+	DEC A
+	STA $2010
+	BNE BRANCH_THETA
+	LDA #$8000
+	STA $2020        ;Start tail part 1 rotating
+	JSR $CE65        ;Set all tail angles to 40XX
+	LDA #$0008
+BRANCH_THETA
+	STA $2014
+	RTS
+}

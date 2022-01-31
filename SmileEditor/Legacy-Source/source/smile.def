@@ -1,0 +1,12 @@
+LIBRARY "smile.dll"
+
+EXPORTS
+	Figure_TotalNumberOfTiles
+	Figure_RoomTileXY
+	FormDrag
+	CrystalBlt
+	FromBin
+	ToBin
+	DrawSquare
+	DrawLine
+	DrawSquareSpaced

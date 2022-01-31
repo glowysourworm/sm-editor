@@ -1,0 +1,52 @@
+$0F78 - enemy pointer
+$0F7A - enemy X pos (from room pop)
+$0F7C - enemy sub-pixel X pos. Often unused.
+$0F7E - enemy Y pos (from room pop_)
+$0F80 - enemy sub-pixel Y pos. Often unused.
+$0F82 - enemy collision width (1/2 pixel value from center)
+$0F84 - enemy collision height (1/2 pixel value from center)
+$0F86 - Property bits (from room pop: prop bits) (FEDC BA98 7654 3210)
+        F makes their hitbox solid to Samus, E respawns the enemies if they die,
+        D tells the game to process the enemy's graphic AI, C makes the enemy block Plasma shots
+        B makes the enemy process even when offscreen, A makes the enemy ignore Samus/Projectiles, 
+        9 instantly deletes the enemy, 8 makes the enemy invisible?
+        1 and 0 used by geemers as orientation
+$0F88 - extra property bits (FEDC BA98 7654 3210)
+        F signifies that the enemy processed a new enemy instruction with $0F92, update graphics.
+        2 enables multiple hitbox/reactions (indepth $0F8E)
+        0 disables processing of the enemy's movement AI, I think. Isn't disabled if 0F86 A is set (ignore Samus/Projectiles)
+$0F8A - AI handler. Lowest bit set determines which AI pointer in enemy data to use
+        (None = 18, 1 = 1A, 2 = 1C, 4 = 1E, 8 = 20)
+$0F8C - Enemy HP
+$0F8E - Main graphics/hitbox pointer
+          Byte 0 is a counter of some sort. Byte 1 is unused, I think.
+          Bytes 2-3 are X pixel offset. Bytes 4-5 are Y pixel offset.
+          Bytes 6-7 are a pointer to a tilemap, I think. Bytes 8-9 are a pointer to collision detection:
+            Byte 0 is a counter of some sort. Byte 1 is unused, I think.
+            Bytes 2-3 are X pixel offset to left border. Bytes 4-5 are Y pixel offset to bottom border.
+            Bytes 6-7 are X pixel offset to right border. Bytes 8-9 are Y pixel offset to top border.
+            Bytes A-B are for collisions with Samus. Bytes C-D bytes are pointer to code for collision with projectiles.
+            Bytes 2-D repeat 'byte 0' times. Total length is 2 + (n*C), n = byte 0.
+          Bytes 2-9 repeat 'byte 0' times. Total length is 2 + (n*8), n = byte 0
+$0F90 - ??? (Used by Mochtroid) (LN Chozo uses it as a loop counter)
+$0F92 - pointer to AI structure. Acts like PLMs instruction pointer ($1D27,X). Positive Enemy instructions set delay timer and 0F8E, and highest bit of 0F88
+$0F94 - action delay (apparantly) (Used with above?)
+$0F96 - Which SNES palette the enemy uses (when drawing the sprite, from enemy set number). ORAed with other data to stick directly into OAM.
+$0F98 - Index to graphics in VRAM
+$0F9A - Layer control
+$0F9C - Set to (0F78),#$0D + #$08 when shot? This - 8 = timer for using Hurt AI.
+$0F9E - Enemy frozen timer
+$0FA0 - Counter, forces a different kind of processing. Used when hit by Plasma Beam (powerbombs?)
+$0FA2 - A value that works concurrently with $0FA4 to modify vertical position of sprite
+$0FA4 - Value that determines if sprite vertical position is lowered or raised (with $0FA2).
+	For many enemies it's used as come sort of counter though
+$0FA6 - Bank of enemy data
+$0FA7 - it was 04 during the spore spawn battle. Will look into
+$0FA8 - Used by AI routines.
+$0FAA - Used by AI routines.
+$0FAC - Used by AI routines. Example: air time? vertical jump distance, etc.?
+$0FAE - Used by AI routines. Example: all-purpose counter, direction and speed, etc.
+$0FB0 - Used by AI routines. Example: current action of enemy? 
+$0FB2 - Used by AI routines
+$0FB4 - Used by AI routines. Speed in SMILE
+$0FB6 - Used by AI routines. Speed2 in SMILE

@@ -1,0 +1,180 @@
+A super missile counts as two projectiles. When the graphic projectile dies, it deletes all super missiles. ALL.
+So, if you have two super missiles on screen, the moment either one dies, the other one dies as well (give or take a frame).
+This is really stupid, especially considering that the routine to delete the multiple super missiles is less efficient than using the graphic projectile's link to the super missile.
+So I made use of just that. This code (should) allow you to fire multiple super missiles without worrying about them being deleted when they shouldn't be. Also, this fix exists entirely within original code; no extra space is used, so unless you tweaked this specific code, it should run fine on any hack.
+Of course, you'll probably want the easier-to-use ips patch for headerless roms.
+
+UPDATE:
+There was another glitch popping up because the second projectile was not correctly deleted.
+I fixed that. There is no more second projectile. Super Missiles are now *one* projectile instead of two.
+Code was also revamped for use in xkas and commented.
+
+NOTE: I still need to make the new ips
+
+
+org $90AC61
+	DB $00	;Just canceling a branch that's now unneeded since Super Missiles take one slot
+
+org $90AE19
+	DB $80,$02	;BRA #$02. Skipping a JSL that causes a small graphic glitch.
+			;I'm a bit worried this may cause problems elsewhere, but it seems fine.
+
+org $90B005
+	JSR $B329	;Middle of some old code, acceleration for projectile
+	LDA $0C04,X	;Skipped the rest of old code that created the second projectile
+	AND #$000F
+	ASL
+	TAX
+	JSR ($B033,x)
+	JSR $B16A	;Check if out of bounds
+	BCC SkipDelete
+	JSL $90ADB7	;Delete *just this* projectile if out of bounds.
+SkipDelete:
+	RTS
+
+org $90B2F6
+	PHP
+	REP #$30
+	PHX
+	PHY
+	LDA $0C7C,X
+	BNE +
+	INC
+	STA $0C7C,X
+	LDA #$0100
+	STA $16
+	STX $12
+	JSR $B1F3
+	BRA ++	
++
+	JSR $B329
+++
+	PLY
+	PLX
+	PLP
+	RTS	;Keep missiles from breaking. >_>
+
+
+org $90B362
+	RTS	;End of projectile acceleration code, go back to $90B005
+
+
+org $90B366	;Extra Vertical collision detection
+	LDX $0DDE	;For commentary, see next routine.
+	LDA $0C18, X
+	AND #$0F00
+	CMP #$0200
+	BNE Branch_A
+	LDA $0BF0, X
+	BPL Branch_B
+	EOR #$FFFF
+	INC A
+Branch_B:
+	AND #$FF00
+	CMP #$0B00
+	BMI Branch_A
+	XBA
+	SEC
+	SBC #$000A
+	STA $12
+	LDA $0B78, X
+	PHA
+	BIT $0BF0, X
+	BMI Branch_D
+	SEC
+	SBC $12
+	BRA Branch_C
+Branch_D:
+	CLC
+	ADC $12
+Branch_C:
+	STA $0B78, X
+	JSL $94A4D9
+	LDA $0C18,X
+	AND #$0F00
+	CMP #$0800
+	PLA
+	BCS Branch_A
+	STA $0B78,X
+Branch_A:
+	RTS
+
+org $90B406	;Extra Horizontal collision detection
+	LDX $0DDE
+	LDA $0C18, X
+	AND #$0F00
+	CMP #$0200	;Check for live super missile
+	BNE Branch_1	;Dead super missiles don't need to do anything
+	LDA $0BDC, X	;Check X velocity
+	BPL Branch_2
+	EOR #$FFFF
+	INC A
+Branch_2:
+	AND #$FF00
+	CMP #$0B00	;If speed >= B pixels per frame
+	BMI Branch_1
+	XBA		;Do a second collision detection
+	SEC
+	SBC #$000A	;at (speed-A) pixels earlier
+	STA $12
+	LDA $0B64, X
+	PHA		;Save old position
+	BIT $0BDC, X	;Check direction
+	BMI Branch_4
+	SEC
+	SBC $12
+	BRA Branch_3
+Branch_4:
+	CLC
+	ADC $12
+Branch_3:
+	STA $0B64, X	;Move position back according to direction
+	JSL $94A46F	;Collision detection
+	LDA $0C18,X
+	AND #$0F00
+	CMP #$0800	;If collided, SEC and RTS
+	PLA
+	BCS Branch_1
+	STA $0B64,X	;Else CLC and restore old position
+Branch_1:
+	RTS
+
+
+org $90ADB7	;This is actually a revert from the old super missile patch. Identical to original game.
+		;Note that this is not in the ips patch. If you used the old patch, you will have to revert this section yourself.
+		;Hint: Use xkas.
+	PHP
+	REP #$30
+	STZ $0B64, X
+	STZ $0B78, X
+	STZ $0B8C, X
+	STZ $0BA0, X
+	STZ $0C04, X
+	STZ $0BDC, X
+	STZ $0BF0, X
+	STZ $0BB4, X
+	STZ $0BC8, X
+	STZ $0C18, X
+	STZ $0C2C, X
+	STZ $0C40, X
+	STZ $0C54, X
+	STZ $0C7C, X
+	STZ $0CB8, X
+	LDA #$B169
+	STA $0C68, X
+	CPX #$000A
+	BPL BRANCH_ALPHA
+	DEC $0CCE
+	BPL BRANCH_BETA
+	STZ $0CCE
+	BRA BRANCH_BETA
+BRANCH_ALPHA:
+	DEC $0CD2
+	BPL BRANCH_BETA
+	STZ $0CD2
+BRANCH_BETA:
+	PLP
+	RTL
+
+
+

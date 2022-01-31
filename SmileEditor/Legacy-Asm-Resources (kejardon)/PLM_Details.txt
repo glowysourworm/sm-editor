@@ -1,0 +1,772 @@
+TODO: Look at DE6C, 8DA0, and 861E.
+TODO: Look through Scroll PLM's touch detection routine for clues. Figure out why the jump to 861E is required to pick up beams.
+
+
+Normal Scroll PLM
+01 00 62 AF B4 86 55 8B 24 87 8A AF
+FirstFour         Touch Goto  Goto
+BytesSkipped      pntr? Instr pntr
+
+8B55 (Scroll PLM Touch Pointer?)
+PHB           8B
+PHX           DA
+PHY           5A
+STZ $1E17,X   9E 17 1E
+LDY $1DC7,X   BC C7 1D
+PEA $8F00     F4 00 8F
+PLB           AB
+PLB           AB
+LDA #0000     A9 00 00
+SEP #20       E2 20
+LDA $0000,Y   B9 00 00
+BMI #0C       30 0C
+TAX           AA
+LDA $0001,Y   B9 01 00
+STA $7ECD20,X 9F 20 CD 7E
+INY           C8
+INY           C8
+BRA #EF       80 EF
+REP #20       C2 20
+PLY           7A
+PLX           FA
+PLB           AB
+PHX           DA
+LDA $1C87,X   BD 87 1C
+TAX           AA
+LDA $7F0002,X BF 02 00 7F
+AND #0FFF     29 FF 0F
+ORA #3000     09 00 30
+STA $7F0002,X 9F 02 00 7F
+PLX           FA
+RTS           60
+
+Edit:
+
+PHB           8B
+PHX           DA
+PHY           5A
+STZ $1E17,X   9E 17 1E
+LDY $1DC7,X   BC C7 1D
+PEA $8F00     F4 00 8F
+PLB           AB
+PLB           AB
+LDA $0000,Y   B9 00 00
+BMI #0E       30 0E
+TAX           AA
+LDA $0002,Y   B9 02 00
+STA $7F0002,X 9F 02 00 7F
+INY           C8
+INY           C8
+INY           C8
+INY           C8
+BRA #ED       80 ED
+PLY           7A
+PLX           FA
+PLB           AB
+RTS           60
+
+
+Custom Block-Edit PLM
+Insert the following into bank 84 at some location.
+
+Part 1: 71 B3 (Pointer to Part 2) (4 bytes)
+Part 2: 01 00 62 AF B4 86 (Pointer to Part 3) 24 87 ((Pointer to Part 2) + 4) (12 bytes)
+Part 3: 8B DA 5A 9E 17 1E BC C7 1D F4 00 8F AB AB B9 00 00 30 0E AA B9 02 00 9F 02 00 7F C8 C8 C8 C8 80 ED 7A FA AB 60 (37 bytes)
+
+When you want to use this plm in a room, make a plm with this format for the room:
+ XXXX    XX XX   XXXX
+Pointer  XandY  Pointer
+ToPart1  Coord  To New
+                Blocks
+
+Also in bank 8F, put in the address for the blocks you want to change, followed by the new block to change it to.
+The address is calculated by taking the y coord of the block, multiplying by $10 * the number of screens wide the room is, adding the x coord, then multiplying that by two.
+Technically, the address is two bytes later, but the routine accounts for this, so you don't have to worry about it.
+When you're done changing blocks, put in 0080 to mark the end. It should look like this when you're done:
+(Pointer, NewBlock), (Pointer, NewBlock), (Pointer, NewBlock) ... (Pointer, NewBlock), 00 80
+
+The block format:
+The lo-byte (first one you put in) is the graphic used. The low-nybble of the hi-byte is also used. $000-3FF are all different graphics, add $400 to flip it horizontally, and $800 to flip it vertically.
+The high nybble of the hi-byte tells what kind of block it is: 0 is air, 1 is slope, 3 is treadmill (also used by plms), 5 is two-wide (copys block to the left of it), 8 is a solid block, 9 is a door (changes to new room), A is spikes, B is a crumble block, C is a shot block, D is two-high (copys block above it), E is grapple block, and F is bomb block.
+
+
+PLM Routines
+
+At the very top, the room calls the PLM. It points to the PLM header, gives the X and Y coords, and finally an argument. 
+The PLM header then has two pointers. The first calls code to run immediately to set the PLM up 
+The second has the address of the first instruction, which is then stored in 1D27,X. I think.
+Assuming the startup code doesn't change the delay counter, the first PLM instruction executes immediately. It may use bytes from after the instruction as arguments, to modify exactly what that code is supposed to do.
+When it is finished, Y is pointing to the next instruction to load, which is then loaded. This process repeats until an instruction breaks out of it by pulling an extra argument (usually through A) before returning. When this happens, it also needs to set the next instruction to run in 1D27,X
+Afterwords, the PLM waits until the counter in 7E:DE1C,X reaches 0. When this happens, the next instruction (in 1D27,X) is run.
+Also note that the instruction in 1CD7,X is run once every frame *before* the PLM delay counter is even tested.
+
+Some words, to make describing this easier:
+Routine : The raw code that is called.
+Instruction : The direct pointers to routines. One instruction is run every frame the PLM exists.
+Header : The two pointers that are used to start a PLM (First pointer sets the plm up when the room loads, second pointer points to the start of the PLM's instructions). Door PLMs have three pointers.
+Most pointers in arguments will point to instructions, not to actual routines (code to run). This makes handling PLMs awkward sometimes.
+
+
+Some noteworthy info to begin with:
+7E:05E7 is often used to check bits for completed tasks/picked up items.
+7E:07A5 stores the current room's width in blocks.
+7E:0DC4 is the block Samus is in contact with (nth block of the room)
+7E:1C27 has the current PLM's room ID (I think). This is the value that's indexed extremely often through X.
+7E:1C37,X has the pointer to the PLM header.
+7E:1C87,X is the table for PLM's location in the room (7E:0002 array)
+7E:1CD7,X is a pointer to code to run before the game runs the normal PLM instruction. Used to detect if the item is touched? (initialized to 84E6, a RTS)
+7E:1D27,X is a pointer to current instruction to be run.
+7E:1DC7,X is the argument from the room that calls the PLM.
+7E:D820,X is the list of event bits (Uses PLM_Argument/8 for X, finds a specific bit)
+7E:D870,X is the list of picked up items (Uses Room_Argument/8 for X, finds a specific bit)
+7E:D8B0,X is the list of opened doors (Uses Room_Argument/8 for X, finds a specific bit)
+7E:DE1C,X counts the frames until next instruction should be run. This is decremented *before* being tested, so 0 = wait 65535 frames. 
+7E:DE6C,X is a messy pointer. Initialized to 8DA0. Data at pointer is used to edit the blocks that a plm exists on top of. See 861E.
+7E:DEBC,X has a special pointer used by some PLMs to find the next instruction. I think.
+
+7E:DF0C,X is initialized to 0000. Initialized and used by items hidden in shotblocks (missiles use 000A). Used by X-ray scope (only?) to find tile to show. Used by doors as hit counter?
+7E:1D77,X has an unknown use (initialized to 0000. Used by touch detection, I think... If Samus is touching PLM, this is **FF. Setting it to **FF will trigger pickups) (Used as a loop counter for hidden items)
+7E:1E17,X has an unknown use (initialized to 0000 by the scroll PLM's startup code) (Changes PLM to this kind of block?)(Or use as a pointer to something)(Ok, this seems to have a lot of uses. Variable.)
+7E:D91A has an unknown use (some sort of counter? Incremented by hidden item shot blocks initialization)
+
+X is originally used to identify the instance of the PLM in the room. The first is 3C, the second 3A, third 38, and so on.
+Y is originally used as a specific pointer to the bytes *after* the command that called the specific routine. This is often used to call the argument(s) for the command, or determine the next command.
+A may be set to something specific originally, but I doubt it; it doesn't seem to be used in any PLMs. It is often pulled to from the stack to exit the PLM loop, though.
+
+84:83D7 is a routine to create a PLM at a single location. The routine that calls it must have after it the X and Y coordinate of the PLM and the address of the PLM header, in that order, after the JSL to 84:83D7. The PLM will be set up completely and run once. Then the code will resume, after those four bytes. If there are already too many PLMs and the game fails to make a new one, it just resumes code past those four bytes.
+
+External Routines called within PLM Instruction Routines (i.e. JSLs)
+
+80:81DC checks if the boss bit for the current area matches A. SEC if there's a match. It also pushes and pulls Y for ABSOLUTELY NO REASON.
+80:914D Play a sound effect, depending on A.
+80:818E has code that winds up with a single bit set in 7E:05E7. The bit set (n) is equal to A mod 8. So if A is $0432, the 2nd bit will be set. If A is $7FFF, the 7th bit will be set. Also, X will be set to A/8. This is most often used for testing specific bits.
+84:8290 calculates the X and Y coord of a PLM from it's absolute location (1C87,X). Results stored in $1C29(X) and $1C2B(Y). NOTE: This must be called LONG (JSL). Do not attempt to use this as a PLM instruction, even though it's in the same bank as PLMs.
+80:8233 calls 80:818E and tests against 7E:D820,X. CLC if 0, SEC if 1.
+86:8097 spawns some kind of projectiles? Only used by gate PLMs, so far as I can see. Also used by some enemies.
+80:81FA marks an event as happened. Event bit # must be stored in A.
+84:84E7 Creates PLMs. Before running, nth block is stored at $0DC4 (Block Samus is in contact with?) (Multiplied by two to get absolute address), A contains the PLM header. (TODO!)
+
+Routines (Called by what?)
+
+8B05 : Store 1E17,X to the PLM's block data, and to $1E69. Store #$0001 to $1E67, and #$0000 to $1E6B. Set the PLM to run next frame, set Block Edit pointer (7E:DE6C,X) to #$1E67. Store the pointer to the currently running instruction (probably this; probably points to an 8B05) to run next. Then calls 861E, 84:8290, and 8DAA, then exits instructions (PLA, RTS)
+
+
+Routines called within PLM Instruction Routines
+
+82B4 : X must contain a block location in ram, and A has new status for it. High byte becomes the new block-prop (second nybble should be 0), and low byte becomes the new bts value.
+84E6 : RTS. Often used for 1CD7,X.
+861E : Called within routines very often. Uses DE6C,X as a pointer to new tile data. Format for new tile data: First byte tells how many blocks to extend, second tells whether to extend horizontally(right, 00) or vertically(down, 80). Data past the pointer is used to set block data (block type and graphic), starting at the PLM's location and moving down/right as far as the first byte tells it to go. After this, it checks the bytes past the last new block. If they're $#0000, it's done and returns. Otherwise, it uses the first next byte to see how far to move, and the second next byte to see in which direction to move (right, 00, down, 80. Unchecked). It repeats until it runs into a $#0000 at the end of new blocks.
+8DAA : Called within routines very often. Stores $#5000 in $09, and #$53E0 in $0C. Loads DE6C,X (Pointer for block change data) and puts it into Y. It also puts a previously calculated X($1C29) and Y($1C2B) coordinate in $1E and $20. Then it starts doing stuff, for which I don't know what the purpose is. Effectively, however, this routine has been noted to draw (or perhaps to just refresh) graphics at the specified X and Y coordinates.
+
+RTS routines : 84E6, 853D
+
+PLM Instructions (* = Completely understood)
+
+<8000 : Set delay counter to this value. Also, redraw block using the argument (2 bytes, stored to 7E:DE6C,X) and 861E, 84:8290, and 8DAA. 
+*86B4 : Do nothing. Absolutely, positively, nothing. The PLM will sit on this instruction until something else (often pre-PLM instruction) tells it to change.
+*86BC : Deletes the PLM header, then exits the instruction loop (PLA, RTS). Used to delete PLMs
+*86C1 : Stores the argument to 7E:1CD7,X, which will be executed every frame before the PLM instruction(s) until something overwrites it.
+*86CA : Stores #$86D0 to 7E:1CD7,X (RTS). Effectively disables pre-PLM instructions.
+*8724 : Use the address given by the argument as the next instruction.
+ 873F : Decrement 7E:1D77,X. If not 0, use the address given by the argument as the next instruction.
+*874E : Set 7E:1D77,X to the argument (only 1 byte).
+ 8764 : Used by all pickups with custom graphics. Determines what pickup looks like: First argument (2 bytes) is a pointer to the tiles to use (bank 89); two blocks are loaded (the pickup flashes). The rest of the bytes (8) determine the pallete: Frame 1(Top left, Top right, Bottom left, Bottom right), Frame 2(repeat).
+ 882D : Load the argument (2 bytes) to A and go to 80:8233 to check the corresponding event bit. If Carry is set (event bit set), use the next argument (2 bytes) as the address to the next instruction.
+*883E : Mark the argument'th (2 bytes) event bit as set. 
+*887C : Check if item has been picked up (with 1DC7,X, aka the room call argument). If so, use the address given by the argument as the next instruction(by calling 8724). If not, go to instruction past the argument. NOTE: If the room call argument is negative, it is assumed to not be picked up; i.e. 8724 is NOT called, and the plm continues with the next instruction in line.
+*8899 : Mark this item as picked up. No effect on PLMs with a negative calling argument (see 887C)
+ 88B0 : Pick up a beam (including Charge Beam. No missiles, super missiles, etc.). Argument (2 bytes) tells which beam(s) to add. Noteworthy info: Calls 90:AC8D to change(reload?) the beam graphics and pallete (including the pallete of explosions), calls 82:E118, which restore previous music when the pickup music is finished, and calls 85:8080, which brings up the item-pickup box, with the aid of the 3rd byte of the argument (only 1 byte). Also contains code to disable plasma or spazer if the other is picked up.
+ 8968 : Pick up Energy Tank. Refills health. Argument (2 bytes) tells how much to increase max health by. Calls messagebox 01
+ 89A9 : Pick up Missile Tank. Argument (2 bytes) tells how much to increase max missiles and current missiles by. Calls messagebox 02
+ 89D2 : Pick up Super Missile Tank. Argument (2 bytes) tells how much to increase max super missiles and current super missiles by. Calls messagebox 03
+*8A24 : Store the argument as the target instruction for special routines. Stored in 7E:DEBC,X
+*8A2E : Store the address of the next instruction (i.e. Y + 2) to 7E:DEBC,X, and go to the argument. Inverse of 8A24.
+*8A3A : Go to 7E:DEBC,X.
+ 8A72 : Load the room argument, and if positive, check that door bit. If set, use the argument as the next instruction.
+ 8A91 : Increment hit counter. If at least as much as the argument (1 byte), set the door as opened, disable preplm code, and goto the second argument (2 bytes)
+ 8ACD : Used by Draygon's turrets, probably more. Add 1 to 1DC7,X, if it's smaller than the first argument (1 byte), just RTS. Else store #$FFFF to $1DC7,X, disable pre-plm, and use the second argument (2 bytes) as the next argument's address.
+ 8AF1 : Set the BTS at the PLM's location to the argument, 1 byte.
+ 8B05 : 
+ 8B17 : Draw 1x1 tile at PLM's location, using 1E17,X as the tile. Sets delay to 0001, PLA and RTS.
+*8B55 : Edits the scrolling of the room, using the values given by the room-call argument/pointer. Resets plm block to treadmill for no apparent reason (touching it doesn't change it)
+ 8BDD : Plays a specific track (only music-control available), depending on the argument. For some unknown purpose, stores zeroes to 7E:060B - 7E:062A ($20 bytes), and also 7E:063D and 7E:063F. Then it stores 7E:0639 to 7E:063B.
+ 8C10 : Load argument (Only first byte used) and go to 80:90CB. Plays sound.
+ 8C19 : Load argument (Only first byte used) and go to 80:914D. Plays sound.
+ 8C46 : Load argument (Only first byte used) and go to 80:90B7. Plays sound. (0A = bomb block break)
+ 8C7C : Load argument (Only first byte used) and go to 80:90C1. Plays sound.
+ 8C8F : Map Station. Set current area's map station and set area mapped, and JSL $858080 with A = #$0014. TODO
+ 8CD0 : Checks number of missiles. If not equal to max, set it to max and pop up the MISSILE RELOAD COMPLETED. box. Also enables Samus's movement.
+ B9B9 : Set 'Dachora and Etecoon escaped' event. Used by shot blocks in Bomb Torizo room.
+ BB25 : Moves PLM right 4 blocks
+ BBDD : Store 0 to $1D77,X.
+ BBE1 : Load the argument (2 bytes) and create a new object with 86:8097.
+ BBF0 : Gates only, probably: Load the position, and find the room object that has that at $1AFF,X (Object's X, not PLM's X). Store 1 to $1B8F,X, and increment $1B47,X twice. Crash if no object is found. *ALLOCATES ROOM FOR 2 BYTE ARGUMENT, BUT DOES NOT USE IT*
+ BD0F : If not in a loop, skip this instruction. If in a loop, clear loop counter, set next instruction address to 7E:DEBC to run next frame. NOTE: This does not end the PLM loop, nor immediately jumps to 7E:DEBC. If it runs into a draw command or something, this does NOTHING but clear the loop.
+ BE3F : Grey doors only: Load a value from 84:BE4B,Y (indexed by 1E17,X, grey door open condition index) and store it to 1CD7,X (check grey door conditions every frame)
+ CD93 : Set this block's BTS to 01. Used by breakable grapple blocks
+ D155 : Sets $1978 to #$02D2. Unknown purpose.
+ D525 : Something to do with water settings. Enables water?
+ D5E6 : Pauses Samus's animation. Might look into the details later.
+ DB8E : Draygon's turrets. 1E17,X is pointer to ram, bank 7E, set it to #$0001, and also set the block at the current location and below to spike, BTS 03.
+ E04F : Complex. Loads 7E:DF0C,X, puts that in Y, then uses that to load 84:E05F,Y, and puts that in 7E:DE6C,X. I think this is determining which graphic to display. It then stores the original Y to 7E:1D27,X, then jumps to three subroutines. The first (861E) checks if Samus touches it, which triggers the pickup routine (as aided by 8A24, I think). The second (8290) determines which PLM to draw to, and the third (8DAA) actually draws that PLM. It finally returns afterwords. No arguments are used. Set the delay counter to 4, and pulls before returning (thus ending the instructions run this frame).
+ E067 : Extremely similar to above, but loads from 84:E077,Y. Causes the flashing animation. (USED BY CUSTOM-GRAPHIC PICKUPS, SEE 8764)
+*E29D : Set charge (from charge beam) to 0. Used by suit pickups.
+ F49D : Used by WS chozo. Changes two blocks from slopes to spikes. Can probably be safely deleted if you just change the two blocks to spikes in the ram, and remove the call to it.
+
+PLM startups
+NOTE: Most ####,X's are really ####,Y's during the startup routine, due to some assembly limitations. This will be ignored in these notes.
+
+ B3CF : RTS
+ B18B : Map station; If not already used, set right slot to crumble, BTS 47, set left slot to crumble, BTS 48
+ B1C8 , B1F0 : Check for proper collision, if good, load mapstation position and goto B146. Else delete self
+ B245 : Missile station; Set self to solid, set right slot to crumble, BTS 4B, set left slot to crumble, BTS 4C
+ B2D0 , B300 : Check for proper collision and missile supplies, if good, load missilestation position and goto B146. Else delete self
+ B33A : Make the block a horizontal continuation with FF (copies one block to the left) and deletes the PLM.
+ B345 : Make the block a horizontal continuation with 01 (copies one block to the right) and deletes the PLM.
+ B350 : Make the block a vertical continuation with FF (copies one block above) and deletes the PLM.
+ B35B : Make the block a vertical continuation with 01 (copies one block below) and deletes the PLM.
+ B393 : Find the PLM on the same block, then if it's $1E17,X isn't negative, make it #$8000, increment its instruction counter by 2, and set it's delay to 0001. Else leave it alone. *SET UP TO CRASH IF THERE IS NO PLM ON THE SAME BLOCK*
+ B3C1 : Make the block this is on a normal solid (if originally type 8-F) or air block (if originally type 0-7)
+ B3D4 : Make the block this is on a normal air block
+ D108 : Set the PLM's block to the block-prop in A.
+ C794 : Used by grey doors. Takes the hi-byte of $1CD7,X, ANDs it with #$007C, divides by 2, then stores it in $1E17,X. $1DC7,X = $1DC7,X AND #$83FF. And sets the block-type with 82B4, but that's not very interesting.
+ C7B1 : Used by hit-doors. Sets block to shootable, BTS 44.
+
+B146 triggers the PLM at the current spot, and disables Samus's movement. If there is no PLM at the calculated spot, it just deletes the current PLM.
+
+PLMs with a instruction pointer of AAE3 point to the delete PLM instruction - these PLMs simply run their setup and do nothing else.
+
+8764: 1C2D = 0, 2, 4, or 6.
+
+PLM Graphics
+AF6E:
+0001 5011
+0000
+
+AF74:
+0001 5411
+0000
+
+AF7A:
+0001 D800
+0000
+
+AFB0:
+0001 D000
+0000
+
+
+
+Kill PLM (DONE) (Misc --> Misc, DFA9)
+01 00 B5 A2 BC 86 (DIE! And the PLM was thus vanquished)
+
+
+Do Not Make PLM (DONE) (B62F --> B3CF (RTS), AAE3)
+BC 86
+
+Continuation From Left (B63B --> B33A, AFA4)
+01 00 74 AF BC 86
+
+Continuation From Right (B63F --> B345, AF9E)
+01 00 6E AF BC 86
+
+Continuation From Above (B643 --> B350, AFB0)
+01 00 80 AF BC 86
+
+Continuation From Below (B647 --> B35B, AFAA)
+01 00 7A AF BC 86
+
+Map Station (B6D3 --> B18B, AD62)
+24 8A 76 AD 06 00 25 9F 06 00 31 9F 06 00 3D 9F 24 87 66 AD
+AD76: 02 00 25 9F 02 00 31 9F 02 00 3D 9F 24 87 76 AD
+
+Map Station RightAccess (B6D7 --> B1C8, AD86) (Collision with Crumble BTS 47)
+10 8C 37 06 00 49 9F 60 00 55 9F 8F 8C 06 00 55 9F 10 8C 38 06 00 55 9F 06 00 49 9F BC 86
+
+Map Station LeftAccess (B6DB --> B1F0, ADA4) (Collision with Crumble BTS 48)
+10 8C 37 06 00 5B 9F 60 00 67 9F 8F 8C 06 00 67 9F 10 8C 38 06 00 67 9F 06 00 5B 9F BC 86
+
+Energy Station (B6DF --> B21D, ADC2)
+
+Missile Station (B6EB --> B245, AE4C)
+24 8A 60 AE 06 00 91 9F 06 00 9D 9F 06 00 A9 9F 24 87 50 AE
+AE60: BF AE 77 AE 4E 87 10 03 00 91 9F 03 00 9D 9F 03 00 A9 9F 3F 87 67 AE 24 87 4C AE
+
+Missile Station RightAccess (B6EF --> B2D0, AE7B) (Collision with Crumble BTS 4B)
+BF AE 9B AE 10 8C 37 06 00 B5 9F 60 00 BB 9F D0 8C 06 00 BB 9F 10 8C 38 06 00 BB 9F 06 00 B5 9F BC 86
+
+Missile Station LeftAccess (B6F3 --> B300, AE9D) (Collision with Crumble BTS 4C)
+BF AE BD AE 10 8C 37 06 00 C1 9F 60 00 C7 9F D0 8C 06 00 C7 9F 10 8C 38 06 00 C7 9F 06 00 C1 9F BC 86
+
+Scroll Block Touch PLM (B6FF --> B393, AAE3)
+
+Normal Scroll PLM (DONE) (B703 --> B371, AF86)
+01 00 62 AF B4 86 55 8B 24 87 8A AF
+
+Elevator platform ? (B70B --> B3C1, AFB6)
+
+Unknown Maridia-block PLM (B737 --> B541, AAE3)
+
+Save Station (B76F --> B5EE, AFE8)
+
+Speedbooster escape (B8AC --> B89C, B88A) (Setup: Deletes self if already outran lava)
+(Instructions go here. All they do is set pre-PLM code, which handle the lava rising as Samus moves)
+
+Shaktool PLM (B8EB --> B8DC, B8D6) (Setup: Does some scrolling config as if it's a ddb scroll pointer)
+C1 86 B0 B8 B4 86
+B8B0: Some more scrolling, sets room as cleared if Samus is far enough right.
+
+Old Tourian Escape Shaft Escape PLM (B964 --> B3C1, B919) (Setup: AND block PLM is on with #$8FFF)
+C1 86 27 B9 B4 86 CA 86 01 00 83 92 BC 86
+
+Escape Room before Old Escape Shaft PLM (B968 --> B3C1, B940) (Setup: AND block PLM is on with #$8FFF)
+C1 86 48 B9 B4 86 BC 86
+
+Unknown shot block grapple-reaction (B974 --> B96C, AAE3) (Setup: STZ $26, store #$FFFF to $28)
+
+Dachora / Etecoon escape block reaction (B9C1 --> B978, B9A2)
+10 8C 0A 04 00 5B 92 04 00 65 92 04 00 6F 92 01 00 79 92 B9 B9 BC 86
+
+Bomb room escape PLM (B9ED --> B9C5, AAE3)
+
+? (BAF4 --> C794, BA7F, BA4C) (SMILE marks it as a 5th grey door, facing right)
+
+Mainstreet Brinstar Escape PLM (DONE) (BB30 --> BB09, BB19) (Setup: Check event bit F, if it hasn't happened, delete self)
+01 00 53 92 25 BB 01 00 53 92 BC 86
+
+Left Green Gate Trigger reaction (C806 --> C54D, AAE3)
+
+Right Green Gate Trigger reaction (C80A --> C56C, AAE3)
+
+Left Red Gate Trigger reaction (C80E --> C58B, AAE3) (Setup: Check shot, if not missile or super, dud. Else trigger gate)
+
+Right Red Gate Trigger reaction (C812 --> C5AF, AAE3)
+
+Left Blue Gate Trigger reaction (C816 --> C610, AAE3) (Setup: Check shot, if bomb, ignore. Else trigger gate)
+
+Right Blue Gate Trigger reaction (C81A --> C627, AAE3)
+
+Left 'Orange' Gate Trigger reaction (C81E --> C5D3, AAE3)
+
+Right 'Orange' Gate Trigger reaction (C822 --> C5F1, AAE3)
+
+Normal Open Gate (C826 --> C6D8, BC13)
+01 00 17 A5 DD BB C1 86 52 BB B4 86 10 00 17 A5 E1 BB 4B E6 19 8C 0E 10 00 25 A5 10 00 33 A5 10 00 41 A5 18 00 4F A5 ... (BC3A, below)
+BB52: Check if $1D77,X is set. If so, continue with the PLM, new pre-PLM instruction is BB6A (RTS)
+
+Normal Closed Gate (C82A --> C6BE, BC3A)
+01 00 5D A5 DD BB C1 86 6B BB B4 86 F0 BB 66 E5 19 8C 0E 10 00 4F A5 10 00 41 A5 10 00 33 A5 18 00 25 A5 24 87 13 BC (BC13, above)
+BB6B: If Samus is inside the gate (below it) *or* if $1D77,X is set, continue with the PLM, new pre-PLM instruction is BBA3 (RTS)
+
+Upside Down Open Gate (C82E --> C6DC, BC61)
+08 00 6B A5 DD BB C1 86 52 BB B4 86 10 00 6B A5 E1 BB 67 E6 19 8C 0E 10 00 7D A5 10 00 8F A5 10 00 A1 A5 10 00 B3 A5 ... (BC88, below)
+BB52: Check if $1D77,X is set. If so, continue with the PLM, new pre-PLM instruction is BB6A (RTS)
+
+Upside Down Closed Gate (C832 --> C6CB, BC88)
+08 00 C5 A5 DD BB C1 86 A4 BB B4 86 F0 BB B0 E5 19 8C 0E 10 00 B3 A5 10 00 A1 A5 10 00 8F A5 10 00 7D A5 25 87 61 BC (BC61, above)
+BBA4: If Samus is inside the gate (above it) *or* if $1D77,X is set, continue with the PLM, new pre-PLM instruction is BBDC (RTS)
+1x1 Respawning Crumble Block Bomb Reaction (CFFC --> CFA0, C8EC) (Setup: Load projectile type. If not bomb, delete self. Very commonly used)
+01 00 9B A4 BC 86
+
+Shot Gate Top PLM (C836 --> C6E0, BCAF) (C6E0 selects the appropriate PLM instructions for the gate)
+01 00 D7 A5 BC 86 01 00 E3 A5 BC 86 01 00 EB A5 BC 86 01 00 F7 A5 BC 86 01 00 FF A5 BC 86 01 00 0B A6 BC 86 01 00 13 A6 BC 86 01 00 1F A6 BC 86
+01 00 27 A6 BC 86 01 00 33 A6 BC 86 01 00 3B A6 BC 86 01 00 47 A6 BC 86 01 00 4F A6 BC 86 01 00 5B A6 BC 86 01 00 63 A6 BC 86 01 00 6F A6 BC 86 (Unused upside-down tiles)
+
+(C83E --> C7E2, AAE3) (Setup: Look for another PLM on this spot, if one's found, tell it that it was hit, and what hit the block via 1D77)
+BC 86
+
+Grey Door (Facing Left) (C842 --> C794, BE70, BE59)
+(02 00 77 A6 02 00 CB A6 19 8C 08 02 00 BF A6 02 00 B3 A6 01 00 A7 A6)
+72 8A B1 C4 24 8A 84 BE 3F BE 01 00 A7 A6 B4 86  ;Startup, wait till door conditions fulfilled
+BE80: 24 87 7E BE (When would it even get here?)
+BE84: 24 8A A8 BE C1 86 0F BD  ;Door conditions fulfilled, set up door to be shot
+BE8C: 03 00 B3 A9 04 00 A7 A6 03 00 B3 A9 04 00 A7 A6 03 00 B3 A9 04 00 A7 A6 24 87 8C BE ;Flashing animation. Loop endlessly.
+BEA8: 91 8A 01 AD BE ;Door was shot. Increment hit counter... for a grey door??
+BEAD: 19 8C 07 04 00 B3 A6 04 00 BF A6 04 00 CB A6 01 00 77 A6 BC 86 ;Door was shot enough (1) times. Open door sound and animation
+
+Grey Door (Facing Right) (C848 --> C794, BED9, BEC2) (Unconfirmed)
+
+Grey Door (Facing Up) (C84E --> C794, BF42, BF2B) (Unconfirmed)
+
+Grey Door (Facing Down) (C854 --> C794, BFAB, BF94) (Unconfirmed)
+
+Orange Door (Facing Left) (DONE) (C85A --> C7B1, C014, BFFD)
+(02 00 77 A6 02 00 8B A7 19 8C 08 02 00 7F A7 02 00 73 A7 01 00 67 A7)
+72 8A B1 C4 24 8A 2A C0 C1 86 26 BD 01 00 67 A7 B4 86 24 87 24 C0
+BD26: Check hit detection. If hit by a power bomb, set PLM instruction to DEBC,X and tell PLM to go.
+C02A: 91 8A 01 4B C0 03 00 B3 A9 04 00 67 A7 03 00 B3 A9 04 00 67 A7 03 00 B3 A9 04 00 67 A7 24 87 24 C0
+C04B: 19 8C 07 04 00 73 A7 04 00 7F A7 04 00 8B A7 5C 00 77 A6 BC 86
+
+Orange Door (Facing Right) (C860 --> C7B1, C077, C060)
+(02 00 83 A6 02 00 BB A7 19 8C 08 02 00 AF A7 02 00 A3 A7 01 00 97 A7)
+72 8A E2 C4 24 8A 8D C0 C1 86 26 BD 01 00 97 A7 B4 86 24 87 87 C0
+C08D: 91 8A 01 AE C0 03 00 EF A9 04 00 97 A7 03 00 EF A9 04 00 97 A7 03 00 EF A9 04 00 97 A7 24 87 87 C0
+C0AE: 19 8C 07 06 00 A3 A7 06 00 AF A7 06 00 BB A7 01 00 83 A6 BC 86
+
+Orange Door (Facing Up) (C866 --> C7B1, C0DA, C0C3)
+(02 00 8F A6 02 00 EB A7 19 8C 08 02 00 DF A7 02 00 D3 A7 01 00 C7 A7)
+72 8A 13 C5 24 8A EC C0 C1 86 26 BD 01 00 C7 A7 B4 86
+C0EC: 91 8A 01 0D C1 03 00 2B AA 04 00 C7 A7 03 00 2B AA 04 00 C7 A7 03 00 2B AA 04 00 C7 A7 24 87 EA C0
+C10D: 19 8C 07 06 00 D3 A7 06 00 DF A7 06 00 EB A7 01 00 8F A6 BC 86
+
+Orange Door (Facing Down) (C86C --> C7B1, C139, C122)
+(02 00 9B A6 02 00 1B A8 19 8C 08 02 00 0F A8 02 00 03 A8 01 00 F7 A7)
+72 8A 44 C5 24 8A 4F C1 C1 86 26 BD 02 00 F7 A7 01 00 F7 A7 B4 86
+C14F: 91 8A 01 70 C1 03 00 67 AA 04 00 F7 A7 03 00 67 AA 04 00 F7 A7 03 00 67 AA 04 00 F7 A7 24 87 4D C1
+C170: 19 8C 07 06 00 03 A8 06 00 0F A8 06 00 1B A8 01 00 9B A6 BC 86
+
+Green Door (Facing Left) (C872 --> )
+
+Green Door (Facing Right) (C878 --> )
+
+Green Door (Facing Up) (C87E --> )
+
+Green Door (Facing Down) (C884 --> )
+
+Red Door (Facing Left) (DONE) (C88A --> C7B1, C318, C301)
+(02 00 77 A6 02 00 0B A9 19 8C 08 02 00 FF A8 02 00 F3 A8 01 00 E7 A8)
+72 8A B1 C4 24 8A 2A C3 C1 86 50 BD 01 00 E7 A8 B4 86
+BD50: Check hit detection. If hit by a missile, set PLM instruction to DEBC,X and tell PLM to go. If hit by a super missile, set hit counter to 120 missiles and act as if a missile hit.
+C32A: 91 8A 05 4E C3 19 8C 09 03 00 B3 A9 04 00 E7 A8 03 00 B3 A9 04 00 E7 A8 03 00 B3 A9 04 00 E7 A8 24 87 28 C3
+C34E: 19 8C 07 06 00 F3 A8 06 00 FF A8 06 00 0B A9 01 00 77 A6 BC 86
+
+Red Door (Facing Right) (C890 --> )
+
+Red Door (Facing Up) (C896 --> )
+
+Red Door (Facing Down) (C89C --> )
+
+Blue door opening (Facing Left) (C8A2 --> C7BB, C489, C49E?)
+19 8C 07 06 00 BF A9 06 00 CB A9 06 00 D7 A9 5E 00 77 A6 BC 86
+
+Blue door opening (Facing Right) (C8A8 --> C7BB, C4BA, C4CF?) (C7BB: If a powerbomb, delete PLM, else make PLM block solid)
+19 8C 07 06 00 FB A9 06 00 07 AA 06 00 13 AA 5E 00 83 A6 BC 86 ;Play door open sound, open door
+
+Blue door opening (Facing Up) (C8AE --> C7BB, C4EB, C500?)
+19 8C 07 06 00 37 AA 06 00 43 AA 06 00 4F AA 5E 00 8F A6 BC 86
+
+Blue door opening (Facing Down) (C8B4 --> C7BB, C51C, C531?)
+19 8C 07 06 00 73 AA 06 00 7F AA 06 00 8B AA 5E 00 9B A6 BC 86
+
+Blue door closing (Facing Left) (C8BA --> B3C1, C49E)
+02 00 77 A6 02 00 D7 A9 19 8C 08 02 00 CB A9 02 00 BF A9 F1 8A 40 01 00 B3 A9 BC 86
+
+Blue door closing (Facing Right) (C8BE --> B3C1, C4CF)
+02 00 83 A6 02 00 13 AA 19 8C 08 02 00 07 AA 02 00 FB A9 F1 8A 41 01 00 EF A9 BC 86
+
+Blue door closing (Facing Down) (C8C2 --> B3C1, C500)
+
+Blue door closing (Facing Up) (C8C6 --> B3C1, C531)
+
+? (C8CA --> ) (SMILE marks this as Tourian gate that closes behind you when escaping)
+
+Unknown door? (Doesn't look right with *any* graphic set, door graphics are 30F (doesn't flip) and 2E8 (flips)) (C8D0 --> B3C1, BB44)
+02 00 73 94 02 00 7F 94 02 00 8B 94 BC 86
+
+Door already opened (Facing Left) (???? --> ????, C4B1)
+F1 8A 40 01 00 B3 A9 BC 86
+
+Unknown Brinstar-block PLM (Looks like a normal speed block) (D034 --> CDEA, C9CF)
+
+1x1 Respawning Crumble Block Touch Reaction (D044 --> CE37, C9F9) (Setup: Load collision type. If Samus is landing on block, put block data (#$B0BC) in PLM's $1E17,X, #$F0BC in block's $7F0002,X, and delay as 4 frames. If collision is wrong, delete PLM)
+7C 8C 0A 08 00 45 A3 06 00 4B A3 04 00 51 A3 10 00 57 A3 04 00 51 A3 04 00 4B A3 04 00 45 A3 17 8B BC 86
+
+1x1 Respawning shot block reaction (D064 --> CE6B, CADF)
+
+2x1 Respawning shot block reaction (D068 --> CE6B, CB02)
+
+1x2 Respawning shot block reaction (D06C --> CE6B, CB27)
+
+2x2 Respawning shot block reaction (D070 --> CE6B, CB4C)
+
+1x1 Shot block reaction (D074 --> B3C1, CBB7)
+
+2x1 Shot block reaction (D078 --> B3C1, CBCC)
+
+1x2 Shot block reaction (D07C --> B3C1, CBE1)
+
+2x2 Shot block reaction (D080 --> B3C1, CBF6)
+
+Respawning power bomb block reaction (D084 --> CF2E, CB94)
+
+Power bomb block reaction (D088 --> CF2E, CC20)
+
+Respawning super missile block reaction (D08C --> CF67, CB71)
+
+Super missile block reaction (D090 --> CF67, CC0B)
+
+Enemy breakable block (D094 --> B3D4, CD53)
+46 8C 0A 04 00 45 A3 04 00 4B A3 04 00 51 A3 01 00 57 A3 BC 86
+
+1x1 Respawning Bomb Block Collision Reaction (D098 --> ) (untested)
+
+1x2 Respawning Bomb Block Collision Reaction (D09C --> ) (untested)
+
+2x1 Respawning Bomb Block Collision Reaction (D0A0 --> ) (untested)
+
+2x2 Respawning Bomb Block Collision Reaction (D0A4 --> ) (untested)
+
+1x1 Bomb Block Collision Reaction (D0A8 --> ) (untested)
+
+2x1 Bomb Block Collision Reaction (D0AC --> ) (CE83, CCFF)
+
+1x2 Bomb Block Collision Reaction (D0B0 --> ) (untested)
+
+2x2 Bomb Block Collision Reaction (D0B4 --> ) (untested)
+
+1x1 Respawning Bomb Block Bomb Reaction (D0B8 --> CEDA, CC3C) (Setup: Check trigger. If not powerbomb or bomb, leave. If powerbomb, add 3 to PLM instruction pointer. For both powerbomb and bomb, store blocktype and bomb block graphic into 1E17,X, and store #$8FFF into current block)
+46 8C 0A 04 00 45 A3 04 00 4B A3 04 00 51 A3 80 01 57 A3 04 00 51 A3 04 00 4B A3 04 00 45 A3 17 8B BC 86
+
+1x2 Respawning Bomb Block Bomb Reaction (D0BC --> CEDA, CC66) (untested)
+
+2x1 Respawning Bomb Block Bomb Reaction (D0C0 --> CEDA, CC92) (untested)
+
+2x2 Respawning Bomb Block Bomb Reaction (D0C4 --> CEDA, CCBE) (untested)
+
+1x1 Bomb Block Bomb Reaction (D0C8 --> CEDA, CCEA) (untested)
+
+2x1 Bomb Block Bomb Reaction (D0CC --> CEDA, CD06) (untested)
+
+1x2 Bomb Block Bomb Reaction (D0D0 --> CEDA, CD02) (untested)
+
+2x2 Bomb Block Bomb Reaction (D0D4 --> CEDA, CD3E) (untested)
+
+Grapple block grapple-reaction (D0D8 --> CFCD, CD68) (Setup: SEC, SEV)
+BC 86
+
+Respawning Breakable grapple block grapple-reaction (D0DC --> CFB5, CD6A) (Setup: Clear BTS, backup block graphic, SEC, SEV)
+F0 00 F9 A4 10 8C 0A 04 00 FF A4 04 00 05 A5 04 00 0B A5 06 00 11 A5 04 00 0B A5 04 00 05 A5 04 00 FF A4 93 CD 17 8B BC 86
+
+Breakable grapple block grapple-reaction (D0E0 --> CFB5, CDA9) (Setup: Clear BTS, backup block graphic, SEC, SEV)
+78 00 F9 A4 10 8C 0A 04 00 FF A4 04 00 05 A5 04 00 0B A5 01 00 11 A5 BC 86
+
+Spike Grapple-reaction (D0E4 --> CFD1, CD68) (Setup: SEC, CLV)
+
+Draygon's Broken Turret Grapple-reaction (D0E8 --> CFD5, CD68) (Setup: 1.0000 environmental damage to Samus, SVC, SEC)
+BC 86
+
+? (D113 --> D108, D0F6)
+04 00 45 A3 04 00 4B A3 04 00 51 A3 01 00 57 A3 BC 86
+
+? (D6DE --> ) (SMILE lists as MB's glass)
+
+Lower Norfair Chozo Hand  (Done?) (D6D6 --> D18E(RTS), D13F)
+2D 88 0C 00 4D D1 C1 86 5C D1 B4 86
+D14D: 55 D1 01 00 B5 A2 BC 86
+
+Lower Norfair Chozo Hand Test (A1128, X=4, Y=6, whenever Samus is in contact with the hand) (D6DA --> D18F, AAE3)
+
+? (D6EA --> ) (SMILE lists as crumbling Chozo statue)
+
+WS Chozo Hand (DONE) (D6EE --> D616, AAE3) (D616 sets PLM block-type to B, and bts to 80)
+
+WS Chozo Floor Slope-->Spike (D6FC --> D6F7 (RTS), D3EC)
+01 00 0F 9D F4 D3 BC 86
+
+Maridia Bridge (D70C --> D6CC, D4D4)
+2D 88 0B 00 21 D5 24 8A E8 D4 C1 86 26 BD 01 00 D1 98 B4 86 24 8A F2 D4 C1 86 BF D4 B4 86 CA 86 E6 D5 2C D5 30 00 D7 98 01 00 91 99 09 00 E5 99 10 8C 1A 43 D5 36 D5 60 00 DD 98 3E 88 0B 00 25 D5 EE D5 BC 86 01 00 E3 98 01 00 53 99 25 D5 BC 86
+NOTE: D519-D524 seem to be unused, as well as 98E3 - 9990. They are redundant drawing instructions for the bridge.
+
+Maridia Bridge Drawing Information
+0C 00 4181 FF00 FF00 FF00 FF00 FF00 FF00 FF00 FF00 FF00 FF00 4185
+00 01
+0C 00 2203 FF00 FF00 FF00 FF00 FF00 FF00 FF00 FF00 FF00 FF00 2207
+00 02
+0C 00 2303 FF00 FF00 FF00 FF00 FF00 FF00 FF00 FF00 FF00 FF00 2307
+0000
+01 00 4101
+00 03
+0C 00 230B FF00 FF00 FF00 FF00 FF00 FF00 FF00 FF00 FF00 FF00 230F
+00 04
+0C 00 220B FF00 FF00 FF00 FF00 FF00 FF00 FF00 FF00 FF00 FF00 220F
+00 05
+0C 00 4E81 4F81 FF00 FF00 FF00 FF00 FF00 FF00 FF00 FF00 4F85 4E85
+0000
+
+Set Event when Room Cleared (DONE) (DB44 --> DB1E, DB42)
+B4 86
+
+? (DB48 --> ) (SMILE says right-facing eye-door eye)
+
+? (DB4C --> ) (SMILE says right-facing eye-door top)
+
+? (DB52 --> ) (SMILE says right-facing eye-door bottom)
+
+? (DB56 --> ) (SMILE says left-facing eye-door eye)
+
+? (DB5A --> ) (SMILE says left-facing eye-door top)
+
+? (DB60 --> ) (SMILE says left-facing eye-door bottom)
+
+Draygon's Left Turret (DF59 --> DE94, DCDE) (Setup: 1DC7,X into 1E17,X, #$0000 into 1DC7,X, change block to Shootable 44 and below to vertical copy FF)
+24 8A F0 DC C1 86 64 DB 08 00 CD 9F B4 86
+DCF0:
+CD 8A 03 11 DD 03 00 CD 9F 04 00 DD 9F 03 00 CD 9F 04 00 DD 9F 03 00 CD 9F 04 00 DD 9F 24 87 E6 DC
+
+Draygon's Left Broken Turret (DF65 --> DF4C, DD11) (Setup: 1DC7,X into 1E17,X, #$0003 into 1DC7,X)
+8E DB 06 00 2D A0 06 00 3D A0 06 00 4D A0 06 00 5D A0 24 87 13 DD
+
+Draygon's Right Turret (DF71 --> DEF0, DDB9)
+
+Draygon's Right Broken Turret (DF7D --> )
+
+Chozo Ball Animation (DONE) (Misc --> Misc, DFAF)
+C1 86 89 DF 14 00 C7 A2 0A 00 CD A2 14 00 D3 A2 0A 00 CD A2 24 87 B3 DF
+
+Chozo Ball Opening Animation? Need to confirm, otherwise DONE (Misc --> Misc, DFC7)
+CA 86 03 00 B5 A2 03 00 D9 A2 03 00 B5 A2 3A 8A
+
+Hidden Shotblock (Misc --> Misc, E007)
+C1 86 E6 DF B4 86
+
+Restore Hidden Shotblock (Misc --> Misc, E020)
+CA 86 04 00 E9 A3 04 00 E3 A3 04 00 DD A3 05 8B 3A 8A CA 86
+
+(EED3 --> EEAB, AAE3) (Setup:Find a PLM on this spot, crash if not found. Tell it what beam-type (?) hit the block via 1D77. Uncharged peashooter and non-beams = 0000)
+BC 86
+
+Energy Tank (DONE) (EED7 --> EE4D, E099)
+7C 88 BA E0 24 8A B1 E0                         C1 86 89 DF          04 00 DF A2 04 00 E5 A2 24 87 A5 E0 99 88 DD 8B 02 68 89 64 00    24 87 A9 DF
+
+Missile (DONE) (EEDB --> EE52, E0BE)
+7C 88 DF E0 24 8A D6 E0                         C1 86 89 DF          04 00 EB A2 04 00 F1 A2 24 87 CA E0 99 88 DD 8B 02 A9 89 05 00    24 87 A9 DF 
+
+Super Missile (DONE) (EEDF --> EE57, E0E3)
+7C 88 04 E1 24 8A FB E0                         C1 86 89 DF          04 00 F7 A2 04 00 FD A2 24 87 EF E0 99 88 DD 8B 02 D2 89 05 00    24 87 A9 DF
+
+Power Bomb (EEE3 --> )
+
+Bombs (EEE7 --> )
+
+Charge (DONE) (EEEB --> EE64, E15B)
+64 87 00 8B 00 00 00 00 00 00 00 00
+7C 88 85 E1 24 8A 7B E1                         C1 86 89 DF                      4F E0 67 E0 24 87 73 E1 99 88 DD 8B 02 B0 88 00 10 0E 24 87 A9 DF
+
+Ice (EEEF --> )
+
+Normal High Jump Boots (EEF3 --> EE64, E1B7)
+64 87 00 84 00 00 00 00 00 00 00 00
+7C 88 E1 E1 24 8A D7 E1                         C1 86 89 DF                      4F E0 67 E0 24 87 CF E1 99 88 DD 8B 02 F3 88 00 01 0B 24 87 A9 DF
+
+Speed Booster (EEF7 --> )
+
+Wave (DONE) (EEFB --> EE64, E213)
+64 87 00 8D 00 02 00 00 00 02 00 00
+7C 88 3D E2 24 8A 33 E2                         C1 86 89 DF                      4F E0 67 E0 24 87 2B E2 99 88 DD 8B 02 B0 88 01 00 10 24 87 A9 DF
+
+Spazer (DONE) (EEFF --> EE64, E241)
+64 87 00 8F 00 00 00 00 00 00 00 00
+7C 88 6B E2 24 8A 61 E2                         C1 86 89 DF                      4F E0 67 E0 24 87 59 E2 99 88 DD 8B 02 B0 88 04 00 11 24 87 A9 DF
+
+Spring Ball (EF03 --> )
+
+Varia Suit (EF07 --> )
+
+Gravity Suit (EF0B --> )
+
+X-Ray Scope (EF0F --> )
+
+Plasma (EF13 --> )
+
+Grapple (EF17 --> )
+
+Space Jump (EF1B --> )
+
+Screw Attack (EF1F --> )
+
+Morph Ball (EF23 --> )
+
+Reserve Tank (EF27 --> )
+
+Chozo Ball Energy Tank (DONE) (EF2B --> EE4D, E44A)
+7C 88 76 E4 2E 8A AF DF 2E 8A C7 DF 24 8A 6D E4 C1 86 89 DF 4E 87 16 04 00 DF A2 04 00 E5 A2 24 87 61 E4 99 88 DD 8B 02 68 89 64 00    01 00 B5 A2 BC 86
+
+Chozo Ball Missile (DONE) (EF2F --> EE52, E47C)
+7C 88 A8 E4 2E 8A AF DF 2E 8A C7 DF 24 8A 9F E4 C1 86 89 DF 4E 87 16 04 00 EB A2 04 00 F1 A2 24 87 93 E4 99 88 DD 8B 02 A9 89 05 00    01 00 B5 A2 BC 86 (END, next is Chozo Ball Super Missile)
+
+Chozo Ball Super Missile (DONE) (EF33 --> EE57, E4AE)
+7C 88 DA E4 2E 8A AF DF 2E 8A C7 DF 24 8A D1 E4 C1 86 89 DF 4E 87 16 04 00 F7 A2 04 00 FD A2 24 87 C5 E4 99 88 DD 8B 02 D2 89 05 00    01 00 B5 A2 24 87 (END)
+
+Chozo Ball Power Bombs (EF37 --> )
+
+Chozo Ball Bombs (EF3B --> )
+
+Chozo Ball Charge (EF3F --> )
+
+Chozo Ball Ice (EF43 --> )
+
+Chozo Ball High Jump (EF47 --> )
+
+Chozo Ball Speed Booster (EF4B --> )
+
+Chozo Ball Wave (DONE) (EF4F --> EE64, E642)
+64 87 00 8D 00 02 00 00 00 02 00 00
+7C 88 77 E6 2E 8A AF DF 2E 8A AF DF 2E 8A C7 DF 24 8A 6D E6 C1 86 89 DF 4E 87 16 4F E0 67 E0 24 87 65 E6 99 88 DD 8B 02 B0 88 01 00 10 01 00 B5 A2 BC 86
+
+Chozo Ball Spazer (DONE) (EF53 --> EE64, E67D)
+64 87 00 8F 00 00 00 00 00 00 00 00
+7C 88 B2 E6 2E 8A AF DF 2E 8A AF DF 2E 8A C7 DF 24 8A A8 E6 C1 86 89 DF 4E 87 16 4F E0 67 E0 24 87 A0 E6 99 88 DD 8B 02 B0 88 04 00 11 01 00 B5 A2 BC 86
+
+Chozo Ball Spring Ball (EF57 --> )
+
+Chozo Ball Varia Suit (EF5B --> )
+
+Chozo Ball Gravity Suit (EF5F --> )
+
+Chozo Ball X-Ray Scope (EF63 --> )
+
+Chozo Ball Plasma (EF67 --> )
+
+Chozo Ball Grapple (EF6B --> )
+
+Chozo Ball Space Jump (EF6F --> )
+
+Chozo Ball Screw Attack (EF73 --> )
+
+Chozo Ball Morph Ball (EF77 --> )
+
+Chozo Ball Reserve Tank (EF7B --> )
+
+Chozo Ball Energy Tank (EF7F --> )
+
+Hidden Shotblock Missile (EF83 --> EE7C, E949)
+2E 8A 07 E0 7C 88 79 E9 24 8A 70 E9 C1 86 89 DF 4E 87 16 04 00 EB A2 04 00 F1 A2 3F 87 5C E9 2E 8A 20 E0 24 87 49 E9 99 88 DD 8B 02 A9 89 05 00 2E 8A 20 E0 24 87 49 E9
+
+Hidden Shotblock Super Missile (EF87 --> )
+
+Hidden Shotblock Power Bomb (EF8B --> )
+
+Hidden Shotblock Bombs (EF8F --> )
+
+Hidden Shotblock Charge (EF93 --> )
+
+Hidden Shotblock Ice (EF97 --> )
+
+Hidden Shotblock High Jump (EF9B --> )
+
+Hidden Shotblock Speed Booster (EF9F --> )
+
+Hidden Shotblock Wave (EFA3 --> )
+
+Hidden Shotblock Spazer (EFA7 --> )
+
+Hidden Shotblock Spring Ball (EFAB --> )
+
+Hidden Shotblock Varia Suit (EFAF --> )
+
+Hidden Shotblock Gravity Suit (EFB3 --> )
+
+Hidden Shotblock X-Ray Scope (EFB7 --> )
+
+Hidden Shotblock Plasma (EFBB --> )
+
+Hidden Shotblock Grapple (EFBF --> )
+
+Hidden Shotblock Space Jump (EFC3 --> )
+
+Hidden Shotblock Screw Attack (EFC7 --> )
+
+Hidden Shotblock Morph Ball (EFCB --> )
+
+Hidden Shotblock Reserve Tank (EFCF --> )
+

@@ -1,0 +1,34 @@
+Checks blocks to see what to do whenever an enemy collides with a block.
+
+X = block type*2
+A0:C888: Vertical. JSR ($C88D,X)
+A0:C854: Horizontal. JSR ($C859,X)
+
+BlockType           Vert   Horz
+------------------|------|------
+0 = Air           | C2BC | C2BC
+1 = Slope         | C319 | C2FA
+2 = XRay Air      | C2BC | C2BC
+3 = Treadmill     | C2BC | C2BC
+4 = Shootable Air | C2BC | C2BC
+5 = H-Extend      | C619 | C619
+6 = Air???        | C2BC | C2BC
+7 = Bombable Air  | C2BC | C2BC
+8 = Solid         | C2BE | C2BE
+9 = Door          | C2BE | C2BE
+A = Spike         | C2C0 | C2C0
+B = Crumble       | C2BE | C2BE
+C = Shot          | C2BE | C2BE
+D = V-Extend      | C64F | C64F
+E = Grapple       | C2BE | C2BE
+F = Bomb block    | C2BE | C2BE
+
+
+C2BC : CLC and RTS (passable)
+C2BE : SEC and RTS (solid)
+
+C319 / C2FA : Slope stuff, I'm not disassembling that.
+C619 : Adjust horizontal position according to BTS and go to the pointed-to block's code
+C64F : Adjust vertical position according to BTS and go to the pointed-to block's code
+C2C0 : Load ($A0C2DA,X), X = 2*(BTS & 7F). If 0000, act as solid, else make a PLM with it and act as passable.
+       BTS == 0F: Break this block

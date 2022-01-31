@@ -1,0 +1,1045 @@
+NMI routine, main contents:
+	JSR $933A  ; Write to OAM and CGRAM
+	JSR $9376  ; Copy Samus's graphics to VRAM
+	JSR $9416  ; Handle misc. animations (spikes, FX1)
+	JSR $91EE  ; Copies values from RAM to lotsa hardware registers
+	LDX #$00
+-
+	LDA $18B4, X
+	BEQ ++
+	LDY $18C0, X
+	LDA $18D8, X
+	STA $4302, Y  ;Setup for HDMAs
+++
+	INX
+	INX
+	CPX #$0C
+	BNE -
+	LDX $55
+	CPX #$07
+	BEQ ++
+	LDX $56
+	CPX #$07
+	BNE +++
+++
+	JSL $808BBA  ; Assumably Mode 7 stuff, ignoring for now
++++
+	JSL $808C83  ; Do the DMA's in the D0,X table
+	JSL $808EA2  ; Do the DMA's in the 0340,X table
+	SEP #$10
+	REP #$20
+	LDX $85
+	STX $420C    ; Turn HDMAs on
+	JSL $809459  ; Get controller input, and also a debug branch
+
+
+Main Game Loop starts at 82:8948, I think. Ends at 82:897F. Here're the main contents.
+
+	JSL $8884B9	; Handles Background
+	JSL $808111	; Generate a new random number
+	JSL $808B1A	; Clear OAM high x bits and sizes
+	STZ $0590
+	STZ $071D
+	STZ $071F
+	STZ $0721       ; Clearing stuff for vram
+	LDA $0998       ; Current game state. Never accessed externally
+	AND #$00FF
+	ASL A
+	TAX
+	JSR ($8981, X)	; Run current game state engine?
+	JSL $8289EF	; Sound effects
+	JSL $80896E	; Clear OAM (sprites to Y = F0)
+	JSL $828AB0	; A lot of debug stuff, and put $8B into $0DFE
+	JSL $808338	; Wait until an IRQ's STZ $05B4 to loop
+
+82:8981 (not flipped)
+ 0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
+E48A 088B 9FEB 0D8B E589 EA89 0080 208B 448B 69E1 B7E1 88E2 CF8C EF8C C890 E890
+2493 6793 A193 80DC E0DC 71DD 87DD 9ADD AFDD C7DD E089 10DC 3F8B DB89 0E8B 0080
+6783 8883 0E8B 1184 3184 0E8B BD84 138B 0080 2D85 4885 9385 FB85
+
+Testing gamestates:
+00: Reset/Start
+01: Opening
+02: Game options menus
+03: Unused? Points to an RTS.
+04: Save game menus
+05: Load Game map view
+06: Loading game data?
+07: Setting game up after loading the game?
+08: Main gameplay
+09: Hit a door block
+0A: Loading next room?
+0B: Loading next room?
+0C: Pausing (normal gameplay but darkening)
+0D: Paused, loading pause screen?
+0E: Paused, continuation of above?
+0F: Paused, map and item screens
+10: Unpausing (Loading normal gameplay)
+11: Unpausing (continuation of above)
+12: Unpausing (normal gameplay but brightening)
+13: Samus ran out of health
+14: Continuing, black out surroundings
+15: Continuing
+16: Continuing, starting death animation
+17: Continuing, flashing
+18: Continuing, explosion
+19: Continuing, black out (also cut to by timeup death)
+1A: Game Over screen
+1B: Reserve Tanks Auto
+
+1D: Debug menu (End/Continue)
+1E: Set up entirely new game with cutscenes?
+1F: Set up new game (Ceres / Zebes?)
+20: Made it to Ceres Elevator
+21: Blackout from Ceres
+22: Ceres goes boom, Samus goes to Zebes 
+23: Time up
+24: Whiting out from time up (Goes to 19 directly if not on Ceres)
+25: Ceres goes boom with Samus
+26: Samus escapes from Zebes
+27: Ending + Credits
+28: Transition to demo movies
+29: Continuation of above?
+2A: Playing demo movies
+2B: Transition from demo movies
+2C: Continuation of above?
+
+The main gamestate is 08. So:
+
+82:8B44
+	PHP
+	REP #$30
+	JSL $A08EB6	; Determine which enemies to process.
+	JSL $B49809     ; Debug functions. Does nothing worthwhile normally.
+	AND #$FFFF
+
+	BNE BRANCH_ALPHA  ; Debug Branch
+
+	JSL $8DC527     ; Special background lighting. Very rarely used.
+	JSL $90E692	; JSR ($0A42) - handles controller input for game physics.
+	LDA $0E12       ; Debug enabled only. Ignoring
+
+	BNE BRANCH_BETA
+
+	JSL $A09785	; Bomb Jump routine. o_O
+
+BRANCH_BETA
+
+	JSL $A08FD4	; Enemy routines (but can still be killed by power bombs)
+	JSL $90E722	; Handles Samus's movements and pausing? JSR ($0A44)
+	JSL $868104	; Handles enemy/room projectiles/objects
+	JSL $8485B4	; Handles PLMs
+	JSL $878064	; No idea
+	LDA $0E12
+
+	BNE BRANCH_GAMMA
+
+	JSL $A09894	; Enemy/Room projectiles/objects collisions with Samus. Only does default routine, no customizable options.
+	JSL $A0996C ; Enemy/Room projectiles/objects collisions with Samus's projectiles.
+	JSL $A0A306
+
+BRANCH_GAMMA
+
+	JSL $9094EC	; Room Scrolling
+	LDA $808006	
+
+	BEQ BRANCH_DELTA
+
+	JSL $80A9AC	; Debug Scroll position saving/loading?
+
+BRANCH_DELTA
+
+	JSL $A0884D	; Something for sprites and sounds
+	JSL $A09726	; Something for the graphic update table. Unknown
+
+BRANCH_ALPHA
+
+	JSL $809B44	; Status bar stuff
+	JSL $80A3AB	; Handles the movement of layer 1 and 2
+	JSL $8FE8BD	; Handles background graphics
+	JSR $DB69	; Handles game time. And kills Samus (!).
+	JSL $A08687	; Unknown 
+	JSL $A09169	; Handles Samus getting hurt?
+	PLP
+	RTS
+
+No better place... so 91:B629 table explanation here:
+First byte is the direction Samus is facing. Second byte is the movement type. They're often used together for simplicity.
+Third byte is used as value for 0A28 if button check reaches an FFFF (see TransitionTable.txt)
+Fourth byte is direction for firing shots.
+Fifth byte is vertical displacement. Samus's hitbox is not affected, but her graphic is, and her shots are displaced as well
+Sixth byte unused. Seventh byte is vertical radius. Eighth byte is unused.
+
+91:B010 table explanation:
+Simple list of pointers to animation frame timers. See 90:8000
+
+$0A42 usually runs 90:E695 every frame.
+90:E695 runs 90:EC22 every frame, which checks Samus's position type and gets her radius, one byte, from 91:B62F,X (X = 8*0A1C) Also puts #$0005 into $0AFE.
+90:E695 runs 90:E90F every frame, which gets controller input depending on $0A60. $0A60 is commonly #$E913, which just JSLs to 91:8000
+
+91:8000 checks movement type, and goes to 91:(8014,X), X being 2x movement type. List:
+804D, 8066, 806E, 8076, 807E, 8087, 80B6, 8086, 810A, 8112, 8113, 812D, 8132, 813A, 8142, 8146,
+8147, 814F, 8157, 815F, 8167, 816F, 8181, 8189, 818D, 8191, 8199, 81A1
+
+91:804D If Samus is facing forward (0A1C = 00 or 9B) and on a moving elevator, RTS. Else JSR to 81A9.
+91:8066 JSR to 81A9.
+91:806E JSR to 81A9.
+91:8076 JSR to 81A9.
+91:807E JSR to 81A9.
+91:8087 If x-ray scope or reserve tanks, JSL $91FCAF and end. Else JSR 81A9, and if immediately standing, adjust Y position (crouching). In theory. Actually always JSRs to 81A9 and does nothing else.
+91:80B6 JSR to 81A9.
+91:8086 RTS (unused)
+91:810A JSR to 81A9.
+91:8112 RTS (unused)
+91:8113 JSR to 81A9. If not hurt, jump and clear the hurt timer. Pretty sure that never happens. (hurt)
+91:812D PHP, REP #$30, PLP, RTS. Unused anyways.
+91:8132 JSR to 81A9.
+91:813A JSR to 81A9.
+91:8142 JSR $81A9, RTS. No PHP, REP #$30, PLP as in others. (turning around on ground)
+91:8146 RTS (morphing/demorphing and standing/crouching transitions)
+91:8147 JSR to 81A9.
+91:814F JSR to 81A9.
+91:8157 JSR to 81A9.
+91:815F JSR to 81A9.
+91:8167 JSR to 81A9.
+91:816F JSR to 81A9, unless reserve tanks or x-ray are active, then JSR to FCAF instead. Good thing that never happens, 91:FCAF needs to be called with JSL (reserve tanks change 0A42 and never call this routine, x-ray sets to standing)
+91:8181 JSR to 81A9.
+91:8189 JSR $81A9, RTS. No PHP, REP #$30, PLP as in others. (Turn while jumping)
+91:818D JSR $81A9, RTS. No PHP, REP #$30, PLP as in others. (Turn while falling)
+91:8191 JSR to 81A9.
+91:8199 JSR to 81A9.
+91:81A1 JSR to 81A9.
+
+Basically, EVERYTHING JSRs to 81A9 or RTSes, except for 0 (standing).
+
+91:81A9 is complex. Continue on the lines unless otherwise stated.
+	If no current controller input, goto E
+	If there is controller input, JSR $81F4.
+	Look up $0000,Y (Y = $9EE2,X, X = 0A1C*2). If it's #$FFFF, CLC and RTS.
+A	If $0000,Y AND $12 is not #$0000, goto D
+B	If $0002,Y AND $14 is #$0000, goto C
+D	Add 6 to Y. If $0000,Y is not #$FFFF, goto A
+E	STZ $0A18, JSL $9182D9, CLC, and RTS. 91:82D9 puts a value into 0A2E (8332,X, X is movement type, if 8332,X is 1 and Samus has momentum, use 2 instead) and 0A28 (B62B,X, X is Samus's position * 8. If FF or the momentum special case, copy 0A1C instead)
+C	If $0004,Y = $0A1C, CLC and RTS.
+	Put $0004,Y into $0A28, #$0000 in $0A56, SEC and RTS
+
+91:81F4 (Note: This contains the evil code that disallows aiming to not be L and R)
+	$12 = $8F (minus pause and switch item) EOR #$FFFF
+	$14 = $8D (minus pause and switch item) EOR #$FFFF
+
+	If I understand this right, then, the pointers in the below table point to 6 byte entries that act as checks to see what position Samus should end up, based on where she is now (starting point in table) and what buttons are held down:
+If Bytes 0-1 = FFFF, use 91:B629 table for new pose
+If Bytes 0-1 are not all matched by new buttons pressed, goto next entry
+If Bytes 2-3 are not all matched by buttons being held, goto next entry
+If Bytes 4-5 are different from Samus's current position, transition into it as Samus's new position.
+
+See TransitionTable.txt
+
+That's basically it for 90:E90F
+
+90:E695 then JSRs to $ECB6 next.. which determines Samus's pallete index from the suits she has on.
+90:E695 then JSRs to $9C5B. Handles gravity, I think.
+
+	LDA $09A2
+	BIT #$0020
+	BNE BRANCH_ALPHA
+	JSL $90EC3E		; Just calculates Samus' lower boundary, I think, and puts it in $12
+	LDA $195E
+	BMI BRANCH_BETA
+	CMP $12
+	BMI BRANCH_GAMMA
+	BRA BRANCH_ALPHA
+BRANCH_BETA
+	LDA $1962
+	BMI BRANCH_ALPHA
+	CMP $12
+	BMI BRANCH_EPSILON
+BRANCH_ALPHA
+	LDA $9EA1
+	STA $0B32
+	LDA $9EA7
+	STA $0B34
+	BRA BRANCH_DELTA
+BRANCH_GAMMA
+	LDA $197E
+	BIT #$0004
+	BNE BRANCH_ALPHA
+	LDA $9EA3
+	STA $0B32
+	LDA $9EA9
+	STA $0B34
+	BRA BRANCH_DELTA
+BRANCH_EPSILON
+	LDA $9EA5
+	STA $0B32
+	LDA $9EAB
+	STA $0B34
+BRANCH_DELTA
+	RTS
+
+90:E695 then JSLs to 94:9B60. It just runs stuff depending on what blocks Samus is inside. Maximum is 3 blocks/routines: feet, middle, head. Quick personal opinion: whoever programmed this part was short a brain.
+Indexed by block type
+97D0, 97BF, 98CC, 9B16, 97D0, 9411, 97D0, 97D0, 98DC, 98DC, 98DC, 98DC, 98DC, 9447, 98DC, 98DC
+97D0: Put #$9F55 into $0A6C
+97BF: Compare the tile's (BTS AND #$001F) with #$0005. Then, uhhh... depending on the result, RTS or RTS. Yeah.
+98CC: Jump to a routine depending on the BTS of the tile. Greater than 0F will likely cause a crash. The perfectly positioned AND fails to fix this. >_> 00 or 01: CLC. 03-0F: Nothing. 02: Hurt Samus if there's no reason not to.
+9B16: If BTS < 7F, default is 'Put #$9F55 into $0A6C'. 08 = If in Wrecked Ship and Phantoon is alive, goto default, else if Samus is not moving vertically, STZ $0B56 and store #$0002 to $0B58. Ditto 09, except store #$FFFE to $0B58. 0A and 0B always store #$0002 and #$FFFE. 46 is used by scroll PLMs, activates scroll PLM (only if center of Samus touches it?). 50-7F crash (PLM table)
+      If BTS >= 80, it spawns a PLM. Address of header = $949A06 + (20*area) + 2*(BTS - 80). Intended to be under 90, but this could be used to grab PLMs from later areas. I'll look at this later, notable PLMs are Maridia's quicksand (81 and 82) and falling sand (85?), and Brinstar's grabbing plants (80 and 81)
+9411: Use the BTS as a relative horizontal block offset(1 byte signed), and via clever stack manipulation handle it as if Samus is touching that block(gasp! The code is actually clever!... well, except for that redundant AND #$00FF and poor testing/branching)
+98DC: Put #$9F55 into $0A6C. Yes, this is identical to 97D0. Utter brilliance.
+9447: Use the BTS as a relative vertial block offset(1 byte signed), and handle it as if Samus is touching that block.
+
+That means the only interesting ones are 98CC hurting you and 9B16. There's a lot 9B16 can potentially do though.
+
+90:E695 then JSRs to DCDD. This handles Samus's firing/selecting weapons.
+Specifically, 90:AC1C handles Samus's cooldown, 90:C4B5 handles Samus's selection on the status bar, and 90:AECE handles current projectiles/bombs. 90:DD05,X is the pointer to code to run for firing beams, X being Samus's movement type:
+DD3D DD3D DD3D DDB6 BF9D DD3D DD3D BF9D BF9D BF9D DDB6 DD6F DD6F DDB6 DD74 DD8C
+DD3D BF9D BF9D BF9D DDB6 DD3D DD6F DD74 DD74 DDB6 DDD8 DDB6
+DD3D
+
+90:E695 then JSRs to EB02. This clears a bunch of things, related to sound I think (disabling this makes it so the space jump sound doesn't end if you break out of it)
+90:E695 finally pulls and returns after that.
+
+$0A44 usually runs 90:E725 every frame. The interesting stuff:
+	JSR $F52F    ; RTS... lol
+	STZ $0A6E    ; Samus's contact damage
+	JSR $E94B    ; Handles Samus's movement, JSR ($0A58)
+	JSL $90A91B  ; Minimap
+	JSR $E097    ; JSR ($0A5A). Commonly an RTS (#$E90E). Rarely used, I'm hoping. Used for timer (E0E6), no other known uses.
+	JSR $8000    ; Animates Samus and junk. DONE!
+	JSR $DDE9    ; Samus is hit interruption
+	JSL $91E8B6  ; Handles automatic transitions from collisions with blocks
+	JSL $91EB88  ; Handles ALL transitions? Doesn't handle space jumping, but everything else with 0A1C? TODO
+	JSL $91D6F7  ; Special sound/palletes for Samus. Also handles super jump timer.
+	JSR $E9CE    ; Handle periodic damage to Samus (lava, acid, heat, not metroids)
+	JSR $EA45    ; Pause the game if: No PB, no x-ray/reserve pause, not in Ceres, not in normal game mode, and you just pressed start
+	JSR $EA7F    ; Trigger/Disable health warning
+
+$0A58 is typically #$A337, which is thankfully short. Except it can JSR to a lot.
+	LDA $0A78
+	BNE BRANCH_ALPHA
+	LDA $0A1F
+	AND #$00FF
+	ASL A
+	TAX
+	JSR ($A34B, X)
+	JSR $EEE7      ; Handles Samus's speed echoes, if she has blue suit
+BRANCH_ALPHA
+	RTS
+
+Options for that indexed indirect JSR:
+A383, A3E5, A42E, A436, A521, A573, A58D, A32D, A5CA, A5FB, A5FC, A607, A60F, A617, A67C, A61C,
+A694, A69F, A6F1, A703, A734, A75F, A780, A790, A7AD, A7CA, A7D2, A7DA
+
+TODO
+A383 handles collision detection while on elevators(94:9763, that's basically all if on elevators), locks Samus's animation if she's holding fire and not aiming, and goes to 90:9348, 90:923F, and 91:DE53 (movement and collision detection)
+A3E5 handles X motion(90:8E64), then Y motion(90:923F), then on certain animation frames makes footstep graphics (90:ED88), and if nothing stops it, footstep sounds (80:914D)
+
+A61C:
+
+A7DA clears 0DC6... that's it.
+
+
+90:8000 is a pretty major routine, it animates Samus.
+First thing it does is JSL to 90:EC58 and calculates Samus's lower/upper boundaries.
+Then it JSRs to ($8067,X), X = $196E AND #$000F (no ASL). Unknown use.
+If Samus is in the normal jumping pose, branch to $8032.
+Decrement the frame timer. If it's positive, return.
+If it's 0 or negative, increment Samus's animation frame and JSR to $82DC. Return when $82DC is done (so here on out is just for $82DC)
+90:82DC handles all the game-mechanics related to animating Samus.
+First off, it gets a pointer to the starting address for the $0A1C's animation frame timers from 91:B010,X (X = 2*$0A1C).
+If the number is positive, $84E3 will get a different pointer for the animation frame timer if Samus is running, depending on Samus's current speed counter (B5E8, B5F3, B5FE, B609, B614). Whichever pointer it has then, it's used to find the next animation frame timer and the game is done with 90:8000.
+If the number is negative, it first goes to $852C. If Samus isn't running, this just loads the value animation frame timer again. If she's running without speed boots, it sets everything up and tells $82DC to branch to the end. Otherwise, if Samus is running with speed boots, it has a few things to do. If Samus has just reached blue suit speed, start the sound for it. Set everything up for speed running, and tell $82DC to branch to end. Very inefficient.
+Finally, if the routine doesn't branch to the end (Samus isn't running), the last nybble is used as an index for a JSR ($8324,X).
+0-5 all CLC and RTS. (Stop at last frame)
+6 causes heavy breathing(goto next animation loop) when low on health (SEC). Else go back to start of current animation loop
+7 is used only when Samus is exhausted (MB or Metroid attack)(SEC). (Put #$94CB into $0A58, goto next animation loop)
+8 makes a lot of checks: If $0A60 is #$E91D or $0A28 is 4B, 4C, 19, or 1A, do nothing. Else put #$E926 into $0A60 and use the argument for $0A2C (same as D)
+9 checks Samus's equipment, if a certain item bit isn't equipped(first 2 bytes of argument), use 3rd byte of argument for $0A2C if Samus is moving vertically, 4th if not, 5th if item is equipped and Samus is moving vertically, 6th if not moving but equipped. 0A32 = #$0003, CLC. Only used by Springball, currently.
+A If Samus isn't falling, use 1st byte of argument for $0A2C, else use second. 0A32 = #$0003, CLC
+B is used by walljumps only, I think. Hardcoded stuff, switches to screw attack, space jump, or spinjump depending on FX3, Gravity Suit, screw attack, and space jump.
+C checks Samus's equipment, if a certain item bit isn't equipped(first 2 bytes of argument), use 3rd byte of argument for $0A2C, else use 4th byte of argument for $0A2C. 0A32 = #$0003, CLC. Springball
+D uses the next byte in the animation frame list for $0A2C, 0A32 = #$0003.
+E backtracks by the argument's amount of frames (SEC). A targeted loop, basically. 
+F loops back to frame 0. SEC. Straightforward loop.
+Anyways, if carry is cleared, it's done. Otherwise, it uses the pointer,$0A96 to get the next frame timer. Semi TODO
+
+
+
+91:EB88
+0A2C takes priority (unless dead), then 0A2A, then 0A28. I think. Assuming that.
+If 0A2C is used, JSL 91:F433 and 91:FB08, and JSR $EC3E,X (X = 0A32).
+If 0A2A is used, JSL 91:F404, then if CLC, JSR $EC28,X (X = 0A30).
+If neither are used, JSR $EADE
+If 0A28 is used, JSL 91:F404, then if CLC, JSR $EC16,X (X = 0A28).
+If any are used, update 7E:0A20 - 7E:0A27
+That's it.
+
+91:F468 goes to F4A2,X routines, X = 0A1F. They handle specific transition stuff... it looks like it's mainly concerned with poses.
+F4DC(00, standing) sets 0A9A to 1 if Samus was aiming up, and still is aiming up.
+F50C(01, running) sets 0A9A to 8000 if Samus was already running. Also some unused code for unused ram and unused poses.
+F543(02, jump) if current pose is in a checklist, put Samus in superjump pose and JSL 90:CFFA, and move Samus up a pixel if she wasn't jumping previously(Stores new Y position to 0B14 also, unknown use). If Samus jumped and aimed up while standing and aiming up, sets 0A9A to 1. Also has stuff for shooting, triggers firing when Samus has charge and presses fire while spinjumping.
+F624(03, spinjump) If Samus turned around, add current speed to momentum, cleanup blue suit, set horizontal speed to 0, and 0B4A to 1. Also handles poses and sound.
+
+FACA(1B, misc) If $0A1C is below #$00CF, find appropriate value for $0A58 from $FAFC,X, set $0A60 to #$E90E (RTS). Clear some echoes stuff and play a sound.
+
+91:FBBB goes to FBCF,X routines, X = 0A1F.
+FC07(0, 1, 4, 5, 6, 7, 8, 9, A, B, C, E, F, 10, 11, 13, 15, 16, 17, 18, 1A, 1B) all RTS
+FC66(2, jump) #$000A pixel boost if crouchjumped, JSL 90:98BC if starting jump (checked by transitioning poses)
+FC99(3, spinjump) JSL 90:98BC if starting jump (checked by previous movement type)
+
+
+Sound Libraries
+Various JSL's to 80:9XXX cause sound, depending on A. I don't know what 065X is for, it doesn't have any effect I notice.
+065X is the maximum position on the queue that may be used for this sound. If too many sounds are queued, this sound will not play.
+Many sounds documented thanks to Insom
+
+Library 1
+9021 ($0653 = 0F)
+902B ($0653 = 09)
+9035 ($0653 = 03)
+903F ($0653 = 01)
+9049 ($0653 = 06)
+   00 = Nothing
+   01 = Power Bomb
+   02 = Clear sounds from this library?
+   03 = Fire Missile
+   04 = Fire Super Missile
+   05 = Fire Grapple
+   06 = Grappling on a block
+   07 = Short grapple sound, not sure when it's used exactly.
+   08 = Charge beam
+   09 = X-Ray
+   0A = Clear sounds from this library?
+   0B = Fire beam (Normal)
+   0C = Fire beam (Ice)
+   0D = Fire beam (Wave)
+   0E = Fire beam (Wave/Ice)
+   0F = Fire beam (Spazer)
+   10 = Fire beam (Spazer/Ice)
+   11 = Fire beam (Spazer/Ice/Wave)
+   12 = Fire beam (Spazer/Wave)
+   13 = Fire beam (Plasma)
+   14 = Fire beam (Plasma/Ice)
+   15 = Fire beam (Plasma/Wave/Ice)
+   16 = Fire beam (Plasma/Wave)
+   17 = Fire beam (Charged)
+   18 = Fire beam (Charged Ice)
+   19 = Fire beam (Charged Wave)
+   1A = Fire beam (Charged Wave/Ice)
+   1B = Fire beam (Charged Spazer)
+   1C = Fire beam (Charged Spazer/Ice)
+   1D = Fire beam (Charged Spazer/Wave/Ice)
+   1E = Fire beam (Charged Spazer/Wave)
+   1F = Fire beam (Charged Plasma)
+   20 = Fire beam (Charged Plasma/Ice)
+   21 = Fire beam (Charged Plasma/Wave/Ice)
+   22 = Fire beam (Charged Plasma/Wave)
+   23 = Ice beam shield
+   24 = Ice beam shield fires off
+   25 = Spazer shield
+   26 = Spazer shield fires off
+   27 = Plasma shield
+   28 = Wave shield
+   29 = Nothing?
+   2A = Samus helmet noise in the start menu
+   2B = Nothing?
+   2C = Nothing?
+   2D = Nothing?
+   2E = Save station saving
+   2F = Spin jump sound (full spin sound)
+   30 = Resuming normal spin jumping
+   31 = Starting normal spin jumping
+   32 = Stop spinjump sound?
+   33 = Screw attack sound. Ramps up then loops
+   34 = Stop screw-attack sound?
+   35 = Samus hurt
+   36 = Map 'click' when moving/scrolling
+   37 = Selection click when moving on equipment screen or pressing select item.
+   38 = Sound from when you change between equipment screens, or you toggle an equipped item.
+   39 = Same as 37 (quieter)
+   3A = Nothing?
+   3B = Going from world map to area map when loading saved game
+   3C = Going from area map to world map when loading saved game
+   3D = Crumble block
+   3E = Space jump
+   3F = Same as 31
+   40 = Mother brain's laser attack?
+   41 = Resuming a charged beam, not starting it
+   42 = Boss death throes (only with Kraid/Crocomire/Phantoon Boss BGM)
+   43+= Locks up sound and music
+
+
+Library 2
+90A3 ($0654 = 0F)
+90AD ($0654 = 09)
+90B7 ($0654 = 03)
+90C1 ($0654 = 01)
+90CB ($0654 = 06)
+   00 = Nothing
+   01 = Health pickup
+   02 = Health pickup (for large?)
+   03 = Missile pickup
+   04 = Missile pickup (for supers?)
+   05 = Missile pickup (for powerbombs?)
+   06 = Not sure. Almost sounds like a bomb or a dud shot, but isn't either.
+   07 = (Super) Missile explosion.
+   08 = Bomb explosion.
+   09 = Enemy death sound?
+   0A = Block break
+   0B = Enemy death sound (from screw attack, I think)
+   0C = Enemy death sound? (Insom: Beam dud noise?)
+   0D = Loud Water splash
+   0E = Soft Water splash
+   0F = 'large' Air bubbles
+   10 = Scraping sound from dust enemies
+   11 = 'small' Air bubbles
+   12 = 'one' Air bubble (Tourian?)
+   13 = 'two' Air bubbles (Tourian?)
+   14 = 'three' Air bubbles (Tourian?)
+   15 = nothing?
+   16 = Boss screaming (only with Kraid/Crocomire/Phantoon Boss BGM)
+   17 = Low pitch X-ray scope (Does NOT stop, ignores new sounds)
+   18 = Load game 'hum' (very quiet). Loops infinitely till stopped
+   19 = Boss gem shattering and goodies inside flying upward.
+   1A = Explosions + smashing Mother Brain's glass case (Would make a good monster scream when paired with boss BGM...)
+   1B = A muffled explosion? (Insom: A boulder smashing?)
+   1C = Wrecked Ship chozo statue gripping Samus (as morph ball)
+   1D = Dachora chirping noise
+   1E = Smashing Mother Brain's glass case (Would make a good monster scream when paired with boss BGM...)
+   1F = Weird tone then a plasma shot sound? (Probably specific enemy sound)
+   20 = Space pirate barking?
+   21 = Skree dive bombing / Reo screetch?
+   22 = Hurt enemy 2? (Pipe enemies)
+   23 = Hurt enemy 3? (Ball enemies)
+   24 = Bomb explosion? (Used when escaping Zebes)
+   25 = Sounds like a missile shot that immediately hits a wall, but muffled (Used when escaping Zebes)
+   26 = Torizo shooting a cresent thing
+   27 = Hurt enemy 4 (larger enemies, Torizo)
+   28 = Bomb explosion
+   29 = Shot block breaking?
+   2A = Bomb explosion
+   2B = Multiple bomb explosions. Not bomb-spread sound.
+   2C = Either a Draygon scream or a Metroid/Mother Brain scream
+   2D = Crocomire scream
+   2E = Crocomire death throes
+   2F = Yapping maw
+   30 = Some sort of boss noise
+   31 = Jumping starfish noise
+   32 = Etecoon noise
+   33 = Different etecoon noise
+   34 = Puffing noise from those super missile giving cacti (saboten)
+   35 = Etecoon humming the 'item get!' theme
+   36 = Swooping Norfair enemies
+   37 = Plugging into and using a missile/energy/map thing
+   38 = Finished using the aforementioned thing
+   39 = Speed Booster running
+   3A = Single spin jump?
+   3B = Ripping noise, not sure where from.
+   3C = Missile explosion
+   3D = Shinespark charged up
+   3F = Missile launcher noise
+   40 = A squeaky noise that reminds me of something disengaging
+   41 = Nothing
+   42 = Breaking noise, maybe from crumbling chozo statue.
+   43 = Another explosion, sounds muffled
+   44 = Nothing
+   45 = A double-clicking sort of sound
+   46 = Bubbling used in some rooms where lava rises
+   47 = Swooping Norfair enemy?
+   48 = Torizo shooting
+   49 = Furry wall crawlers from Maridia
+   4A = Very odd. Sort of a buzzing sound.
+   4B = Stepping sound from the Wrecked Ship Chozo statue.
+   4C = Draygon shooting his sticky white stuff ^_^
+   4D = Low pitch humming sound you hear in the background of some rooms (ie: the one right before the boss statues.)
+   4E = Slightly different power bomb sound
+   4F = Splashing sound?
+   50 = Metroid screech (only works with Tourian/Maridia BGMs)
+   51 = Some sort of echoing noise
+   52 = Alternate metroid screech?
+   53 = Squishing noise
+   54 = Lower pitched skree noise
+   55 = Similar to #4A
+   56 = 'Suit get!' noise
+   57 = Crumble block?
+   58 = Another metroid screamm
+   59 = Ridley's roar
+   5A = Metroid feeding noise?
+   5B = Skree noise
+   5C = Skree meets ground
+   5D = Very subtle noise, sounds like rubbing/scraping
+   5E = Sounds like a swishing of air made from swinging a large object?
+   5F = Norfair bouncy ball enemy?
+   60 = Sounds VERY suitable for a mini-crocomire, but needs to be with a Crocomire/Kraid BGM
+   61 = Starts off like a power bomb but truncates before getting very high pitched
+   62 = Scraping noise?
+   63 = Mother Brain explosion shot
+   64 = Similar to #61
+   65 = Swooping horsefly thing from brinstar
+   66 = Space pirate noise
+   67 = Space pirate shooting noise
+   68 = Sounds like same instrument used to make the Kraid/Crocomire boss anticipation BGM
+   69 = Completely unrecognizable
+   6A = Puffing noise from those super missile giving cacti things.
+   6B = Mother Brain eye beam
+   6C = Subtle knocking noise
+   6D = Super missile explosion?
+   6E = Mother Brain (first form) oww noise
+   6F = Mother Brain (second form) scream
+   70 = Snail enemy rolling noise
+   71 = Nothing?
+   72 = Shitroid feeling sorry noise
+   73 = Draygon roar/Phantoon scream (Both work flawlessly)
+   74 = Crocomire roar/Shitroid dies (Both work flawlessly)
+   75 = Collapsing Crocomire bones (works everywhere o.O)
+   76 = Super missile explosion?
+   77 = Crocomire death throes in lava pit
+   78 = Shitroid feeding off of Samus in Tourian and Maridia BGM/Shitroid feeding off of Mother Brain during with battle's BGM.
+   79 = Phantoon death throes?
+   7A = More Phantoon death throes?
+   7B = Even more Phantoon death throes?
+   7C = Botwoon barking
+   7D = Sad Metroid :(
+   7E = Mother Brain roar
+   7F = Mother Brain is chargin her laser
+
+Library 3
+9125 ($0655 = 0F)
+912F ($0655 = 09)
+9139 ($0655 = 03)
+9143 ($0655 = 01)
+914D ($0655 = 06)
+   00 = Nothing
+   01 = Clear sounds from this library?
+   02 = Low Health alarm
+   03 = Speedrun
+   04 = Land from jump (loud)
+   05 = Land from jump (soft)
+   06 = Footstep
+   07 = Opening door
+   08 = Closing door
+   09 = Hit a red door with a missile
+   0A = Frozen enemy
+   0B = Elevator moving
+   0C = Super jump charged
+   0D = Typewriter? (during intro text)
+   0E = Gate moving
+   0F = Super jump
+   10 = Similar to bomb, but not as long. Unsure (might be for boss explosions)
+   11 = Sounds kinda like a block breaking
+   12 = Clear sounds from this library?
+   13 = Bomb explosion
+   14 = Samus's ship door opening
+   15 = Samus's ship door closing
+   16 = Block break --> explosion (that's what it sounds like at least)
+   17 = Space Pirate beam
+   18 = Nothing
+   19 = 'Busy' sound. 
+   1A = Nothing
+   1B = Same instrument as busy sound, random notes
+   1C = Sounds similar to normal beam
+   1D = 
+   1E = 
+   1F = 
+   20 = 
+   21 = 
+   22 = 
+   23 = 
+   24 = 
+   25 = Stop speed running sound?
+   26 = 
+   27 = 
+   28 = 
+   29 = 
+   2A = 
+   2B = 
+   2C = 
+   2D = 
+   2E = 
+   2F = 
+
+
+
+Projectiles/bombs
+
+Cooldown times are stored at 90:C254. Normal beam order (charge beam adds 10)
+Cooldown times (held, no charge beam) are stored at 90:C283. Normal beam order
+Missile cooldown at 90:C27B, super at C27C, bomb at C27F
+Sounds start at 90:C28F, and are 2 bytes each. Normal beam order, charge beams start at 90:C2A7. Missiles at C2C1, Supers at C2C3.
+Beam instructions are at 90:B96E. 2 bytes each, normal beam order, uncharged beams only?
+Charge beam instructions (only?) are at 90:BA3E. 2 bytes each, normal beam order.
+90:B197 (JSL) sets the initial speed for projectiles (including the boost from Samus's current speed)
+90:B887 has code for firing uncharged beams (also used by hyper beam)
+90:B986 has code for firing charged beams
+90:BA56 has a *ton* of code, to find out if Samus can fire a beam in her current position. If so, place the beam where it should start, and make it travel in the correct direction. Might do more, but that's what I got from a glance through.
+90:BCBE clears a ton of stuff. Unknown purpose
+90:BCD1 has code for firing hyper beams
+90:BD64 goes to a routine depending on the direction. Seems to check for point-blank collisions (fails at GGG)
+90:BDB2 goes to a routine depending on the direction, when Samus has the wave beam equipped. Probably checks for point-blank collisions with enemies? Pure guess
+90:AC39 checks current number of beams and cooldown when trying to fire.
+90:CCC0 has code for triggering powerbomb + beam attacks
+
+TODO: 93:8000 (JSL)
+
+Random
+When 0A60 is E91D, the game can control Samus. E91D calls 91:83C0 (get controller input from game), then the normal 91:8000.
+If Samus collides with a solid enemy (Zebetites, kagos, frozen enemies...) the game JMPs to A0:AA2F,X, where X is ($0B02 * 2), Samus's current collision detection direction.
+90:DF99 seems to handle bomb jumping
+A0:9785 probably detects/sets up bomb jumping
+
+92:D94E,X: Determines tilesets. Indexed by 2*0A1C.
+Value + 0A96*4 = pointer to entry
+Entry: First byte --> $16, second byte --> 0B24, second byte * 7 --> $12, 92:D91E,(first byte * 2) + $12 --> $071F
+Value + 0A96*4 + 2 = pointer to entry 2
+Entry 2 is a pointer
+If first byte == #$FF, just leave instead (No tiles used for bottom half)
+1st byte * 2 --> Y, second byte --> 0B26, second byte * 7 --> $14, 92:D938,Y + $14 --> $0721, 
+
+92:9263,X: Determines tilemaps for top half. Indexed by 2*0A1C.
+Value + 0A96 --> $0AC8 (Almost never used)
+(Value + 0A96) * 2 --> X, 92:808D,X --> Y. THAT's the specific pointer to current tilemap.
+
+92:945D,X: Determines tilemaps for bottom half. Indexed by 2*0A1C.
+Value + 0A96 --> $0ACA (Almost never used)
+(Value + 0A96) * 2 --> X, 92:808D,X --> Y. THAT's the specific pointer to current tilemap.
+
+Tilemaps are 2 bytes for # of sprites to load + 5*(# of sprites to load). Sprite entries:
+2 bytes of X offset (100 - 1FF => -100 - -1, 00 - FF => 00 - FF) and size (negative = larger size), 1 byte for Y offset, 2 bytes direct to remaining OAM data.
+
+
+7E:0A1F: Samus's movement type:
+00 = Standing
+01 = Walking/running
+02 = normal jump
+03 = spin jump
+04 = morph ball on ground
+05 = crouch
+06 = falling
+07 = Glitchy (morph ball/spinjump), unused?
+08 = morph ball in air
+09 = Glitchy morph ball, unused?
+0A = Hurt
+0B = Can fire grapple beam, not moving. (unused?)
+0C = Can fire grapple beam and change pose, no movement. (unused?)
+0D = Can change pose, no movement or firing. (unused?)
+0E = Turning around
+0F = Standing/crouching, and crouching/morphball
+10 = Moonwalking
+11 = spring ball on ground
+12 = spring ball in air
+13 = falling with spring ball
+14 = wall jump
+15 = Ran into a wall
+16 = Grappling
+17 = Turning in mid-air (jumping)
+18 = Turning while falling?
+19 = Spin back
+1A = Grabbed by Draygon
+1B = Superjump / Drained by Metroid / Damaged by MB's attacks / CF
+
+Enemy routines:
+A0:8FD4 Main routine. See MainEnemyRoutine.txt
+A0:9423 (JSR) Draws enemies, 1 at a time
+A0:9758 (JSR) Interaction with Samus, depends on $0F88,X's 2 bit. If set:(projectiles: JSR $9B7F, bombs: JSR $9D23, Samus: JSR $9A5A) Not set:(projectiles: JSR $A143, bombs: JSR $A236, Samus: JSR $A07A)
+A0:9A5A (JSR) Check for collision with Samus. If they collide, JSL to that hitbox's 0Ath byte (Samus collision code). This routine disables Samus's invincibility if she is using blue suit or screw attack; if there are no enemies she'll get invincibility time with them.
+A0:9B7F (JSR) Check for collisions of all of the enemy's sprites/hitboxes in $0F8E with all projectiles. If there's a collision, JSL $A09D17 then RTS.
+A0:9D17 Small routine, just JML to code for enemy/projectile detection. Address used is at (($0F8E,X),(8*n1)),(C*n2). n1 = sprite number, n2 = hitbox number 
+A0:9D23
+A0:A07A
+A0:A143 (JSR) Check for collisions of main hitbox with all projectiles. If there's a collision, JSL $A0A226 then RTS.
+A0:A226 Small routine, just JML to code for enemy/projectile detection. Address used is projectile pointer in enemy rom ($0F78 + 32)
+A0:A236
+A0:A3AF Death animation
+A0:A45E Divide damage (A) by 4 for Gravity, or 2 for Varia. Nothing if neither suit. Result in A and $12
+A0:A63D A common hit routine, I think. JSR $A6DE, display the 'hit' graphic if applicable. If enemy is at 0 health, set 7E:7002,X to the projectile type ($0C18,Y, AND #$0F00), and play the death animation (JSL $A0A3AF)
+A0:A6DE (JSR) Handles beam damage, freezing, and sound.
+A0:ADE7 Determines if enemies with normal sprites are off screen. I guess. 1 at a time
+A0:B067 Get the absolute value of A (also into $0E32)
+A0:B0B2 Cosine multiplication. (cos (A * 128/pi) * 0E32) --> 0E36.0E39
+A0:B0C6 Called by Wavers. Sine multiplication, (-sin (A * 128/pi) * 0E32) --> 0E36.0E39
+A0:B6FF 16bit ($26) * 16bit ($28) = 32bit ($2A)
+A0:BB70 Call after pushing a X then Y pixel position onto the stack (2 bytes each). 0DC4 is set with block #, and stack is also cleaned up (do not try to pull Y and X position from stack)
+A0:C0AE Rough angle calculation given X (in $12) and Y (in $14). Angle 0 = up (-Y), 40 = right (X), 80 = down (Y), C0 = left (-X)
+A0:C26A (JSR) Enemy instruction AI loop (uses $0F92)
+A0:C6AB Common horizontal movement routine, moves by $14.$12. TODO
+A0:C786 Common vertical movement routine, moves by $14.$12. TODO
+A0:C8AD X must hold enemy pointer. Align enemy vertically to slopes if currently in contact with slopes.
+
+A3:E8A5 (JSR) Used by geemers... adjusts horizontal speed according to current slope being traversed.
+
+General use routines:
+80:818E 7E:05E7 = bit (A mod 8), X = A / 8. Most often used for testing or setting specific bits in a bit array.
+80:81A6 Set boss bits in A for current area (7E:D828,X)
+80:81DC checks if the boss bits for the current area matches any bits in A. SEC if there's a match. It also pushes and pulls Y for ABSOLUTELY NO REASON.
+80:81FA marks an event as happened. Event bit # must be stored in A.
+80:8233 calls 80:818E and tests against 7E:D820,X. CLC if 0, SEC if 1.
+80:82C5 Wait until the end of a VBlank
+80:82D6 Multiplies A and Y together (16-bit * 16-bit). Result in $05F1-$05F4. Not accurate: Can lose carry to top byte.
+80:8573 Pointed to by misc. error handling, should never be called. JML $808573, infinite loop, game stops forever.
+80:8C83 Processes $D0,X table. Runs once a frame during VBlank, should not be called outside of VBlank.
+80:8FC1 Changes music song/instruments or music track to A, with an 8-frame delay. Makes sure 0639 does not lap 063B.
+80:8FF7 Changes music song/instruments or music track to A, with a Y-frame delay (minimum of 8). Does not stop 0639 from lapping 063B.
+80:91A9 Initiate a DMA transfer. 2116 should be set before hand, if it's being used. First byte tells channel (00 - 07), next 7 are copied into 47x0-47x6.
+80:9632 (JSR) DMA transfer to VRAM. VRAM address = 05BE, 05C0 - 05C4 = 4312 - 4315. Used for room tiles, enemy graphics, background/foreground graphics, and status bar(?)
+80:9B44 Status bar routine. Handles reserve tanks, energy tanks, health, missiles, super missiles (skips 3-digit SM code), power bombs, changing items, and finally auto-unselected flashing. Then puts in an entry in the $D0 graphic table to update itself. Format: Length(2 bytes), Offset source (3 bytes), something (2 bytes)
+80:A2F9 (JSR) Calculates Layer 2's X scroll position (0917) based on Layer 1 (0911) and Layer 2's X scroll percent (091B)
+80:A33A (JSR) Calculates Layer 2's Y scroll position (0919) based on Layer 1 (0915) and Layer 2's Y scroll percent (091C)
+80:A37B (JSR) Translates Layer 1 and Layer 2 scroll positions to BG1 and BG2 scroll positions
+80:A3A0 Updates only BG1 when scrolling, I think
+80:A3AB Updates BG1 and BG2 graphics when scrolling
+80:A4BB (JSR) Calculate blocks scrolled for various layers, which is used to update room graphics
+80:A528 Handles autoscrolling when Samus isn't moving horizontally and part of the screen is on a no-scroll area.
+80:A641 Handles scrolling when Samus moves and triggered scrolling right. Checks scrollmap.
+80:A6BB Handles scrolling when Samus moves and triggered scrolling left.
+80:A731 Assumed to mirror above, not moving Y
+80:A893 Assumed to mirror above, scrolling up
+80:A936 Assumed to mirror above, scrolling down
+80:AB70 (JSR) Update a block in Layer 2 / BG2
+80:AB75 (JSR) Update a block in Layer 1 / BG1 (because of scrolling?). Room X/Y is 
+80:AD1D Run to 'Fix' doors moving up; redraws top row of blocks.
+80:AE10 (JSR) Record X/Y scrolling for BG1/BG2 during room transitions
+80:AF89 (JSR) Scrolling routine for doors moving up. First time run is actually a fix to redraw top row of blocks.
+80:B0FF Decompression routine. 3 bytes after JSL are the target address, and $47 contains a 3 byte source address. Source may overflow bank, target may NOT.
+80:B119 Decompression routine. Target address in $4C (3 bytes), source address in $47 (3 bytes).
+
+81:879F Main sprite drawing routine. Sprite map starts at (Databank):YYYY. $14 holds X center, $12 holds Y center, $16 holds pallete number * 200. Sprite maps start with 2 bytes for # of tiles, each tile is 5 bytes: First 2 bytes xxxx xxxx S??? pppX  (9-bit signed X offset, pallete that is almost never used, Size bit), then Y offset (1 byte), and last 2 bytes are remaining OAM (flips, priority, pallete that's not used, tile #)
+81:8EB2 Unused, but could be used as a general purpose write-to-D0 command. $00 holds 3-byte address, copy data from there to $D0,X until you run into a FFFF. (Does something for debug menu normally)
+
+82:8F70 (JSR) Writes the number next to your reserve amount in the pause screen
+82:A12B (JSR) Sets the equipment screen up (reserve tank tiles, clears uncollected items, greys unequipped items, oranges equipped items). Runs when the game is paused
+82:D961 (JSR) Gradual color change routine for all colors, setting C402 to C.
+82:DA02 (JSR) Gradual color change routine for all colors, based on C402 and C400.
+82:DA4A (JSR) Gradual color change routine. Y is new color (C200,x), X is original color (C000,x), A is current change amount
+82:DE12 (JSR) Load data from DDB during room transition
+82:DFC7 (JSR) Ensures that Samus is drawn every frame?
+82:E039 (JSR) Sets up DMA transfer to VRAM. 7 bytes after the JSR are used as arguments: Source address (3 bytes), VRAM address (2 bytes), size (2 bytes). Waits for an IRQ to DMA - ONLY during door transitions.
+82:E29E (Indirect JSR through 7E099C) Handles room transitions
+
+84:8290 calculates the X and Y coord of a PLM from it's absolute location (1C87,X). Results stored in $1C29(X) and $1C2B(Y). NOTE: This must be called LONG (JSL). Do not attempt to use this as a PLM instruction, even though it's in the same bank as PLMs.
+84:83D7 Creates PLMs. The routine that calls it must have after it the X and Y coordinate of the PLM and the address of the PLM header, in that order, after the JSL to 84:83D7. The PLM will be set up completely and run once. Then the code will resume, after those four bytes. If there are already too many PLMs and the game fails to make a new one, it just resumes code past those four bytes.
+84:84E7 Creates PLMs. Before running, nth block is stored at $0DC4 (Block Samus is in contact with?) (Multiplied by two to get absolute address), A contains the PLM header. (TODO!)
+
+85:8080 draws and handles message boxes. NOTHING else runs while this is running, aside from the IRQ stuff.
+
+86:8027 spawns enemy specific projectiles (0F96/0F98 copied to projectile).
+86:8097 spawns enemy/room projectiles (0 used for pallete and sprite index). Used by some enemies, also gate PLMs.
+86:8104 is the main enemy/room projectile engine. Called every game frame.
+86:8125 (JSR) handles enemy/room projectile processing for current projectile this frame.
+86:83B2 Check to draw all enemy/room projectiles
+86:83D6 (JSR) Found a projectile to draw, draw it
+86:C26C Calculates A * sin ($12 * 360/256), result in A.
+86:C272 Calculates A * cos ($12 * 360/256), result in A.
+86:C29B (JSR) Multiply $26 (2 bytes) by $28 (2 bytes), result in $2A (4 bytes). When leaving, A = $2B (2 bytes), Y = $2D.
+86:F106 Random drop routine?
+
+88:8435 Set up a DMA entry. Arguments are stored after the JSL that calls this: values for 4300/4301 (2 bytes total), 2 byte pointer to plm-esque instruction list
+
+90:8A4C (JSR) Atmospheric effects (water splash, air bubbles, footsteps)
+90:85E2 (JSR) Draws Samus
+90:87BD (JSR) Draw Samus's echoes
+90:8EA9 (JSR) Check Samus's direction and go to E4AD or E464, then 9350 or 93B1 depending on net movement.
+90:8E64 (JSR) Simple JSR list: 973E, 9BD1, 9A7E, 8EA9. Effectively, calculates horizontal momentum, speed, and new position and any collisions
+90:923F (JSR) Calculate values for initial $12 and $14 (Y movement distance, don't currently understand calculations), and goto 93EC or 9440
+90:9348 (JSR) Clear $12 and $14 and goto 90:8EA9
+90:9350 (JSR) moves Samus left $12.$14 pixels with all the checks; this --> A0:A8F0, 94:971E, E5CE, 9842, 94:87F4
+90:93B1 (JSR) moves Samus right $12.$14 pixels with all the checks; this --> A0:A8F0, 94:971E, E5CE, 9826, 94:87F4
+90:93EC (JSR) moves Samus up $12.$14 pixels with all the checks; this --> A0:A8F0, 94:9763, E606, 988D
+90:9440 (JSR) moves Samus down $12.$14 pixels with all the checks; this --> A0:A8F0, 94:9763, E61B, 9871
+90:94EC Main scrolling routine? Has $0CF8 scrolling (JSL $80A528 and JSL $80A731), and then normal scrolling. Also JSRs to $07E9 if it's not 0000. Sets previous frame's position($0B10 - $0B17)
+90:95A0 (JSR) Handles horizontal scrolling. If Samus didn't move, JSL $80A528 and do nothing else. Calculates ideal position, adjusts by how much Samus moved, and JSL $80A641 if scrolling right, JSL $80A6BB if scrolling left.
+90:964F (JSR) Handles vertical scrolling. If Samus didn't move, JSL $80A731 and do nothing. Calculates ideal position, adjusts by how much Samus moved, and JSL $80A893 if scrolling down, JSL $80A936 if scrolling up.
+90:96C0 (JSR) Calculates the horizontal distance Samus has moved last frame, + 1 pixel. Results in $0DA2.$0DA4.
+90:96FF (JSR) Calculates the vertical distance Samus has moved last frame, + 1 pixel. Results in $0DA6.$0DA8.
+90:973E (JSR) Checks if Samus is being affected by water, or if she isn't walking/running on ground, if so, set her speed to 0 if her running byte isn't set ($0B3C). Otherwise, increase and cap her speed as appropriate.
+90:9826 (JSR) Move Samus $12.$14 pixels right and put $12 and $14 into $0DAE and $0DB0
+90:9842 (JSR) Move Samus $12.$14 pixels left and put -$12 and -$14 into $0DAA and $0DAC
+90:9871 (JSR) Move Samus $12.$14 pixels down and put $12 and $14 into $0DB6 and $0DB8
+90:988D (JSR) Move Samus $12.$14 pixels up and put -$12 and -$14 into $0DB2 and $0DB4
+90:98BC Load Samus's vertical speeds(+2 for water, +4 for lava): Highjump: 9EBF.9EB9, normal: 9ECB.9EC5. Also adds Samus's horizontal speed / 2, IF Samus has speed boots. Sets Samus moving up, clears 0A9E and 0AA0, unknown uses.
+90:9A7E (JSR) Modifies momentum according to $0B4A (add or subtract) and X (entry start). X is usually a start pointer indexed by $0A1F *#$0C
+90:9BD1 (JSR) Set $0A6C to #$A08D if affected by FX3, or #$A1DD if affected by FX3 and FX3 fills the room. Also, X = ($0A1F * #$0C) + $0A6C when leaving.
+90:A7E2 Disable and clear automap. Check a list for boss number ($179C). If one isn't found, cleanup and RTS, else use the argument for a list of entries for $12 and $18, then JSR to 90:A8A6 after each entry, until a negative entry (such as FFFF). Entry format: bytes 1 and 3 ignored, bytes 2 and 4 = X/Y offset from topleft corner of room.
+90:A8A6 (JSR) Set tiles explored for current area, depending on $12 and $18 (X and Y offsets from room's topleft corner).
+90:ADB7 Clean up (aka delete) projectile/bomb. Index in X.
+90:AE06 Kill projectile. 0C18 index in X.
+90:C663 (JSR) Draw arm cannon 'open' sprite.
+90:D0AB (JSR) Used by 0A58. Vertical Super Jump routine.
+90:D0D7 (JSR) Used by 0A58. Diagonal Super Jump routine.
+90:D106 (JSR) Used by 0A58. Horizontal Super Jump routine.
+90:D132 (JSR) Super jump horizontal movement: Set $0A68 to #$000F, add acceleration to speed (cap at F.00 pixels), then standard enemy detection/movement (E4AD/E464, A0:A8F0, 94:971E, 94:87F4). Also caps scrolling to F pixels
+90:D1FF (JSR) Super jump vertical movement: Set $0A68 to #$000F, add rate of acceleration (0B32) to acceleration (0DEC), add acceleration to vertical speed, set movement and cap it at at E.XX pixels, add external movement and cap total movement at F.XX pixels. Finally gets to normal movement stuff: A0:A8F0 and 94:9763, then cap scrolling to E pixels.
+90:D2BA (JSR) Check whether or not to end Super Jump, and do so.
+90:E23B Set Samus into the grabbed by Draygon pose. A = 0 means left, A = 1 means right
+90:E4AD (JSR) adds Samus's horizontal speed to $12.$14 (moving right). Also calls E4E6.
+90:E464 (JSR) subtracts Samus's horizontal speed from $12.$14 (moving left). Also calls E4E6.
+90:E4E6 (JSR) Convulated routine to divide Samus's horizontal movement by 2^($0A66).
+90:E5CE (JSR) If Samus collided with something, stop her horizontally and clean up speed(91:DE53). Else just clear 0DC6 and 0DCE.
+90:E606 (JSR) Set $0DC6 to 4 if $0DD0 is set, else clear $0DC6. Unknown use
+90:E61B (JSR) Sets $0DC6 depending on $0DD0 and $0A1F. Unknown use
+90:EC3E Just calculates Samus's lower boundary and puts it into $12
+90:EC58 This calculates Samus's lower and upper boundaries, then puts them in $12 and $14.
+90:ED88 (JSR) Footstep graphics. Water splashing in Maridia and Crateria, dust if speedrunning. Only works on certain frames, assumed to be walking/running.
+90:EEE7 (JSR) Echoes for Blue Suit - updates echo position to Samus's.
+90:F084 Very general use routines, depending on A. Can range from 0 to 1F.
+   00:F109 Put #$E713 into $0A42, #$E8DC into $0A44
+   01:F117 Put #$E695 into $0A42, #$E725 into $0A44
+   02:F125 Set Samus to standing (facing current direction). JSL to $91F433 and $91FB08, then go to 00
+   03:F152 Check GrappleFire pointer. If not #$C4FC, just set it to #$C8C5. Else if spin jumping or wall jumping, set to standing (facing current direction), JSL $91F433 and $91FB08, JSR $F0EE, SEC and RTS
+   04:F19B Clear charge beam pallete, charge beam, JSR $BCBE, JSL $91DEBA.
+   05:F38E 
+   06:F1AA Put #$E713 into $0A42, #$E8DC into $0A44, play a sound if charge is under F, goto 04
+   07:F1C8 JSL $91E3F6, #$E8EC into $0A44, #$A337 into $0A58, #$EC14 into $0A5C, #$E913 into $0A60
+   08:F1E9 #$E8CD into $0A42, #$E8DC into $0A44, Samus facing forward, JSL $91F433, $91FB08, $91DEBA. #$EB52 into $0A5C, update $0A20 - $0A27, JSL $868027 with Y = #$A387 then Y = #$A39D, JSL 82E118.
+   09:F23C JSL $8DC4E9, Y = #$E1F4 (no suits), #$E1F8 (varia), or #$E1FC (grav). Samus facing forward. JSL $91DEBA, $91F433. Set Samus's animation to frame 2, delay 3
+   0A:F28D #$E90E into $0A5C, CLC and RTS. Short.
+   0B:F295 #$EB52 into $0A5C, goto 01
+   0C:F29E JSL $91E633, if $0A44 is #$E8D6, #$E695 into $0A42 and #$E725 into $0A44. Run when unpausing.
+   0D:F2B8 If GrappleFire pointer is #$C4F0, A = 0. Else A = 1.
+   0E:F2CA 
+   0F:F2D8
+   10:F2E0
+   11:F2F8
+   12:F320
+   13:F328
+   14:F331
+   15:F310
+   16:F3C9
+   17:F3DD
+   18:F3C0
+   19:F3FB
+   1A:F409
+   1B:F411
+   1C:F41E
+   1D:F471
+   1E:F4A2
+   1F:F4D0
+
+90:F0EE (JSR) Update $0A20 through $0A27
+90:F576 (JSR) Checks to play sounds: Continue charge sound, end(?) blue suit sound, end spin jump, and game over if escaping Zebes and 0A5A = E114?
+
+91:D6F7 Almost always branches at start. JSR $D743, if CLC, JSR $D72D,X (X = 2*0ACC). If that is CLC (or if D743 is SEC) then LDA $D724,X (X=$0A74) and JSR $DD5B. JSR $D8A5 then return. Following options are for 0ACC's options.
+   00: 
+   01: 
+
+91:D743 (JSR) Sets Samus's pallete depending on Charge beam release, grapple, or charge amount/pseudo-screw attack. SEC if returning to normal pallete?(yellow charge release ends, or hyper flash ends). If in certain rooms (an FX3 condition? 1982 = 28 or 2A), may cycle visor colors.
+91:D8A5 (JSR) 
+91:DD5B (JSR) Loads 9B:0000,X to 9B:001F,X into Samus's pallete
+91:DE53 is cleanup for speed counter/blue suit/speedechoes because Samus was stopped for some reason.
+91:DEBA Reset pallete with 91:DD5B depending on suit. Grav: X = 9800. Var: X = 9520. Norm: X = 9400
+91:DF51 Deal damage (A) to Samus. Does NOT do any damage if damage = 300 (#$12C) or if time is paused by x-ray / reserve tanks, ignores suits. NOTE: If damage is negative, game will stop (JML $808573) (change $91DF65 to 00 to skip 300-damage check)
+91:EADE (JSR) Check to see if Samus walked/ran into something. If so, change to the appropriate pose; 91:EB74,X, X = 2*(aiming direction). Also checks if Samus is trying to walk/run into something.
+91:ECDA (JSR) Run during start of transitions. Corrects Samus's height so crouching/morphing ends on ground instead of in the air.
+91:F404 If 0A1C isn't new, CLC and RTL. If it is, JSR $FDAE (check pose size), JSL 91:F433(check pose changes), JSL 91:FBBB(check movement type changes), JSL 91:FB08(handle animation frame), STZ $0A9A. If 0A1C changed, SEC, else CLC. 
+91:F433 Set $0A1E depending on $0A1C, JSR $F468, and if Samus was previously screw attacking, JSL $91:DEBA to reset pallete.
+91:F468 (JSR) First go to F4A2,X (X = 0A1F*2), then set 0A1E depending on 0A1C. If it's E (turning on ground), refresh X and goto F4A2,X again, and refresh 0A1E (TODO, check routines)
+91:FB08 Get the animation frame number and timer for the current pose, adjusted (FX3, 0A66, 0A9A)
+91:FBBB Goes to FBCF,X, X = 0A1F*2.
+91:FDAE (JSR) Nothing if 0A1C = 0 or 9B. If new vertical radius is bigger than old radius, check for collisions and adjust Samus's height as appropriate. If impossible to fit (both sides hit something), revert to oldstance
+
+93:80CF Part of kill projectile - Plays sound and sets up graphic
+
+94:87F4 Detects and handles horizontal slope collissions for slopes with a BTS AND #$001F greater than 4
+94:9495 (JSR) Calculate how many blocks tall Samus is covering, and put it in $1A and $1C
+94:94B5 (JSR) Calculate how many blocks wide Samus is covering, and put it in $1A and $1C
+94:9515 (JSR) Horizontal block collision reaction(94D5) for Samus. Address of block must be in A when called. TODO... deserves its own document
+94:952C (JSR) Vertical block collision reaction(94F5) for Samus. Address of block must be in A when called. TODO... deserves its own document
+94:9543 (JSR) Check Samus for collision with blocks, assuming current horizontal speed is $12.$14
+94:959E (JSR) JSR $94B5, then calculate if Samus is moving up or down, then the block(s) she is in contact with in that direction, then JSR $952C with the block in A and address in $0DC4. Left to Right checking.
+94:95F5 (JSR) JSR $94B5, then calculate if Samus is moving up or down, then the block(s) she is in contact with in that direction, then JSR $952C with the block in A and address in $0DC4. Right to Left checking.
+94:96AB 
+94:9C1D (JSR) calculates the block at (1A + 1E) pixels X, and (1C + 20) pixels Y. Result in 0DC4
+94:971E is collision detection and movement of Samus's X position all in one. I think. Lotta subroutines: this --> 9543 --> (9495, 9515 --> 94D5,X)
+94:9763 is collision detection and offset of Samus's Y position all in one. I think. Lotta subroutines: this --> (959E, 95F5) --> (94B5, 952C --> 94F5,X)
+94:A052 (JSR) is bomb reaction routine for blocks. X must contain (block number * 2); usable for 7F:0002,X.
+94:A46F Projectiles' block collision detection
+
+A0:8687 Handle room shaking. 183E contains shake type, looks up displacement in table at A0:872D (2 byte values in pixels: BG1 X, BG1 Y, BG2 X, BG2 Y)
+A0:B3C3 Not a routine. Table of -cos values (2 bytes each, values from FF00 to 0100. Angle (index/2) from 0 to 13F)
+A0:B443 Not a routine. Table of sin values (2 bytes each, values from FF00 to 0100. Angle (index/2) from 0 to FF)
+
+A0:A8F0 checks for collisions with (active) enemies, and puts something in A depending on the collisions. 0000 means no collisions, FFFF means yes collision(s). Sets 7E:182C,X and 7E:1834,X, 7E:184A - 7E:185B (see RAMMap.txt)
+
+A6:D4F9 checks for collisions with blocks at pixel X/Y. All non-air blocks are considered fully solid, SEC if hit, CLC if air.
+
+A9:C460 A = (sin($12) * A) / 256. X is preserved
+A9:C465 A = (cos($12) * A) / 256. X is preserved
+A9:D2E4 Copy 2*A bytes from (Y) to 7E:C000,X. Assumes REP #$30
+A9:D2F6 Copy 2*A bytes from (Y) to 7E:C200,X. Assumes REP #$30
+
+B4:BC26 creates enemy-related sprites like dud shots and hits (no sound). $12/$14 is X/Y, $16 is type. $18 is probably pallete or something... Used by Draygon for Evirs
+   0000 = Charge beam shine
+   0001 = 3 charge beam spots
+   0002 = 3 different charge beam spots, plus yellow shine (?)
+   0003 = Normal explosion
+   0004 = Bomb explosion
+   0005 = crumbling lights? Don't recognize it at all
+   0006 = Dud enemy explosion
+   0007 = Power bomb (lol)
+   0008 = Elevator light (larger than elevator)
+   0009 = Smoke (might be the stuff during exploding Ceres/Zebes)
+   000A = Small smoke (no idea where it's used)
+   000B = Water splash (footsteps in certain areas)
+   000C = Yellow smoke (I recognize it, but I don't remember where it's from)
+   000D = Small energy
+   000E = Large energy
+   000F = Bomb
+   0010 = Small energy (?), slow animation
+   0011 = Very similar to screw attack/speed run debris
+   0012 = Large smoke, fast animation (no idea where it's used)
+   0013 = Large smoke, fast animation + something in the center at the end of the animation
+   0014 = Large smoke, fast animation + something larger in the center
+   0015 = Large smoke, normal animation (used by Draygon at least)
+   0016 = Looks like miscolored plasma beam...
+   0017 = Fast miscolored plasma beam
+   0018 = Air bubbles, used by Samus and Draygon
+   0019 = Save station lights
+   001A = Slow closing gate
+   001B = Fast opening gate
+   001C = Elevator (doesn't go away)
+   001D = Large explosion
+   001E+ = Glitchy stuff (tested 1E, 1F, 20, 24, 31, 35, 36, 38, 40)
+   0032 = Looks like crackling electricity, doesn't go away. Supposedly used by something.. metroids?
+   0033 = More crackling electricity (might not be used)
+   0034 = Glitchy. Rapidly flashing stuff, shape suggests it's supposed to be a Metroid shell. Supposedly used, probably by Metroids
+   0037 = Freeze hit (used)
+   003B = Evirs that assist Draygon (facing left)
+   003C = Evirs that assist Draygon (facing right)
+   003D = Big air bubbles, used by Draygon
+
+
+ADDA09F0016BC220ADF60A8512ADFA0A8514A9000085164C26BC
+
+Liquid check, result in X (A, X, and $12 used):
+ADA209892000D018223EEC90AD5E193006C51230108009AD62193004C5123012A200008010AD7E19890400D0F3A202008003A20400
+	LDA $09A2
+	BIT #$0020
+	BNE ++
+	JSL $90EC3E
+	LDA $195E
+	BMI +
+	CMP $12
+	BMI +++
+	BRA ++
++
+	LDA $1962
+	BMI ++
+	CMP $12
+	BMI +
+++
+-
+	LDX #$0000
+	BRA ++
++++
+	LDA $197E
+	BIT #$0004
+	BNE -
+	LDX #$0002
+	BRA ++
++
+	LDX #$0004
+++
+	
+0 = Normal, 2 = Water, 4 = Lava
+The above is pretty commonly used in the game to see what atmosphere Samus is in. Gravity nullifies water and lava.

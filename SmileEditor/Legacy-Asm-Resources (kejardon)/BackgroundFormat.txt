@@ -1,0 +1,102 @@
+;Available background instructions: E5D7 E5EB E616 E637 E63E E64B E652 E5D9
+;Significant note: This is run when the game is unpaused as well as from doors. Though it uses a different jump table at E9D5 instead.
+
+;$165D7-$16658	;0000: End BG_DATA
+	SEC
+	RTS
+
+;$165D9 ALTERNATE ENTRY POINT	;000E: Copy stuff to VRAM if entered by certain door (2 bytes to check for which door, 3 byte source address, 2 byte VRAM address, 2 byte size)
+	LDA $078D
+	CMP $0000, Y
+	BEQ +
+	TYA
+	CLC
+	ADC #$0009
+	TAY
+	CLC
+	RTS
++
+	INY
+	INY
+;$165EB		;0002: Copy stuff to VRAM every time, 3 byte source address, 2 byte VRAM address, 2 byte size
+	LDA $0003, Y
+	STA $05BE
+	LDA $0000, Y
+	STA $05C0
+	LDA $0001, Y
+	STA $05C1
+	LDA $0005, Y
+	STA $05C3
+	LDA #$8000
+	TSB $05BC
+-
+	BIT $05BC
+	BMI -
+	TYA
+	CLC
+	ADC #$0007
+	TAY
+	CLC
+	RTS
+
+;$16616 ALTERNATE ENTRY POINT	;0004: Decompress stuff to RAM. Source address (3 bytes), target address (bank 7E, 2 bytes)
+	PHY
+	LDA $0000, Y
+	STA $47
+	LDA $0001, Y
+	STA $48
+	LDA #$7E00
+	STA $4D
+	LDA $0003, Y
+	STA $4C
+	JSL $80B119  ;Decompression routine
+	PLA
+	CLC
+	ADC #$0005
+	TAY
+	CLC
+	RTS
+
+;$16637 ALTERNATE ENTRY POINT	;0006: Clears layer 3 tilemap, I'm guessing. No arguments
+	PHY
+	JSR $E566	;Set some RAM to #$184E, then copy $0F00 bytes to VRAM at word $5880 (layer 3 alternate tilemap?)
+	PLY
+	CLC
+	RTS
+
+;$1663E ALTERNATE ENTRY POINT	;0008: Always copies data to vram, same arguments as E5EB (02). Also sets layer 3 graphic offset to $2000?
+	JSR $E5EB	;Copy stuff to VRAM (part of E5D9)
+	SEP #$20
+	LDA #$02
+	STA $5E		;Layer 3 graphics begin at VRAM word $2000? Not during status bar, of course.
+	REP #$20
+	CLC
+	RTS
+
+;$1664B ALTERNATE ENTRY POINT	;000A: Clears layer 2 tilemap, I'm guessing. No arguments
+	PHY
+	JSR $E583	;Set some RAM to #$0338, then copy $1000 bytes to VRAM at word $4800 (Layer 2 alternate tilemap)
+	PLY
+	CLC
+	RTS
+
+;$16652 ALTERNATE ENTRY POINT	;000C: Clears stuff. Doesn't look right. Is this ever used?
+	PHY	
+	JSR $E5A0  ;Set some RAM to #$0338, then copy $1000 bytes to VRAM at word $4000 and word $4800 (Layer 3 graphics and layer 2 alternate tilemap)
+	PLY
+	CLC
+	RTS
+
+
+;16566:
+	LDX #$077E
+	LDA #$184E
+-
+	STA $7E4000, X
+	STA $7E4780, X
+	DEX
+	DEX
+	BPL -
+	JSR $E039  ;VRAM transfer using arguments after JSR
+	DB $00,$40,$7E,$80,$58,$00,$0F
+	RTS

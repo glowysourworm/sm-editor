@@ -1,0 +1,16 @@
+This document starts at 82/E27C
+099C is used as a pointer to code to run. All through this time, 0998 (game state) is 0B.
+099C values:
+	E29E: Process enemies, ensure Samus is drawn. Ran until 0646 = 0643, 0647 = 0644, and 0648 = 0645 (sound queues are empty)
+	E2DB: Darken the room. Continues enemy processing and drawing Samus.
+	E2F7: Load DDB data, clear some unknowns related to layer 3 special effects.
+	E310: Align screen to door
+	E353: If moving up, then run 80AD1D before going on (First scroll 'movement', actually used to redraw top row of blocks). Else nothing.
+	E36E: Set elevator bit used if an elevator, then load new room's MDB into ram, test for roomstates, and set calculate room size. Load roomstate's values. Load new map and map-station byte if a region transition. Cleans up Layer 3 stuff. Clears old room tiles, then decompresses new tiles to 7F ram, then copy bts and background to where they go, decompresses 07C0 to 7E:A800, sets default scrolling, then *finally* done.
+	E38E: Set up scrolling + first scroll (Scrolls BG1 and Samus)
+	E3C0: Set Samus inside the new room, set next IRQ to index 16 (10 if moving down), wait for vblank to end, then reload CRE if needed, load room tiles from 07C3 (3 byte pointer)
+	E4A9: Load enemy sprites into VRAM. Set up to load music song/instruments (skipped if new song/instruments is 00). Clear Enemy/Room projectiles. Clear room animations?  Clear background effects? Clear PLMs. Loads PLMs. Run room transition code (pointer at byte A in DDB, generally fixes scrolling). Run 'Layer 1 and Layer 2 handling'(?) code (last pointer in roomstate). Also has a 'wait for scrolling to end' in the middle of it.
+	E659: Dunno, just one JSL
+	E664: Some prep work that needs to be done before gameplay can resume, I guess. Skipping it causes a pause after color is restored
+	E6A2: Positions Samus to avoid collision with the door (kinda useless), and enables some Layer 2 and Layer 3 stuff
+	E737: 'Opposite' of E2DB - brightens room and runs enemies. Set normal game mode when done.

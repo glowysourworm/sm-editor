@@ -1,0 +1,109 @@
+empty = $000E
+space = $284E
+
+Purple Letters (normal) = $28XX
+Green Letters = $38XX
+Yellow Letters = $3CXX
+
+dash = $XXCF
+A = $XXE0
+B = $XXE1
+C = $XXE2
+D = $XXE3
+E = $XXE4
+F = $XXE5
+G = $XXE6
+H = $XXE7
+I = $XXE8
+J = $XXE9
+K = $XXEA
+L = $XXEB
+M = $XXEC
+N = $XXED
+O = $XXEE
+P = $XXEF
+Q = $XXF0
+R = $XXF1
+S = $XXF2
+T = $XXF3
+U = $XXF4
+V = $XXF5
+W = $XXF6
+X = $XXF7
+Y = $XXF8
+Z = $XXF9
+
+---
+Title Screen
+---
+2-tile high characters (Top, Bottom):
+Space = $XX0F, $XX0F
+0 = $XX00, $XX10
+1 = $XX01, $XX11
+2 = $XX02, $XX12
+3 = $XX03, $XX13
+4 = $XX04, $XX14
+5 = $XX05, $XX15
+6 = $XX06, $XX16
+7 = $XX07, $XX17
+8 = $XX08, $XX18
+9 = $XX08, $XX19
+A = $XX0A, $XX1A
+B = $XX0B, $XX1B
+C = $XX0C, $XX1C
+D = $XX0D, $XX1D
+E = $XX0E, $XX1E
+F = $XX0E, $XX1F
+G = $XX0C (I think), $XX30
+H = $XX21, $XX31
+I = $XX22, $XX11
+J = $XX23, $XX33
+K = $XX24, $XX34
+L = $XX25, $XX35
+M = $XX26, $XX36
+N = $XX27, $XX37
+O = $XX00, $XX10
+P = $XX0D (I think), $XX38
+Q = $XX00, $XX39
+R = $XX0D, $XX3A
+S = $XX2B, $XX3B
+T = $XX2C, $XX11
+U = $XX2D, $XX10
+V = $XX2D, $XX3E
+W = $XX2F, $XX3F
+X = $XX40, $XX50
+Y = $XX41, $XX11 (I guess)
+Z = $XX42, $XX52
+! = $XX22, $XX53
+? = $XX44, $XX54
++ = $XX45, $XX55
+- = $XX0F (I guess), $XX56
+( = $XX47, $XX57
+) = $XX48, $XX58
+
+Japanese for $XX39 - $XX3F (top), $XX59 - $XX5F (bottom)
+---
+
+---
+Ending
+---
+Space = $XX7F
+
+1-tile characters:
+A-Z $XX00 - $XX19
+. = $XX1A
+, = $XX1B
+. = $XX1C
+' = $XX1D
+: = $XX1E
+! = $XX1F
+
+2-tile high characters:
+A-P = $XX20-$XX2F(TOP) and $XX30-$XX3F(BOTTOM)
+Q-Z = $XX40-$XX49(TOP) and $XX50-$XX59(BOTTOM)
+' = $XX4A, $XX7F
+" = $XX4B, $XX7F
+. = $XX7F, $XX5A
+0-9 = $XX60-$XX69(TOP) and $XX70-$XX79(BOTTOM)
+% = $XX6A, $XX7A
+---

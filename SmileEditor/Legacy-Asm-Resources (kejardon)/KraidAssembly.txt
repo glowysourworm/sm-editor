@@ -1,0 +1,229 @@
+;This is an xkas code file written by Kejardon, and heavily commented so other people might be able
+;to make sense of it.
+;It adds a new song to the game, and loads the song when you go 2 rooms left of Samus's ship.
+
+lorom
+
+;header   ;Uncomment this command if your rom has a header. Ick.
+
+main() {
+
+org $8FE82C
+	DL NewSongMusic    ;Adds a new pointer to end of original song data pointer table
+	                   ;New pointer index is 4B.
+	                   ;The start of the debug room is overwritten by this
+
+org $838968                ;Custom code to run for Crateria Mainstreet to Energy Tank Slope door.
+                           ;You can use the last two bytes of any door definition in SMILE
+	DW RoomTransitionCode  ;Call the code to load new music
+
+org $8FE9A0                ;Free space for the custom room transition code
+RoomTransitionCode:
+	LDA #$FF4B         ;Load 4B song data
+	JSL $808FC1
+	LDA #$0005         ;Load song track 5 (First track from song data)
+	JSL $808FC1
+	RTS
+
+;This setup (everything from org $838968 to here) allows you to load
+;instruments from another song with the normal song controls in SMILE
+;(Set song to whatever has the instruments you want, and control to 00),
+;then load the note data for this song.
+
+;I ended up not using any instruments from other songs. Oh well.
+
+;You can also simply load the song by changing a room's music data to 4B
+;and music control to 5. If you do, make sure the previous room in the game
+;had any instruments you might want to use already loaded.
+
+
+
+org $DED1C0                ;Free space at end of the rom, with the rest of music data.
+NewSongMusic:
+
+;First off, the music data is stored in blocks that are transferred to the SPC one at a time. In order
+;to set a song up, you have to enclose it in a block and set the block data.
+;The block data is simply 2 words (4 bytes). The first word is the size of the block data being
+;transferred. The second byte is where in the SPC to stick the block data.
+;I personally use xkas's labels to mark the start and end of each block, and have xkas calculate the
+;size of the block on assembling. The instrument definition block below is a nice, simple example.
+;As for where to put it in the SPC, you just have to know what goes where. That's what SPCRammap is for.
+
+	DW InstEnd-InstStart,$6CD2    ;6CD2 points to instrument 23 definition.
+                                      ;It's almost never used, so I used it.
+InstStart:
+	DB $0A : DB %10010110 : DB %01000000 : DB %11000111  : DW $AA04    ;Violin sort of instrument.
+	DB $0C : DB %10001110 : DB %00000000 : DB %10101010  : DB $01, $BC ;Drum
+InstEnd:
+
+;This part is a bit in-depth, and not a good place if you're looking for an easy starting point
+
+;Instrument definitions contain a lot of parts. The first byte is the sample table index. The next 3
+;bytes have to be broken into subsections. To grab the first example...
+;DB %1 001 0110 : DB %010 0 0000 : DB %1 10 00111
+;The first bit, 1 or 0, tells which of the 3 bytes are actually used. If 0, only the last byte is used.
+;If 1, only the first 2 bytes are used. The first two bytes are ADSR settings, the last byte is simple
+;gain settings. If you're already familiar with the SPC, then yes, these bytes are simply stuck into
+;the ADSR and GAIN registers. It might be good just to plug anomie's apudsp.txt document here, if you
+;want an alternate explanation. ADSR = Attack-Decay-Sustain-Release
+
+;I'll cover the last byte first, since it's simpler.
+;If the first bit is 0, then the rest of the bytes is simply a volume. The sound sample is played
+;constantly at that volume. If it's 1, then the next two bits specify a mode for the volume, and
+;the rest of the bytes specify how quickly it happens.
+;00 means decrease at a constant rate
+;01 means decrease at an exponential rate
+;10 means increase at a constant rate
+;11 means increase at a 'bent' rate (fast increase at first, slower increase when near peak)
+
+;Back to the first two bytes. The last 4 bits of the first two bytes is the 'attack' rate, how
+;quickly the volume goes from 0 to its peak. The 3 bits just before that is the 'decay' rate, how
+;quickly the volume exponentially goes from its peak to the sustain level.
+;The first 3 bits of the second byte is the sustain level. It's essentially a fraction of the peak
+;telling when the sustain will kick in. The next bit is the sustain type: 0 is a linearly
+;decreasing sustain, and 1 is an exponentially decreasing sustain. The last 4 bits tell how quickly
+;the volume decreases from sustain level to 0.
+
+;The last two bytes are the pitch multiplier. They are stored high byte first, but are treated as a
+;single variable. So the violin multiplier is actually 04AA, and the drum multiplier is 01BC. I
+;wrote it both ways in the code simply to point out this oddity.
+;If you know how pitch works, this should be self-explanitory. Double the multiplier to make it an
+;octave higher, halve it to make it an octave lower, whatever.
+;Avoid making this too high or low, you'll get notes that don't work if you do.
+
+
+;For this next section, you should have read the newbie-friendly text in the SPCRamMap.txt file.
+;Keep that file handy.
+
+	DW DataEnd-DataStart,$5828   ;Block transfer data. 5828 is the first track pointer used for
+	                             ;music data (track 05), and the music data just follows it.
+base $005828    ;This is a useful xkas command so that all my pointers will be right
+                ;when the music is moved from ROM into the SPC
+DataStart:
+
+	DW Kraid1  ;First is the track pointer for the song. So when track 05 is called, the
+	           ;conductor goes to Kraid1. Note that there is no track 06, trying to call
+	           ;track 06 will probably just make the game lock up. Don't call track 06.
+Kraid1:
+	DW Kraid1Pattern,$00FF,Kraid1  ;The conductor's instructions.
+
+;There's not much to the conductor. It loads the start positions at Kraid1Pattern, then loops
+;endlessly (00FF) to Kraid1, which makes it load the start position at Kraid1Pattern. That's it.
+
+Kraid1Pattern:
+	DW Kraid1Chan1,Kraid1Chan2,Kraid1Chan3,Kraid1Chan4,$0000,$0000,$0000,$0000
+
+;Not much to say here either. There are 4 pointers, 1 for each channel used. Unused channels get
+;a 0000. Important note: The last 3 channels are used for sound effects. You *can* use the channels
+;for music too, but conflicts will mean that either part of the music or the sound effects will be
+;missing. I'm not sure which.
+
+
+Kraid1Chan1:   ;First channel's song instructions.
+;	DB $E5,$C0 ;Song volume: C0. Default
+;	DB $E7,$20 ;Song speed: 20. Default
+;	DB $E1,$0A ;Channel panning: 0A (center). Default
+;	DB $E9,$00 ;Transpose song: 00. Default
+;	DB $EA,$00 ;Transpose channel: 00. Default
+;	DB $ED,$FF ;Channel volume: FF. Default
+;	DB $F4,$00 ;Channel cents adjustment: 00. Default
+
+;I put the above values in just as a sort of note to myself of what the default values are when
+;a new track is loaded.
+
+	DB $E5,$FF    ;Song volume: FF
+	DB $F6        ;Disable echo.
+
+	DB $E0,$23    ;Instrument: String bounce with decay. This is the first instrument I defined
+	DB $E1,$07    ;Panning: Somewhat right
+	DB $ED,$A0    ;Slightly lower channel volume
+
+	DB $1A,$7F    ;Note length 24, sound length 8/8, volume percent 8/8
+	DB $EF : DW K1C1Loop1 : DB $02  ;Play the first song loop twice
+	DB $EF : DW K1C1Loop2 : DB $02  ;Play the second song loop twice
+	DB $00        ;This section of the song is done. Tell the conductor to go on to the next.
+	              ;Of course, in this case, the conductor just tells everyone to loop to their
+	              ;starts.
+
+K1C1Loop1:
+	DB $9C,$C8,$C8     ;E, held for 3 note lengths
+	DB $A1,$C8,$C8     ;A
+	DB $9E,$C8,$C8     ;G b
+	DB $97,$C8,$C8     ;B
+	DB $00             ;Loop / Return from loop
+
+K1C1Loop2:
+	DB $9F,$C8,$C8     ;You can figure this out, I'm sure.
+	DB $9C,$C8,$C8
+	DB $9E,$C8,$C8
+	DB $A1,$C8,$C8
+	DB $00
+
+;That's the end of the first channel. In retrospect, I could have used note lengths of 72 and saved
+;some space and stuff
+
+
+Kraid1Chan2:       ;Second channel's song instructions. Very similar to above.
+	DB $E0,$23 ;Instrument: String bounce with decay
+	DB $E1,$0C ;Panning: Somewhat left
+	DB $ED,$70 ;Lower channel volume
+
+	DB $1A,$7F
+	DB $C9,$C9            ;Wait 2 note length first
+	DB $EF : DW K1C2Loop1 : DB $02
+	DB $EF : DW K1C2Loop2 : DB $02
+	DB $00    ;Note that the game will never actually reach this byte - the first channel will
+	          ;finish first and cause the conductor to reset this channel too. Another thing to
+	          ;change if you're worried about optimizing. Same with the third and fourth channels.
+
+K1C2Loop1:
+	DB $97,$C8,$C8        ;B, 3 note lengths
+	DB $98,$C8,$C8        ;C
+	DB $9A,$C8,$C8        ;D
+	DB $96,$C8,$C8        ;B b
+	DB $00
+
+K1C2Loop2:
+	DB $9A,$C8,$C8
+	DB $97,$C8,$C8
+	DB $9A,$C8,$C8
+	DB $9C,$C8,$C8
+	DB $00
+
+Kraid1Chan3:        ;Third channel. Not really anything interesting here.
+	DB $E0,$24  ;Instrument: Low drum. The second instrument I defined earlier.
+
+	DB $1A,$7F
+	DB $EF : DW K1C3Loop1 : DB $02
+	DB $EF : DW K1C3Loop2 : DB $02
+	DB $00
+
+K1C3Loop1:
+	DB $9C,$C8,$C8
+	DB $9C,$C8,$C8
+	DB $9C,$C8,$C8
+	DB $9C,$C8,$C8
+	DB $00
+
+K1C3Loop2:
+	DB $98,$C8,$C8
+	DB $98,$C8,$C8
+	DB $9A,$C8,$C8
+	DB $9A,$C8,$C8
+	DB $00
+
+Kraid1Chan4:       ;Fourth channel. I used a small trick to save a bunch of space here.
+	DB $E0,$24 ;Instrument: Low drum
+	DB $EA,$0C ;Transpose channel up: 12 steps (1 octave)
+
+	DB $1A,$7F
+	DB $C9     ;wait 1 note length
+	DB $EF : DW K1C3Loop1 : DB $02   ;Play the same thing the third channel plays, just an octave
+	DB $EF : DW K1C3Loop2 : DB $02   ;higher and note later.
+	DB $00
+
+;That's it for the music data
+
+DataEnd:
+	DW $0000  ;No more data to transfer. Stick in a 0000 to signify that. 
+}

@@ -1,0 +1,288 @@
+
+example data: samus's ship -> crateria mainstreet
+   ______________
+                     /-------- Controls the distance from the door Samus 
+   ddb - 12 bytes    |         is placed. 8000 is 'use default', not 80 
+   ______________    |         screens away from the door. :P
+                     |    /-------- Code to run, bank 8F. Mostly (always?)
+                     |    |         used to change default scrolling.
+
+FD92 0005 4E06 04 00 0080 0000
+^^^^ ^^^^ ^^^^ ^^ ^^ ^^^^ ^^^^
+|    |    |    |  |
+|    |    |    |  y position in the room(minimap squares)
+|    |    |    x position in the room(minimap squares)
+|    |    more weirdness.  almost certainly controls what door if any closes
+|    |    behind you
+|    which way the door faces when it closes behind you and some region
+|    switching crap
+|    (note: this value(0500h) gets loaded into a 16-bit accumulator, stored,
+|     ANDed with 0080h, stored somewhere else, then it gets and isolates the
+|     05h and stores that to a third location.  oh, it also gets BITed with
+|     0040h.  multiple times during room load. geez.  the 05 part is the
+|     way the door is facing, and that's all that matters at the moment)
+room_id
+
+
+
+ ________________________ ____________________________ ________________________________________________________________________________________________________________________________________________________________ ______________________________ _________________________________________________________________________________________________________________________
+|                        |                            |                                                                                                                                                                |                              |                                                                                                                         |
+| 02001204050570A0006293 | 12E60E4893 12E6002E93 E6E5 | C4DBC2000000F080FA868581C1C17093000000005A80B4B8D391 C4DBC2000905508061826780C1C17093000000005A80B4B8BC91 C4DBC20000001080A08D9582C1C17093000024C10481B4B89491 | 5E896A89768982898E899A89A689 | 00010101010000000000000200010000020000000002000000   080280080080000002000602800600800001800201800401800400800400080280 |
+|________________________|___________|__________|_____|_____________________________________________________|____________________________________________________|_____________________________________________________|______________________________|____________________________________________________|____________________________________________________________________|
+|                        | first     | second   | no  |                                                     |                                                    |                                                     |                              |                                                    |                                                                    |
+| mdb_header             | test        test      test | first roomstate                                       second roomstate                                     third roomstate                                     | mdb_doorout                  | scrolling data                                       special scrolling data                                             |
+|________________________|___________|__________|_____|_____________________________________________________|____________________________________________________|_____________________________________________________|______________________________|____________________________________________________|____________________________________________________________________|
+                         |                            |                                                                                                                                                                |                              |                                                                                                                         |
+                         | mdb_stateselect            | mdb_roomstate                                                                                                                                                  |                              | mdb_scroll                                                                                                              |
+                         |____________________________|________________________________________________________________________________________________________________________________________________________________|                              |_________________________________________________________________________________________________________________________|
+Brinstar FireFlea befoer Missile Reserve
+06 01 06 06 03 02 70 A0 00 859C
+E6E5
+AC9CC5 06 00 00 2C82 E296 C984 0000 0000 0000 0000 4885 0000 D591
+7E8D 8A8D
+
+21 01 19 0F 08 02 90 A0 00 BAA2
+E6E5
+E391C6 07 00 05 5E83 139B 7F85 0000 BEA2 0000 0000 6E88 0000 D691
+5A90 6690
+02020101020201010101000001010000
+
+4B 02 23 06 03 06 70 A0 00 15B7
+E6E5
+06C7C9 0A 18 05 DC88 80AB 7188 0000 1BB7 0000 0000 1891 0000 0000
+929A 9E9A AA9A
+000200000200000200000100000000000101
+0B0180 0B020D020E0280 0001040080 0102040280
+
+
+
+example data: crateria mainstreet
+     __________________________________
+
+     mdb_header - 11 bytes - mandatory
+     __________________________________
+
+02 00 12 04 05 05 70 A0 00 6293
+^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^^^
+|  |  |  |  |  |  |  |  |  |                           
+|  |  |  |  |  |  |  |  |  mdb_header_p_doorout [ $8f ] -- pointer to doorout
+|  |  |  |  |  |  |  |  unknown 4 (used for certain boss fight rooms) (If set, and DDB is not 947A, decompress B98000 to 7E:7000)
+|  |  |  |  |  |  |  unknown 3
+|  |  |  |  |  |  unknown 2
+|  |  |  |  |  mdb_header_height --\ duh
+|  |  |  |  mdb_header_width ------/
+|  |  |  mdb_header_ypos --\ location on the 
+|  |  mdb_header_xpos -----/ minimap/automap
+|  mdb_header_region -- which part of the planet the area is in
+unknown 1
+
+     _____________________________________________
+
+     mdb_stateselect - variable length - mandatory
+     _____________________________________________
+
+12E6 0E 4893
+12E6 00 2E93
+E6E5            (E6E5 means "use the next 26 bytes of data after the E6E5 as the roomstate)
+^^^^ ^^ ^^^^
+|    |  |
+|    |  mdb_stateselect_p_roomstate  -- pointer to alternate roomstate [ $8f ]
+|    mdb_stateselect_testvalue  -- I think
+mdb_stateselect_p_testcode  --  pointer to testing code [ $8f ]
+
+     ______________________________________________
+     
+     mdb_roomstate - multiple of 26 - one mandatory
+     ______________________________________________
+
+C4DBC2 00 00 00 F080 FA86 8581 C1C1 7093 0000 0000 5A80 B4B8 D391
+C4DBC2 00 09 05 5080 6182 6780 C1C1 7093 0000 0000 5A80 B4B8 BC91
+C4DBC2 00 00 00 1080 A08D 9582 C1C1 7093 0000 24C1 0481 B4B8 9491
+^^^^^^ ^^ ^^ ^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ???? ^^^^ ^^^^ ^^^^ ^^^^
+|      |  |  |  |    |    |    |    |    |    |    |    |    |
+|      |  |  |  |    |    |    |    |    |    |    |    |    layer 1 and 2 handling [ $8f ]
+|      |  |  |  |    |    |    |    |    |    |    |    bg data [ $8f ]
+|      |  |  |  |    |    |    |    |    |    |    door status [ $8f ]     
+|      |  |  |  |    |    |    |    |    |    special effects: sprites(and helpers too, i think) [ $8f ]
+|      |  |  |  |    |    |    |    |    unused, I think           
+|      |  |  |  |    |    |    |    pointer to mdb_scroll [ $8f ]
+|      |  |  |  |    |    |    layer 2 scrolling data
+|      |  |  |  |    |    enemy tilesets to load, I think [ $b4 ]
+|      |  |  |  |    pointer to the room's enemy data [ $a1 ]
+|      |  |  |  special effects: layer 3 and palette [ $83 ]
+|      |  |  See below. Not sure as to why it is this way.
+|      |  music
+|      graphics set to use
+pointer to compressed room map [ any bank ]
+
+Music:
+00 00 = no change
+## 00 = no music
+## 01 = Samus appears clip
+## 02 = Item aquired clip
+## 03 = Elevator music
+## 04 = Continue music
+00 05 = No change. If entered from a ## 00-04 room, switches to ##
+00 06 = Gold Statue music
+## 07 = Mute, game crashes when you enter a door
+03 05 = Intro music
+03 06 = Intro music when Start is pressed
+06 05 = Empty Zebes w/ Thunder
+06 06 = Thunder alone
+06 07 = Empty Zebes w/o Thunder
+09 05 = Space Pirate music
+09 06 = Gold Statue (?)
+0C 05 = Samus's Theme
+0C 06 = Strange chord
+0F 05 = Green Brinstar Fadein
+0F 06 = Mute/crash
+12 05 = Red Brinstar Fadein
+12 06 = Mute/crash
+15 05 = Upper Norfair
+15 06 = Electric Guitar chord, fades out
+18 05 = Lower Norfair
+18 06 = Mute/crash
+1B 05 = Eastern Maridia
+1B 06 = Western Maridia
+1E 05 = Tourian
+1E 06 = No music
+21 05 = Mother Brain fight
+21 06 = Mute/crash
+24 05 = Boss fight (Ridley)
+24 06 = Music before fight w/ Bomb Torizo
+24 07 = Escape music
+27 05 = Boss fight (Kraid)
+27 06 = Music before fight w/ Kraid
+2A 05 = Miniboss (Spore Spawn)
+2A 06 = Mute/crash
+2D 05 = Colony to Zebes
+2D 06 = Ceres
+30 05 = Wrecked Ship asleep
+30 06 = Wrecked Ship alive
+33 05 = Zebes goes boom
+33 06 = Mute/crash
+36 05 = Typewriter music
+36 06 = Mute/crash
+39 05 = Death
+39 06 = *THONK* (Don't ask), no music
+3C 05 = Credits
+3C 06 = Mute/crash
+3F 05 = "The last metroid is in captivity"
+3F 06 = No music
+42 05 = "The galaxy is at peace"
+42 06 = No music
+45 05 = Boss music (Kraid)
+45 06 = Music before fight w/ Kraid
+48 05 = Samus's theme
+48 06 = Strange chord
+4B 05 = Space Pirates
+4B 06 = Statue room
+
+     ________________________________________
+
+     mdb_door_out - multiple of 2 - mandatory
+     ________________________________________
+
+5E89
+6A89
+7689
+8289
+8E89
+9A89
+A689
+^^^^
+|
+pointers to door entries [ $83 ]
+
+
+     _______________________________________
+     
+     mdb_scroll - variable length - optional
+     _______________________________________
+
+0001010101
+0000000000
+0002000100
+0002000000
+0002000000
+^^^^^^^^^^
+|
+Preset scrolling
+
+00 = No scrolling from any room into this room
+01 = Free scrolling from any room into this room
+02 = Free scrolling from any room into this room, can scroll lower than 01
+
+
+08 02 80 (1)
+08 00 80 (2)
+00 00 02 00 06 02 80 (3, 4, 5, 6)
+06 00 80 (7, 8, 9, 10)
+00 01 80 (11, 12, 13)
+02 01 80 (14, 15, 16, 17, 18, 19)
+04 01 80 (20, 21)
+04 00 80 (22, 23, 24, 25, 26)
+04 00 08 02 80 (27)
+^^^^^^^^
+|
+Scrolling modification commands
+
+Format:
+Screen#, New Scroll Variable for Screen#, (Screen#, New Scroll Variable for Screen#), 80 (End)
+(#) Not in game, used to show connection to scrolling triggers
+
+
+
+03B7 3F 0B 8993 (1) 
+03B7 43 0B 8C93 (2)
+03B7 16 0D 8F93 (3)
+3BB6 17 0D 0080 (4)
+3BB6 18 0D 0080 (5)
+3BB6 19 0D 0080 (6)
+03B7 16 0B 9693 (7)
+3BB6 17 0B 0080 (8)
+3BB6 18 0B 0080 (9)
+3BB6 19 0B 0080 (10)
+03B7 0E 09 9993 (11)
+47B6 0E 08 0080 (12)
+47B6 0E 07 0080 (13)
+03B7 1C 0A 9C93 (14)
+47B6 1C 09 0080 (15)
+47B6 1C 08 0080 (16)
+47B6 1C 07 0080 (17)
+47B6 1C 06 0080 (18)
+47B6 1C 05 0080 (19)
+03B7 32 0B 9F93 (20)
+03B7 3C 0B 9F93 (21)
+03B7 3A 11 A293 (22)
+3BB6 3B 11 0080 (23)
+3BB6 3C 11 0080 (24)
+3BB6 3D 11 0080 (25)
+3BB6 3E 11 0080 (26)
+03B7 34 0E A593 (27)
+8AC8 1E 36 0500 (28)
+^^^^^^^^^^^^^^^^^
+|
+Post Load Modifications (1-27 are scrolling triggers)
+
+Format for scrolling PLMs:
+Trigger type, X, Y, Pointer to scrolling modification command
+
+Scrolling triggers:
+
+03B7 = Use value for 
+3BB6 = Copy previous, moves horizontally
+47B6 = Copy previous, moves vertically
+
+X: Number of blocks (16x16 pixels) from left to place scrolling trigger.
+
+Y: Number of blocks (16x16 pixels) from top to place scrolling trigger. The top bar in the
+   game (that shows missiles, super missiles, powerbombs, etc.) counts as two blocks.
+
+Pointer: Points to scrolling modification to be used when this trigger is triggered. 0080
+         means Copy Previous scrolling modification, used only with Copy Previous scrolling
+         triggers
+
+(#): Not in game, used to show connection to the scrolling commands
+
+NOTE: The spot that the trigger is placed it has no clipping.

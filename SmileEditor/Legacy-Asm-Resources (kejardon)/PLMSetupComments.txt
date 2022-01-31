@@ -1,0 +1,250 @@
+entry information:   16 bit A:  doesn't matter
+                     16 bit X:  pointer to a plm
+                     16 bit Y:  doesn't matter
+                           DB:  doesn't matter
+
+terminology:              plm:  a single post-load modification.  consists
+                                of a command, coordinates, and arguments.
+                                (1 word per component for a total of 6 bytes)
+                  plm command:  really a pointer to the tables of subroutine
+                                pointer pairs in bank $84.
+
+=====[ plm preprocessing ]===================================================
+
+; First, some housekeeping.
+
+84/846A:	08		PHP  ; Push P, DBR, Y, and X onto the stack for use
+84/846B:	8B		PHB  ; when exitting the subroutine.  This is done
+84/846C:	5A		PHY  ; because we have no idea which routine will be 
+84/846D:	DA		PHX  ; calling us and if they'll be needing these values again.
+84/846E:	4B      	PHK  ; Set DBR to $84 by pushing the PBR...
+84/846F:	AB      	PLB  ; ...and then pulling it into the DBR.
+
+; OK, let's try to find an empty parking space in RAM to put this PLM's data.
+
+84/8470:	A04E00	LDY #$004E   ; This is the size of the PLM workspaces in
+                                     ; RAM.  Each chunk of PLM workspace stores a
+                                     ; different type of PLM data, but they're all
+                                     ; 50h bytes in size.  So if they're 50h bytes in
+                                     ; size, why the hell does this say 4Eh?  Because
+                                     ; a) 0000h is the first number and
+                                     ; b) a 16-bit LDA aimed at byte 4Eh will load both
+                                     ;    byte 4Eh and byte 4Fh.
+                                     ; This is the PLM workspace index.
+84/8473:	B9371C	LDA $1C37,Y  ; Load from the PLM command workspace in RAM. <<<--------------------------.
+84/8476:	F00A    	BEQ $8482    ; Is what we loaded 0000h?  Then we've found an empty spot.  Branch! ----. |
+84/8478:	88      	DEY          ; Since this one seems to be taken, let's subtract 2                     | |
+84/8479:	88      	DEY          ; from the index value so we can try the next one.                       | |
+84/847A:	10F7    	BPL $8473    ; Loop back and try the next one if the index value is still positive. ----'
+                                                                                                              | 
+; We'll wind up here if all the PLM workspace is already used up.  Uh-oh.                                     |
+; Better exit and tell whichever subroutine called us that we've failed.                                      |
+                                                                                                              |
+84/847C:	FA      	PLX  ; Time to return!  Pull to X!                                                    |
+84/847D:	7A      	PLY  ;                          Y!                                                    |
+84/847E:	AB      	PLB  ;                          DBR!                                                  |
+84/847F:	28      	PLP  ;                          P!                                                    |
+84/8480:	38      	SEC  ; Set Carry because someone's stupid and is trying to use too many PLM commands. |
+84/8481:	6B      	RTL  ; Alright, we're done.                                                           |
+                                                                                                              |
+.............................................................................                                 |
+                                                                                                              |
+; Calculate the location of the target tile's layer 1 data.  Store it.                                        |
+                                                                                                              |
+84/8482:	E220    	SEP #$20       ;  We want an 8 bit A for this. <<<------------------------------------'
+84/8484:	BF03008F	LDA $8F0003,X  ;  Load the number of rows to go down and put
+84/8488:	8D0242  	STA $4202      ;  it into the first multiplication register.
+
+; NOTE: That LDA $8F0003,X doesn't have to load from bank $8F.  It can also load from LowRAM.
+;       Just store your PLM command, coords, and args one after the other into LowRAM and then
+;       set X to the beginning of your PLM in LowRAM.  In fact, this is how the DDBs make PLM calls.
+;       They store the command in $0012, the coords in $0014, and then put #$0012 into X before
+;       invoking the PLM preprocessing subroutine.  Sneaky.  LoROM is fun!
+
+84/848B:	ADA507  	LDA $07A5      ;  Load "room width * 16t"(calculated during mdb load) and put it
+84/848E:	8D0342  	STA $4203      ;  into the other multiplication register.
+84/8491:	BF02008F	LDA $8F0002,X  ;  Load the number of columns to go over.
+84/8495:	C220    	REP #$20       ;  Back to a normal 16 bit A again.
+84/8497:	29FF00  	AND #$00FF     ;  Limit the number of columns to go over to FFh.
+84/849A:	18      	CLC            ;  Clear Carry while we wait for the multiplication result.
+84/849B:	6D1642  	ADC $4216      ;  Add A with the hardware mult result and
+84/849E:	0A      	ASL A          ;  multiply it by two(because the layer 1 map is in words, remember).
+84/849F:	99871C  	STA $1C87,Y    ;  You now have the coords for a 16x16 tile in bytes, so let's store it.
+
+; Store the arguments and the command.
+
+84/84A2:	BF04008F	LDA $8F0004,X  ;  Load the arguments.
+84/84A6:	99C71D  	STA $1DC7,Y    ;  Store the arguments.
+84/84A9:	BF00008F	LDA $8F0000,X  ;  Load the command.
+84/84AD:	99371C  	STA $1C37,Y    ;  Store the command.
+
+; Let's switch some register contents around.
+; When done, X will contain the PLM index.
+; When done, Y will contain the PLM command.
+
+84/84B0:	BB      	TYX            ;  Transfer Y to X.
+84/84B1:	A8      	TAY            ;  Transfer A to Y.
+
+; I don't understand what this is for yet.  It's preparing some workspace in RAM.
+
+84/84B2:	A90000  	LDA #$0000     ;  We like null!
+84/84B5:	9F0CDF7E	STA $7EDF0C,X  ;  We like to put it here.
+84/84B9:	A9E684  	LDA #$84E6     ;  We also like the value 84E6!
+84/84BC:	9DD71C  	STA $1CD7,X    ;  So, let's put it here!
+
+; There's at least two subroutine pointers for every PLM command.
+; The first one is the subroutine which actually makes the mods
+; to RAM.  I don't yet know for certain what the second one is for,
+; but this loads it and stores it.
+
+84/84BF:	B90200  	LDA $0002,Y    ;  Use the PLM command to fetch the second subroutine pointer
+84/84C2:	9D271D  	STA $1D27,X    ;  and stick it here.
+
+; More workspace prep.
+
+84/84C5:	A90100  	LDA #$0001     ;  We like the value 0001!
+84/84C8:	9F1CDE7E	STA $7EDE1C,X  ;  Let's stick it here for some reason!
+84/84CC:	A9A08D  	LDA #$8DA0     ;  Oh, we like the value 8DA0 too!
+84/84CF:	9F6CDE7E	STA $7EDE6C,X  ;  Let's put it here!
+84/84D3:	9E771D  	STZ $1D77,X    ;  Let's store some null in here!
+
+; Swap X and Y.
+
+84/84D6:	8E271C  	STX $1C27      ;  Store X, put Y in X, and load the stored X into Y.
+84/84D9:	BB      	TYX            ;  A X/Y switch is needed because indirect indexed JSR
+84/84DA:	AC271C  	LDY $1C27      ;  can only use the X register.
+
+; Execute the PLM command.  The PLM commands are pointers to
+; subroutine pointers.  This type of JSR will use whatever is
+; at the pointer's destination as the subroutine to call.
+; EXAMPLE:       PLM command:  DEAD
+;                   $84:DEAD:  BEEF
+;          subroutine called:  $84:BEEF
+; NOTE: Example values are not in reverse byte order.
+;       In the ROM, the PLM command DEAD would be stored as
+;       ADDE and the subroutine pointer at $84:DEAD would be
+;       stored as EFBE.
+
+84/84DD:	FC0000  	JSR ($0000,X)  ;  Summon the subroutine!
+
+; Now that the subroutine has returned, we're finished.
+; Clean up, tell our parent subroutine that we were successful, and return. 
+
+84/84E0:	FA      	PLX  ; Time to return!  Pull to X!
+84/84E1:	7A      	PLY  ;                          Y!
+84/84E2:	AB      	PLB  ;                          DBR!
+84/84E3:	28      	PLP  ;                          P!
+84/84E4:	18      	CLC  ; Clear Carry to signal our success.
+84/84E5:	6B      	RTL  ; Alright, we're done.
+
+=============================================================================
+
+
+
+  ///////////////////////////////////////////////////////////////////////////
+ //////////      An Example PLM Command:  plm_cmd_mapstation      //////////
+///////////////////////////////////////////////////////////////////////////
+
+entry info:  16-bit A:  8DA0
+             16-bit X:  plm command
+             16-bit Y:  plm index value
+                  DBR:  84
+
+           1C37,index:  plm command
+           1C87,index:  ram mod address
+           1CD7,index:  84E6
+           1D27,index:  second subroutine pointer
+           1D77,index:  0000
+           1DC7,index:  arguments 
+
+           DE1C,index:  0001
+           DE6C,index:  8DA0
+           DF0C,index:  0000
+
+=====[ map station ]=========================================================
+
+; We're gonna place the important parts of a map station.
+; First, let's make sure the tile has the right properties set.
+
+84/B18B:	BE871C  	LDX $1C87,Y    ; X = mod address.
+84/B18E:	BF02007F	LDA $7F0002,X  ; Load the target tile's data from RAM.
+84/B192:	29FF0F  	AND #$0FFF     ; The first 12 bits are are the 16x16 tile to use, IIRC.
+                                       ; Let's keep them the same.
+84/B195:	090080  	ORA #$8000     ; Let's set the highest nibble(16x16's properties) to 8.
+84/B198:	9F02007F	STA $7F0002,X  ; Let's put it back where we found it.
+
+; Now I guess this is checking to see if the map station has already been
+; accessed by the player or not.
+
+84/B19C:	AE9F07  	LDX $079F      ; X = region number.
+84/B19F:	BF08D97E	LDA $7ED908,X  ; Let's load the station's byte.
+84/B1A3:	29FF00  	AND #$00FF     ; AND it so that only our desired byte is present.
+84/B1A6:	D019    	BNE $B1C1      ; If the station's already been used(byte != 0), branch. ----.
+                                                                                                    |
+; We're here because the map station hasn't yet been accessed.                                      |
+; Let's finish placing the station.                                                                 |
+                                                                                                    |
+84/B1A8:	BE871C  	LDX $1C87,Y    ; X = mod address                                            |
+84/B1AB:	E8      	INX            ; Now, it's...                                               |
+84/B1AC:	E8      	INX            ; ...mod address + 2. (one 16x16 to the right)               |
+84/B1AD:	A947B0  	LDA #$B047     ; Load the mod values.  The high byte is the 16x16 type you  |
+                                       ; wish to set the target tile to.  It should be x0, where x  |
+                                       ; is the 16x16 type(in this example, B0).  The low byte      |
+                                       ; is the target tile's new BTS data.                         |
+                                       ; NOTE:  When stored, it will be stored in reverse byte      |
+                                       ;        order.                                              |
+84/B1B0:	20B482  	JSR $82B4      ; Call the alter map subroutine.                             |
+84/B1B3:	BE871C  	LDX $1C87,Y    ; X = mod address again                                      |
+84/B1B6:	CA      	DEX            ; Now it's                                                   |
+84/B1B7:	CA      	DEX            ; 2 16x16s                                                   |
+84/B1B8:	CA      	DEX            ; left of                                                    |
+84/B1B9:	CA      	DEX            ; mod address.                                               |
+84/B1BA:	A948B0  	LDA #$B048     ; Load the mod values                                        |
+84/B1BD:	20B482  	JSR $82B4      ; Call the alter map subroutine.                             |
+84/B1C0:	60      	RTS            ; Return.                                                    |
+                                                                                                    |
+; We're here because the map station has already been accessed.                                     |
+; We'd better do this.                                                                              |
+                                                                                                    |
+84/B1C1:	A976AD  	LDA #$AD76     ; Let's go ahead and change <<<------------------------------'
+84/B1C4:	99271D  	STA $1D27,Y    ; the second subroutine pointer.                             
+84/B1C7:	60      	RTS            ; Return.                                
+
+entry info:  16-bit A:  tile mod values
+             16-bit X:  mod address
+             16-bit Y:  plm index
+
+=====[ alter map ]===========================================================
+
+; This subroutine gets used a lot, by pretty much every PLM command.
+; First, prepare a little.
+
+84/82B4:        DA              PHX            ; Let's back up that mod address.
+84/82B5:        8512            STA $12        ; Let's stick the tile mod values in $0012.
+
+; Let's change the 16x16's properties.
+
+84/82B7:        E220            SEP #$20       ; 8 bit A.
+84/82B9:        BF03007F        LDA $7F0003,X  ; Load the second byte of the 16x16 we want to mod.
+84/82BD:        290F            AND #$0F       ; Cut off the 16x16's properties.
+84/82BF:        0513            ORA $13        ; Replace them with some of our own.
+84/82C1:        9F03007F        STA $7F0003,X  ; Store it.
+84/82C5:        C220            REP #$20       ; 16 bit A.
+
+; Let's get the address for the mod tile's BTS byte.
+
+84/82C7:        8A              TXA            ; Put X into A so we can...
+84/82C8:        4A              LSR A          ; ...divide it by 2 and then...
+84/82C9:        AA              TAX            ; ...put it back in X.
+
+; Let's change the 16x16's BTS data.
+
+84/82CA:        E220            SEP #$20       ; 8 bit A.
+84/82CC:        A512            LDA $12        ; Load our own BTS data.
+84/82CE:        9F02647F        STA $7F6402,X  ; Put it where it belongs.
+84/82D2:        C220            REP #$20       ; 16 bit A.
+
+; OK, return.
+
+84/82D4:        FA              PLX            ; Restore X.
+84/82D5:        60              RTS            ; Back we go.

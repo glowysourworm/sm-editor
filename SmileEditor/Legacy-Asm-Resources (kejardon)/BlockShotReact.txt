@@ -1,0 +1,37 @@
+Checks blocks to see what to do whenever one of Samus's projectiles hits them
+
+X = block type*2
+94:A1D6: Vertical. JSR ($A195,X)
+94:A1B5: Horizontal. JSR (A175,X)
+
+BlockType           Vert   Horz
+------------------|------|------
+0 = Air           | 9D59 | 9D59
+1 = Slope         | A15E | A147
+2 = XRay Air      | 9D59 | 9D59
+3 = Treadmill     | 9D59 | 9D59
+4 = Shootable Air | 9E55 | 9E55
+5 = H-Extend      | 9411 | 9411
+6 = Air???        | 9D59 | 9D59
+7 = Bombable Air  | 9FD6 | 9FD6
+8 = Solid         | 9D5B | 9D5B
+9 = Door          | 9D5B | 9D5B
+A = Spike         | 9D5B | 9D5B
+B = Crumble       | 9D5B | 9D5B
+C = Shot          | 9E73 | 9E73
+D = V-Extend      | 9447 | 9447
+E = Grapple       | 9D5B | 9D5B
+F = Bomb block    | 9FF4 | 9FF4
+
+
+9411 : Adjust horizontal position according to BTS and go to the pointed-to block's code
+9447 : Adjust vertical position according to BTS and go to the pointed-to block's code
+9D59 : CLC and RTS
+9D5B : SEC and RTS
+9E55 : Check BTS. If positive, create PLM from main table (94:9EA6 + BTS*2, 'max' BTS of 50). Clear V, CLC, RTS.
+9E73 : Check BTS. If positive, create PLM from main table (94:9EA6 + BTS*2, 'max' BTS of 50). If negative, create region-indexed PLM (94:9F46 + 10*region + BTS*2, 'max' BTS of 10). Either way, clear V, SEC, RTS.
+9FD6 : Check BTS. If positive, create PLM (94:A012 + BTS*2, 'max' BTS of 20?). Clear V, CLC, RTS.
+9FF4 : Check BTS. If positive, create PLM (94:A012 + BTS*2, 'max' BTS of 20?). Clear V, SEC, RTS.
+A147 : Goto Square collision (A66A) or Slope collision (A543)
+A15E : Goto Square collision (A71A) or Slope collision (A569)
+

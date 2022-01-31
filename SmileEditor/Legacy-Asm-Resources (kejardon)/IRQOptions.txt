@@ -1,0 +1,32 @@
+7E:00AB is the current interrupt command, 7E:00A7 is the optional next interrupt command. Must be a multiple of two.
+
+80:9616 command table:
+               6E96 8096 8B96 A996 D396
+F196 1A97 3397 5897 7197 A997 C197 DA97
+0A98
+
+
+00 (966E): Go to A7 at top of next frame. Else run 00 again (0/0)
+02 (9680): Nothing. Clear bits 4 and 5 of 84 and run 00 at the start of next frame (0/0)
+
+Main Gameplay?
+04 (968B): Set BG3 for status bar (Tilemap at B000, 32x64 tiles), clear gradients, enable BG3, run 06 at end of status bar (1F/98)
+06 (96A9): Put $70 in $2130, $73 in $2131, $5B in $2109, and $6A in $212C. Run A7 next, or 04 if not there, on first line (0/98)
+
+Start of room transition?
+08 (96D3): Set BG3 for status bar (Tilemap at B000, 32x64 tiles), clear gradients, enable BG3, run 0A at end of status bar (1F/98)
+0A (96F1): Disable(?) sprites, and if either room's byte 9 bit 0 is set, don't enable BG1. Run A7 next, or 08 if not there, on first line (0/98)
+
+Unknown
+0C (971A): Enable BG3, but disable the gradients. Run 0E next after Status Bar (1F/98)
+0E (9733): Put $70 in $2130, $73 in $2131, $5B in $2109. Run A7 next, or 0C if not there, on first line (0/98)
+
+Vertical room transition?
+10 (9758): Enable BG3, but disable the gradients. Run 12 next after Status Bar (1F/98)
+12 (9771): Disable(?) sprites, and if either room's byte 9 bit 0 is set, don't enable BG1. DMA transfer to VRAM if 05BC is set, scroll screen if not done, then runs 14 at bottom of screen (D8/98)
+14 (97A9): Set $05B4 to 1. If A7 is set to something, use it. Else go to 10 next from (0/98)
+
+Horizontal room transition?
+16 (97C1): Enable BG3, disable gradients, run 18 after status bar (1F/98)
+18 (97DA): Disable(?) sprites, and if either room's byte 9 bit 0 is set, don't enable BG1. Scroll screen if not done, run 1A next near bottom of screen (A0/98)
+1A (980A): DMA transfer to VRAM if 05BC is set, set $05B4 to 1. If A7 is set to something, use it, else go to 16 next from (0/98)

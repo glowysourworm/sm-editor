@@ -1,0 +1,179 @@
+
+Waver ROM entry
+
+0006 8786 1E00 0A00 0800 0800 A3   00     4700 0000 ED86 01000000 4C87 0A80 4C80 4180 0000 0000 00000000 0000 000000000000 2380 2D80 000000 86AE 05 00F2 1CEC 87E1
+tile pal  hp   dmg  wide high Bank # of   hurt Boss AI            Norm Grap Hurt Froz XRay die           PB                Tch. Beam        tile  | |    |    |
+get  ptr                      Ptr  "hurt" snd. num  Init          Move AI   AI   AI   or   anim          Flag              Pntr Pntr        set   | |    |    name pointer
+lgth                               frames           Run           AI?                 Rsrv                                                        | |    pointer to enemy resistances
+???                                                 Once                              AI                                                          | pointer to enemy drop chances
+                                                                                                                                                  background/foreground
+
+AI Initialization (A3:86ED)
+	LDX $0E54    ;Enemy Index
+	LDA #$0180
+	AND #$FF00
+	XBA
+	STA $0FAA, X ;Custom use. Horizontal Speed, pixel
+	LDA #$0180
+	AND #$00FF
+	XBA
+	STA $0FA8, X ;Custom use. Horizontal Speed, subpixel
+	LDA $0FB4, X ;Speed
+	AND #$0001
+
+	BNE BRANCH_ALPHA
+
+	LDA #$0180   ;This stuff swaps the orientation (go left instead of right)
+	EOR #$FFFF
+	INC A
+	AND #$FF00
+	XBA
+	JSL $A0AFEA  ;  If A has bit 7 set, A = A OR #$FF00
+	STA $0FAA, X ; $0FAA,X = FFFE
+	LDA #$0180
+	EOR #$FFFF
+	INC A
+	AND #$00FF
+	XBA
+	JSL $A0AFEA  ;  If A has bit 7 set(which it doesn't), A = A OR #$FF00
+	STA $0FA8, X ; $0FA8,X = 8000
+
+BRANCH_ALPHA
+
+	STZ $0FB2, X ;Custom use, orientation
+	STZ $0FAC, X ;Custom use, previous orientation
+	STZ $0FB0, X ;Custom use, orientation clear trigger
+	LDA #$86A7
+	STA $0F92, X ;Pointer to current Enemy Instruction
+	LDA $0FB4, X ;Speed
+	AND #$0001
+	STA $0FB2, X ;Custom use, orientation
+	JSR $87FE  ;  $1187FE IN ROM
+	RTL
+
+A3:87FE
+	LDX $0E54    ;Enemy Index. redundant
+	LDA $0FB2, X ;Custom use, orientation
+	CMP $0FAC, X ;Custom use, previous orientation
+
+	BEQ BRANCH_ALPHA
+
+	STA $0FAC, X ;00 - 03
+	ASL A
+	TAY 
+	LDA $86DB, Y ;0 = 86A7, 2 = 86AD, 4 = 86B3, 6 = 86C7
+	STA $0F92, X ;Pointer to current Enemy Instruction
+	LDA #$0001
+	STA $0F94, X ;Enemy Instruction Delay
+	STZ $0F90, X ;Unknown. Variable?
+
+BRANCH_ALPHA
+
+	RTS
+
+A3:874C (Normal Move AI)
+	LDX $0E54    ;Enemy index
+	LDA $0FA8, X ;Custom, horizontal speed in subpixels
+	STA $12
+	LDA $0FAA, X ;Custom, horizontal speed in pixels
+	STA $14
+	JSL $A0C6AB  ;Common (but not universal) horizontal movement for enemies. TODO
+
+	BCC BRANCH_ALPHA ;If SEC, you hit a wall. Switch directions
+
+	LDA $0FA9, X ;Speed
+	STA $12
+	EOR #$FFFF
+	INC A
+	AND #$FF00
+	XBA
+	JSL $A0AFEA  ;  $102FEA IN ROM
+	STA $0FAA, X ;Horizontal Speed, pixels
+	LDA $12
+	EOR #$FFFF
+	INC A
+	AND #$00FF
+	XBA
+	JSL $A0AFEA  ;  $102FEA IN ROM
+	STA $0FA8, X ;Horizontal Speed, subpixels
+	LDA $0FB2, X ;Orientation
+	EOR #$0001
+	AND #$0001
+	STA $0FB2, X ;Orientation
+	JSR $87FE  ;  $1187FE IN ROM
+	JMP $87CF  ;  $1187CF IN ROM
+
+BRANCH_ALPHA
+
+	LDA #$0004
+	STA $0E32
+	LDA $0FAE, X ;Custom use, vertical speed in pixels?
+	AND #$00FF
+	JSL $A0B0C6  ;  Sine function!
+	STA $14
+	STZ $12
+	JSL $A0C786  ;Common (but not universal) vertical movement for enemies. TODO
+
+	BCC BRANCH_BETA
+	             ;Bounce off roof/floor
+	LDX $0E54
+	LDA $0FAE, X
+	CLC
+	ADC #$0080
+	AND #$00FF
+	STA $0FAE, X
+
+	BRA BRANCH_GAMMA
+
+BRANCH_BETA
+	             ;Accelerate
+	LDX $0E54
+	LDA $0FAE, X
+	CLC
+	ADC #$0002
+	STA $0FAE, X
+
+$1187CF ALTERNATE ENTRY POINT
+BRANCH_GAMMA
+
+	LDX $0E54
+	LDA $0FAE, X
+	AND #$007F
+	CMP #$0038
+
+	BNE BRANCH_DELTA
+
+	LDA $0FB2, X ;Orientation
+	ORA #$0002
+	STA $0FB2, X
+	JSR $87FE  ;  $1187FE IN ROM
+
+BRANCH_DELTA
+
+	LDA $0FB0, X
+
+	BEQ BRANCH_EPSILON
+
+	STZ $0FB0, X
+	LDA $0FB2, X
+	AND #$0001
+	STA $0FB2, X
+	JSR $87FE  ;  $1187FE IN ROM
+
+BRANCH_EPSILON
+
+	RTL
+
+
+Enemy Instructions
+A3:86A7
+01 00 4A 88 2F 81
+A3:86AD
+01 00 B3 88 2F 81
+A3:86B3
+08 00 5B 88 08 00 71 88 08 00 1E 88 08 00 34 88 E3 86 2F 81
+A3:86C7
+08 00 C4 88 08 00 DA 88 08 00 87 88 08 00 9D 88 E3 86 2F 81
+
+812F: Store this instruction to 0F92 and RTL to A0:C2AF ? I assume that's the equivalent of PLMs' PLA, RTS, and this is the equivalent of 86B4.
+86E3: Store 1 to 0FB0,X. Huh.

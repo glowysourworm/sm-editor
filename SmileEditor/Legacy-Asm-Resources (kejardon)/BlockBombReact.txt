@@ -1,0 +1,33 @@
+Checks blocks to see what to do whenever a bomb hits one
+
+94:A052: JSR ($A032),X
+X = block type*2
+
+BlockType           Call
+------------------|------
+0 = Air           | 9D59
+1 = Slope         | 9D59
+2 = XRay Air      | 9D59
+3 = Treadmill     | 9D59
+4 = Shootable Air | 9E55
+5 = H-Extend      | 9411
+6 = Air???        | 9D59
+7 = Bombable Air  | 9FD6
+8 = Solid         | 9D5B
+9 = Door          | 9D5B
+A = Spike         | 9D5B
+B = Crumble       | 9D71
+C = Shot          | 9E73
+D = V-Extend      | 9447
+E = Grapple       | 9D5B
+F = Bomb block    | 9FF4
+
+9D59: CLC and RTS
+9E55: Load the BTS into A. If positive, multiply by 2 and use as an index for 94:9EA6,X to make a PLM. Clear V, SEC and RTS
+9411: Load the BTS into A. If 0, CLC and RTS. Else use it as a horizontal tile offset to use a different tile for the jump index.
+9FD6: Load the BTS into A. If positive, multiply by 2 and use as an index for 94:A012,X to make a PLM. Clear V, SEC and RTS
+9D5B: SEC and RTS
+9D71: Load the BTS into A. If negative, AND with #$007F and use to find a region-indexed PLM (94:9DC4 + Region * 10 + BTS * 2). If positive, use as an index for 94:9DA4,X to make a PLM. Either way, clear V, SEC, and RTS.
+9E73: Load the BTS into A. If negative, AND with #$007F and use to find a region-indexed PLM (94:9F46 + Region * 10 + BTS * 2). If positive, use as an index for 94:9EA6,X to make a PLM. Either way, clear V, SEC, and RTS.
+9447: Load the BTS into A. If 0, CLC and RTS. Else use it as a vertical tile offset to use a different tile for the jump index.
+9FF4: Load the BTS into A. If positive, multiply by 2 and use as an index for 94:A012,X to make a PLM. Clear V, SEC and RTS

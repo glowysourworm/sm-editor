@@ -1,0 +1,1706 @@
+ROM offsets, all in bank 82
+
+BF04 - BF05 : Reserve tank amount to transfer per frame. Really, I'm serious.
+BF06 - BF13 : Tilemap for MODE[MANUAL]
+BF14 - BF21 : Tilemap for RESERVE TANK
+BF22 - BF29 : Tilemap for [MANUAL]
+BF2A - BF31 : Tilemap for [ AUTO ]
+BF32 - BF3B : Tilemap for oCHARGE
+BF3C - BF45 : Tilemap for oICE
+BF46 - BF4F : Tilemap for oWAVE
+BF50 - BF59 : Tilemap for oSPAZER
+BF5A - BF63 : Tilemap for oPLASMA
+BF64 - BF75 : Tilemap for oVARIA SUIT
+BF76 - BF87 : Tilemap for oGRAVITY SUIT
+BF88 - BF99 : Tilemap for oMORPHING BALL
+BF9A - BFAB : Tilemap for oBOMBS
+BFAC - BFBD : Tilemap for oSPRING BALL
+BFBE - BFBF : Unused, I think.
+BFC0 - BFD1 : Tilemap for oSCREW ATTACK
+BFD2 - BFE3 : Tilemap for oHI-JUMP BOOTS
+BFE4 - BFF5 : Tilemap for oSPACE JUMP
+BFF6 - C007 : Tilemap for oSPEED BOOSTER
+C008 - C011 : Tilemap for oHYPER
+C012 - C019 : Unusued, I think (look like they belong with oHYPER, but only 5 tiles are used)
+C01A - C02B : 0000's for clearing tiles
+C02C - C033 : Pointers to start of RAM offsets for specific tilemaps: (this,list_index),item_index = RAM offset
+C034 - C03B : Pointers to bit checklists: (this,list_index),item_index = bit to check
+C03C - C043 : RAM offset to check against bit checklist: this,list_index = RAM offset
+C044 - C04B : Indirect pointers to tilemaps for enabled (?) items: (this,list_index),item_index = Tilemap pointer
+C04C - C067 : Bit checklist: 5 beams, 6 suits/misc, 3 boots
+C068 - C087 : RAM offsets for specific tilemaps
+C088 - C08B : Pointers to tilemaps for MODE[MANUAL] and RESERVE TANK
+C08C - C0AB : Pointers to tilemaps for enabled items
+C0AC - C0AD : Pointer to tilemap for oHYPER
+C0AE - C0B1 : Pointers to empty tilemaps
+C0B2 - C0C3 : Ram addresses to use for animation timers, I think
+C0C4 - C0D5 : Ram addresses to use for animation indexes, I think
+C0D6 - C0E7 : More ram addresses, unknown use. TODO
+C0E8 - C0F9 : Pointers to animation loops. Animation loop entry: FF = loop to start, else timer (1 byte), unknown (1 byte), sprite index? (1 byte)
+
+
+
+
+;INITIALIZATION
+82:A12B
+	REP #$30
+	LDA $09D4  ;  Max Reserves
+	BEQ BRANCH_ALPHA
+	LDY #$0000
+	LDA #$C068
+	STA $03
+	LDA #$0082
+	STA $05
+	LDA [$03], Y
+	STA $00
+	LDX $C088
+	LDA #$000E
+	STA $16
+	JSR $A27E  ;  Draw Tiles (Copy 82:BF06, E bytes, to 7E:3A88)
+	LDY #$0002
+	LDA #$C068
+	STA $03
+	LDA #$0082
+	STA $05
+	LDA [$03], Y
+	STA $00
+	LDX $C08A
+	LDA #$000E
+	STA $16
+	JSR $A27E  ;  Draw Tiles (Copy 82:BF14 E bytes, to 7E:3AC8)
+BRANCH_ALPHA
+	LDY #$0000
+	LDA #$C06C
+	STA $03
+	LDA #$0082
+	STA $05
+	LDA [$03], Y
+	STA $00
+	LDA $0A76
+	BNE BRANCH_BETA
+BRANCH_EPSILON
+	LDA $C04C, Y ; Load beam bit
+	BIT $09A8    ; Check to see if collected
+	BNE BRANCH_GAMMA
+	LDX #$C01A   ; Pointer to a bunch of 0000's (9 tiles worth)
+	LDA #$000A   ; 5 tiles
+	STA $16
+	JSR $A27E  ;  Clear beam item
+	BRA BRANCH_DELTA
+BRANCH_GAMMA
+	LDX $C08C, Y ; Get tilemap to draw
+	LDA #$000A   ; 5 tiles
+	STA $16
+	JSR $A27E  ;  Draw beam item
+	LDA $C04C, Y
+	BIT $09A6
+	BNE BRANCH_DELTA
+	LDA #$0C00 ;  Disabled pallete
+	STA $12
+	LDA #$000A ;  5 tiles
+	STA $16
+	JSR $A29D  ;  Set pallete to disabled
+BRANCH_DELTA
+	INY
+	INY
+	LDA [$03], Y
+	STA $00
+	CPY #$000C
+	BMI BRANCH_EPSILON
+	BRA BRANCH_ZETA
+BRANCH_BETA
+	LDY #$0000
+BRANCH_XI
+	LDX $C0A8, Y ; Hyper beam pointers
+	LDA #$000A   ; 5 tiles
+	STA $16
+	JSR $A27E  ;  Clear other beams, draw hyper beam
+	INY
+	INY
+	LDA [$03], Y
+	STA $00
+	CPY #$000C
+	BMI BRANCH_XI
+BRANCH_ZETA
+	LDY #$0000
+	LDA #$C076 ;  Pointers to RAM offsets
+	STA $03
+	LDA #$0082
+	STA $05
+	LDA [$03], Y
+	STA $00
+BRANCH_KAPPA
+	LDA $C056, Y ; Equipment bit checklist
+	BIT $09A4
+	BNE BRANCH_THETA
+	LDX #$C01A   ; Pointer to a bunch of 0000's (9 tiles worth)
+	LDA #$0012   ; 9 tiles
+	STA $16
+	JSR $A27E  ;  Clear tiles
+	BRA BRANCH_IOTA
+BRANCH_THETA
+	LDX $C096, Y ; Pointer to equipment tiles
+	LDA #$0012   ; 9 tiles
+	STA $16
+	JSR $A27E  ;  Draw tiles
+	LDA $C056, Y 
+	BIT $09A2  ;  Check if currently equipped
+	BNE BRANCH_IOTA
+	LDA #$0C00 ;  Disabled pallete
+	STA $12
+	LDA #$0012 ;  9 tiles
+	STA $16
+	JSR $A29D  ;  Set pallete to disabled
+BRANCH_IOTA
+	INY
+	INY
+	LDA [$03], Y
+	STA $00
+	CPY #$000C ;  Only handles suits and misc
+	BMI BRANCH_KAPPA
+	LDY #$0000
+	LDA #$C082 ;  Pointers to ram offsets
+	STA $03
+	LDA #$0082
+	STA $05
+	LDA [$03], Y
+	STA $00
+BRANCH_NU
+	LDA $C062, Y ; Boot bit checklist
+	BIT $09A4  ;  Currently collected boots
+	BNE BRANCH_LAMBDA
+	LDX #$C01A ;  0000 tiles
+	LDA #$0012 ;  9 of them
+	STA $16
+	JSR $A27E  ;  Clear boot tiles
+	BRA BRANCH_MU
+BRANCH_LAMBDA
+	LDA #$0012 ;  9 tiles
+	STA $16
+	LDX $C0A2, Y ; Pointer to boot tiles in ROM
+	JSR $A27E  ;  Draw tiles
+	LDA $C062, Y
+	BIT $09A2  ;  Check if currently equipped
+	BNE BRANCH_MU
+	LDA #$0C00 ;  Disabled pallete
+	STA $12
+	LDA #$0012 ;  9 tiles
+	STA $16
+	JSR $A29D  ;  Set pallete to disabled
+BRANCH_MU
+	INY
+	INY
+	LDA [$03], Y
+	STA $00
+	CPY #$0006
+	BMI BRANCH_NU
+	RTS
+
+;MAIN --> SPECIFIC_LIST --> BUTTON_RESPONSE --> SET_TILES (X = pointer to tilemap in ROM, [$00] = RAM tilemap offset, $16 = 2x number of tiles)
+82:A27E
+	PHP
+	PHY
+	SEP #$20
+	LDA #$7E
+	STA $02
+	REP #$30
+	LDY #$0000
+BRANCH_ALPHA
+	LDA $0000, X
+	STA [$00], Y
+	INX
+	INX
+	INY
+	INY
+	DEC $16
+	DEC $16
+	BNE BRANCH_ALPHA
+	PLY
+	PLP
+	RTS
+
+;MAIN --> SPECIFIC_LIST --> BUTTON_RESPONSE --> SET_PALLETE ($12 = new pallete, [$00] = RAM tilemap offset, $16 = 2x number of tiles)
+82:A29D
+	PHP
+	PHY
+	SEP #$20
+	LDA #$7E
+	STA $02
+	REP #$30
+	LDY #$0000
+BRANCH_BETA
+	LDA [$00], Y
+	AND #$E3FF
+	ORA $12
+	STA [$00], Y
+	INY
+	INY
+	DEC $16
+	DEC $16
+	BNE BRANCH_BETA
+	PLY
+	PLP
+	RTS
+
+;MAIN --> DISPLAY_SELECTION --> DRAW_SPRITE (X = X position, Y = Y position, A = #$0003)
+82:A881
+	PHP
+	PHX
+	REP #$30
+	STX $12
+	STY $14
+	DEC A
+	ASL A
+	TAX
+	LDA $C0B2, X
+	TAY
+	LDA $0000, Y
+	DEC A
+	STA $0000, Y
+	BEQ BRANCH_ALPHA
+	BPL BRANCH_BETA
+BRANCH_ALPHA
+	STY $18
+	LDA $C0C4, X
+	TAY
+	LDA $0000, Y
+	INC A
+	STA $0000, Y
+	ASL A
+	CLC
+	ADC $0000, Y
+	STA $16
+	LDA $C0E8, X ; Pointer to animation loop
+	CLC
+	ADC $16
+	TAY
+	LDA $0000, Y ; Animation loop entry: FF = loop, else timer
+	AND #$00FF
+	CMP #$00FF
+	BNE BRANCH_GAMMA
+	LDA $C0C4, X
+	TAY
+	LDA #$0000
+	STA $0000, Y
+	LDA $C0E8, X
+	TAY
+	LDA $0000, Y
+	AND #$00FF
+BRANCH_GAMMA
+	LDY $18
+	STA $0000, Y
+BRANCH_BETA
+	LDA $C0C4, X
+	TAY
+	LDA $0000, Y
+	ASL A
+	CLC
+	ADC $0000, Y
+	STA $18
+	LDA $C0E8, X
+	CLC
+	ADC $18
+	INC A
+	TAY
+	PHY
+	LDA #$0003
+	ASL A
+	TAY
+	LDA $C0FA, Y
+	STA $03
+	PLY
+	INY
+	LDA $0000, Y
+	AND #$00FF
+	STA $18
+	LDA $C0D6, X
+	TAY
+	LDA $0000, Y
+	AND #$00FF
+	ASL A
+	STA $1A
+	LDA $C1E4, X
+	CLC
+	ADC $1A
+	TAY
+	LDA $0000, Y
+	CLC
+	ADC $18
+	LDX $12
+	LDY $14
+	DEY
+	JSL $81891F  ;  Draw sprite?
+	PLX
+	PLP
+	RTS
+
+;RESERVES_INITIALIZATION
+82:AB47
+	PHP
+	REP #$30
+	LDA $B1
+	STA $BD
+	LDA $B3
+	STA $BF
+	STZ $B1
+	STZ $B3     ;Dunno what this stuff is for
+	LDA $09D4   ;Check max reserves
+	BEQ BRANCH_ALPHA
+	LDA $09C0   ;Check reserve mode
+	BEQ BRANCH_ALPHA
+	LDX #$BF2A  ;[ AUTO ]
+	LDY #$0082
+	CMP #$0001
+	BEQ BRANCH_BETA
+	LDX #$BF22  ;[MANUAL]
+	LDY #$0082
+BRANCH_BETA
+	STY $02
+	STX $00
+	LDA #$0004 ;4 tiles
+	STA $12
+	LDX #$0000
+	LDY #$0000
+BRANCH_GAMMA
+	LDA $7E3A8E, X
+	AND #$FC00
+	ORA [$00], Y
+	STA $7E3A8E, X ;Draw the tiles
+	INY
+	INY
+	INX
+	INX
+	DEC $12
+	BNE BRANCH_GAMMA
+BRANCH_ALPHA
+	STZ $0741    ;Selection Animation index
+	LDA $C10C    ;#$000F
+	AND #$00FF
+	STA $072D    ;Selection Animation timer
+	STZ $0743    ;Reserve tank Animation index
+	LDA $C165    ;#$000F
+	AND #$00FF
+	STA $072F    ;Reserve tank Animation timer
+	LDA $09D4    ;Reserve tank check again
+	BEQ BRANCH_DELTA
+	LDA #$0000
+	STA $0755    ;If you have them, start at #$0000
+	BRA BRANCH_EPSILON
+BRANCH_DELTA
+	LDA $0A76    ;Check hyper beam
+	BNE BRANCH_THETA ;Skip beams if on
+	LDA $09A8    ;Load collected beams
+	LDX #$0000
+BRANCH_KAPPA
+	BIT $C04C, X ;Check if this beam is collected
+	BNE BRANCH_IOTA
+	INX
+	INX
+	CPX #$000A   ;Check 5 beams
+	BMI BRANCH_KAPPA ;Exit loop if checked 5 beams alredy
+	BRA BRANCH_THETA ;Else loop
+BRANCH_IOTA
+	TXA
+	LSR A
+	XBA
+	ORA #$0001
+	STA $0755    ;Place cursor on this beam
+	BRA BRANCH_EPSILON
+BRANCH_THETA
+	LDA $09A4    ;Load collected equipment
+	LDX #$0000
+BRANCH_MU
+	BIT $C056, X ;Check if this item is collected
+	BNE BRANCH_LAMBDA
+	INX
+	INX
+	CPX #$000C   ;Check 6 items
+	BMI BRANCH_MU
+	BRA BRANCH_NU
+BRANCH_LAMBDA
+	TXA
+	LSR A
+	XBA
+	ORA #$0002
+	STA $0755
+	BRA BRANCH_EPSILON
+BRANCH_NU
+	LDX #$0000
+BRANCH_XI
+	BIT $C062, X ;Check if this boot is collected
+	INX
+	INX
+	CPX #$0006   ;Check 3 boots
+	BMI BRANCH_XI
+	BRA BRANCH_EPSILON
+$12C0C ALTERNATE ENTRY POINT ;Someone forgot a branch! XD Boots will never be selected first, thanks to this bug. Not that it's possible to collect boots first, anyways
+	TXA
+	LSR A
+	XBA
+	ORA #$0003
+	STA $0755
+BRANCH_EPSILON
+	LDA $09D6    ;Check current reserves
+	BEQ BRANCH_ZETA
+	JSR $ADDD  ;  Glowing Arrow
+	JSR $B1E0  ;  Update BG1
+BRANCH_ZETA
+	PLP
+	RTS
+
+;MAIN
+82:AC4F
+	PHP
+	REP #$30
+	LDA $0755
+	AND #$00FF
+	ASL A
+	TAX
+	JSR ($AC68, X)  ;  AC70, AFBE, B0C2, B150 Code to handle individual lists
+	JSR $B267  ;  Display Sprite (selection)
+	JSR $B2A2  ;  Display reserve tank amount
+	JSR $B1E0  ;  Display actual equipped / not equipped items, also changes Samus's display
+	PLP
+	RTS
+
+;MAIN --> TANKS
+82:AC70
+	PHP
+	REP #$30
+	LDA $0755
+	XBA
+	AND #$00FF
+	ASL A
+	TAX
+	JSR ($AC87, X)  ;  AE8B or AF4F, button responce
+	JSR $AC8B  ;  D-pad responce
+	JSR $AD0A  ;  Glowing arrow stuff
+	PLP
+	RTS
+
+;MAIN --> TANKS --> DPAD
+82:AC8B
+	PHP
+	REP #$30
+	LDA $0755
+	STA $12
+	LDA $8F
+	BIT #$0100
+	BEQ BRANCH_ALPHA
+	BIT #$0400
+	BNE BRANCH_BETA
+	LDX #$0000
+	JSR $B4B7  ;  Move to Varia, or lower on Suits/Misc.
+	CMP #$FFFF
+	BNE BRANCH_GAMMA
+BRANCH_BETA
+	LDX #$0000
+	JSR $B511  ;  Move to High Jump or lower in boots
+BRANCH_GAMMA
+	PLP
+	RTS
+BRANCH_ALPHA
+	BIT #$0800
+	BNE BRANCH_DELTA
+	BIT #$0400
+	BEQ BRANCH_GAMMA
+	LDA $0755
+	AND #$FF00
+	CMP #$0100
+	BEQ BRANCH_EPSILON
+	LDA $09C0
+	CMP #$0001
+	BEQ BRANCH_EPSILON
+	LDA $0755
+	CLC
+	ADC #$0100
+	STA $0755
+	LDA $09D6
+	BEQ BRANCH_EPSILON
+	LDA #$0037
+	JSL $809049  ;  Sound
+	BRA BRANCH_ZETA
+BRANCH_EPSILON
+	LDX #$0000
+	JSR $B456  ;  Move to Beams
+	BRA BRANCH_ZETA
+BRANCH_DELTA
+	LDA $0755
+	AND #$FF00
+	BEQ BRANCH_ZETA
+	LDA #$0037
+	JSL $809049  ;  Sound
+	LDA $0755
+	SEC
+	SBC #$0100
+	STA $0755
+BRANCH_ZETA
+	PLP
+	RTS
+
+;MAIN --> TANKS --> GLOWARROW
+82:AD0A
+	PHP
+	REP #$30
+	LDA $0755
+	BIT #$00FF
+	BNE BRANCH_ALPHA
+	XBA
+	AND #$00FF
+	ASL A
+	TAX
+	JSR ($AD25, X)  ;  AD29, ADDD, sets pallets
+	PLP
+	RTS
+BRANCH_ALPHA
+	JSR $ADEF  ;  Grey the arrow
+	PLP
+	RTS
+
+;MAIN --> TANKS --> GLOWARROW --> MODE
+82:AD29
+	LDA $09C0
+	CMP #$0001
+	BNE BRANCH_001
+	LDA $05B5
+	AND #$001F
+	ASL A
+	TAX
+	LDA $AD5D, X
+	STA $7EC0CC ; Arrow tip on status bar
+	LDA $AD9D, X
+	STA $7EC0D6 ; Arrow tip on status bar
+	JSR $AE01  ;  Auto on; Set enabled pallete (pallete will cycle colors)
+	RTS
+BRANCH_001:
+	LDA #$039E
+	STA $7EC0D6 ; Arrow tip on status bar
+	LDA #$0156
+	STA $7EC0CC ; Arrow tip on status bar
+	JSR $AE46  ;  Auto off, grey arrow
+	RTS
+
+;MAIN --> TANKS --> GLOWARROW --> TRIGGER
+82:ADDD
+	LDA #$039E
+	STA $7EC0D6
+	LDA #$0156
+	STA $7EC0CC
+	JSR $AE01  ;  Set enabled pallete (pallete remains 1 color set)
+	RTS
+
+;MAIN --> TANKS --> GLOWARROW --> MOVED_OFF_TANKS
+82:ADEF
+	LDA #$039E
+	STA $7EC0D6
+	LDA #$0156
+	STA $7EC0CC
+	JSR $AE46  ;  Auto off, grey arrow
+	RTS
+
+;MAIN --> TANKS --> GLOWARROW --> SETPALLETE_ON
+82:AE01
+	PHP
+	REP #$30
+	PHP
+	REP #$30
+	LDY #$0010
+	LDX #$0000
+BRANCH_EPSILON
+	LDA $7E3902, X
+	AND #$E3FF
+	ORA #$1800
+	STA $7E3902, X
+	TXA
+	CLC
+	ADC #$0040
+	TAX
+	DEY
+	DEY
+	BNE BRANCH_EPSILON
+	PLP
+	PHP
+	REP #$30
+	LDY #$0004
+	LDX #$0000
+BRANCH_ZETA
+	LDA $7E3B02, X
+	AND #$E3FF
+	ORA #$1800
+	STA $7E3B02, X
+	INX
+	INX
+	DEY
+	DEY
+	BNE BRANCH_ZETA
+	PLP
+	PLP
+	RTS
+
+;MAIN --> TANKS --> GLOWARROW --> SETPALLETE_OFF
+82:AE46
+	PHP
+	REP #$30
+	PHP
+	REP #$30
+	LDY #$0010
+	LDX #$0000
+BRANCH_THETA
+	LDA $7E3902, X
+	AND #$E3FF
+	ORA #$1C00
+	STA $7E3902, X
+	TXA
+	CLC
+	ADC #$0040
+	TAX
+	DEY
+	DEY
+	BNE BRANCH_THETA
+	PLP
+	PHP
+	REP #$30
+	LDY #$0004
+	LDX #$0000
+BRANCH_IOTA
+	LDA $7E3B02, X
+	AND #$E3FF
+	ORA #$1C00
+	STA $7E3B02, X
+	INX
+	INX
+	DEY
+	DEY
+	BNE BRANCH_IOTA
+	PLP
+	PLP
+	RTS
+
+;MAIN --> TANKS --> MODE_BUTTONS
+82:AE8B
+	PHP
+	REP #$30
+	LDA $8F
+	BIT #$0080   ; Button A
+	BEQ BRANCH_KAPPA
+	LDA $09D4    ; Max reserve energy
+	BEQ BRANCH_KAPPA
+	LDA #$0037
+	JSL $809049  ;  Sound
+	LDA $09C0
+	CMP #$0001
+	BNE BRANCH_LAMBDA ; Branch if Manual
+	LDA #$0002
+	STA $09C0
+	JSR $AF33  ;  Disable StatusBar AUTO display
+	PHP
+	REP #$30
+	LDY #$0008
+	LDX #$0000
+BRANCH_MU
+	LDA $7E3A8E, X ; Changes mode tiles
+	AND #$FC00
+	ORA $82BF22, X
+	STA $7E3A8E, X
+	INX
+	INX
+	DEY
+	DEY
+	BNE BRANCH_MU
+	PLP
+	BRA BRANCH_KAPPA
+BRANCH_LAMBDA
+	LDA #$0001
+	STA $09C0
+	JSR $AEFD  ;  Enable StatusBar AUTO display
+	PHP
+	REP #$30
+	LDY #$0008
+	LDX #$0000
+BRANCH_NU
+	LDA $7E3A8E, X ; Changes mode tiles
+	AND #$FC00
+	ORA $82BF2A, X
+	STA $7E3A8E, X
+	INX
+	INX
+	DEY
+	DEY
+	BNE BRANCH_NU
+	PLP
+BRANCH_KAPPA
+	PLP
+	RTS
+
+;MAIN --> TANKS --> MODE_BUTTONS --> SET_AUTO_STATUSBAR
+82:AEFD
+	LDY #$998B
+	LDA $09D6
+	BNE BRANCH_XI
+	LDY #$9997
+BRANCH_XI
+	LDA $0000, Y
+	STA $7EC618
+	LDA $0002, Y
+	STA $7EC61A
+	LDA $0004, Y
+	STA $7EC658
+	LDA $0006, Y
+	STA $7EC65A
+	LDA $0008, Y
+	STA $7EC698
+	LDA $000A, Y
+	STA $7EC69A
+	RTS
+
+;MAIN --> TANKS --> MODE_BUTTONS --> CLEAR_AUTO_STATUSBAR
+82:AF33
+	LDA #$2C0F
+	STA $7EC618
+	STA $7EC61A
+	STA $7EC658
+	STA $7EC65A
+	STA $7EC698
+	STA $7EC69A
+	RTS
+
+;MAIN --> TANKS --> ACTIVATE_BUTTONS
+82:AF4F
+	PHP
+	REP #$30
+	LDA $0757  ; Reserve tank timer
+	BNE BRANCH_OMICRON
+	LDA $8F
+	BIT #$0080 ; Button A
+	BEQ BRANCH_PI
+	LDA $09D6 ; Current reserves
+	CLC
+	ADC #$0007
+	AND #$FFF8
+	STA $0757
+BRANCH_OMICRON
+	LDA $0757
+	DEC A
+	STA $0757
+	AND #$0007
+	CMP #$0007
+	BNE BRANCH_RHO
+	LDA #$002D
+	JSL $80914D  ;  Sound
+BRANCH_RHO
+	LDA $09C2 ; Current Health
+	CLC
+	ADC $BF04 ; just 1... weird.
+	STA $09C2
+	CMP $09C4 ; Max health
+	BMI BRANCH_SIGMA
+	LDA $09C4
+	STA $09C2
+	BRA BRANCH_TAU
+BRANCH_SIGMA
+	LDA $09D6 ; Current reserves
+	SEC
+	SBC $BF04
+	STA $09D6
+	BEQ BRANCH_TAU
+	BPL BRANCH_PI
+	LDA $09C2
+	CLC
+	ADC $09D6
+	STA $09C2
+BRANCH_TAU
+	STZ $09D6
+	STZ $0757
+	JSR $AE46  ;  Set arrow pallete to off.
+	STZ $0755  ;  Move cursor to tanks, mode
+BRANCH_PI
+	PLP
+	RTS
+
+;MAIN --> WEAPONS
+82:AFBE
+	PHP
+	REP #$30
+	JSR $AFDB  ;  D-pad response
+	LDA $09A6  ;  Equipped beams
+	STA $24
+	LDA $09A8  ;  Collected beams
+	BEQ BRANCH_UPSILON
+	LDA #$000A ;  Tiles to load
+	STA $18
+	JSR $B568  ;  Button response
+	JSR $B068  ;  Plasma + Spazer check
+BRANCH_UPSILON
+	PLP
+	RTS
+
+;MAIN --> WEAPONS --> MOVE_BUTTONS
+82:AFDB
+	PHP
+	REP #$30
+	LDA $0755
+	STA $12
+	LDA $8F
+	BIT #$0100  ; Right
+	BEQ BRANCH_PHI
+	BIT #$0800  ; Up
+	BNE BRANCH_CHI
+	LDX #$0004
+	JSR $B4B7  ;  Move to Morphball, or lower on Suits/Misc
+	CMP #$0000
+	BEQ BRANCH_PSI
+	LDX #$0000
+	JSR $B511  ;  Move to High Jump or lower on boots
+	BRA BRANCH_PSI
+BRANCH_CHI
+	LDX #$0000
+	JSR $B4B7  ;  Move to Varia, or lower on Suits/Misc
+	BRA BRANCH_PSI
+BRANCH_PHI
+	BIT #$0400  ; Down
+	BNE BRANCH_OMEGA
+	BIT #$0800  ; Up
+	BEQ BRANCH_PSI
+	LDA $0755
+	AND #$FF00
+	BEQ BRANCH_ALTIMA
+	LDA $0755
+	SEC
+	SBC #$0100
+	STA $0755
+	XBA
+	AND #$00FF
+	ASL A
+	TAX
+	JSR $B489  ;  Move to bottom of Beams
+	CMP #$FFFF
+	BNE BRANCH_PSI
+BRANCH_ALTIMA
+	LDX #$0000
+	JSR $B43F  ;  Move to Reserve Tanks
+	CMP #$0000
+	BNE BRANCH_PSI
+	LDA $12
+	STA $0755
+	BRA BRANCH_PSI
+BRANCH_OMEGA
+	LDA $0A76
+	BNE BRANCH_PSI
+	LDA $0755
+	CMP #$0401
+	BEQ BRANCH_PSI
+	LDA $0755
+	CLC
+	ADC #$0100
+	STA $0755
+	XBA
+	AND #$00FF
+	ASL A
+	TAX
+	JSR $B456  ;  Move to Beams
+BRANCH_PSI
+	PLP
+	RTS
+
+;MAIN --> BEAMS --> PLAS/SPAZER
+82:B068
+	PHP
+	REP #$30
+	LDA $24
+	EOR #$FFFF
+	AND $09A6
+	BIT #$0004
+	BNE BRANCH_ULTIMA
+	BIT #$0008
+	BEQ BRANCH_OPTIMUS
+	LDA $24
+	BIT #$0008
+	BNE BRANCH_OPTIMUS
+	LDA $09A6
+	BIT #$0004
+	BEQ BRANCH_OPTIMUS
+	AND #$FFFB
+	STA $09A6
+	LDA $C072  ;  = #$3CC8
+	STA $00
+	BRA BRANCH_ALIF
+BRANCH_ULTIMA
+	LDA $24
+	BIT #$0004
+	BNE BRANCH_OPTIMUS
+	LDA $09A6
+	BIT #$0008
+	BEQ BRANCH_OPTIMUS
+	AND #$FFF7
+	STA $09A6
+	LDA $C074  ;  = #$3D08
+	STA $00
+BRANCH_ALIF
+	LDA #$0C00
+	STA $12
+	LDA #$000A
+	STA $16
+	JSR $A29D  ;  Greys out name of selected item.
+BRANCH_OPTIMUS
+	PLP
+	RTS
+
+;MAIN --> MISC
+82:B0C2
+	PHP
+	REP #$30
+	JSR $B0D2  ;  DPad response
+	LDA #$0012
+	STA $18
+	JSR $B568  ;  Button response
+	PLP
+	RTS
+
+;MAIN --> MISC --> MOVE_RESPONSE
+82:B0D2
+	PHP
+	REP #$30
+	LDA $0755
+	STA $12
+	LDA $8F
+	BIT #$0200  ;  Left
+	BEQ BRANCH_BET
+	BIT #$0400  ;  Down
+	BNE BRANCH_DEL
+	LDX #$0000
+	JSR $B43F  ;  Move to Reserve Tanks
+	CMP #$0000
+	BNE BRANCH_THEL
+	LDA $12
+	STA $0755
+BRANCH_DEL
+	LDX #$0000
+	JSR $B456  ;  Move to Beams
+	BRA BRANCH_THEL
+BRANCH_BET
+	BIT #$0800  ;  Up
+	BNE BRANCH_SIN
+	BIT #$0400  ;  Down
+	BEQ BRANCH_THEL
+	LDA $0755
+	AND #$FF00
+	CMP #$0500
+	BEQ BRANCH_SHIN
+	LDA $0755
+	CLC
+	ADC #$0100
+	STA $0755
+	XBA
+	AND #$00FF
+	ASL A
+	TAX
+	JSR $B4B7  ;  Move to a spot in Suits/Misc
+	CMP #$FFFF
+	BNE BRANCH_THEL
+BRANCH_SHIN
+	LDX #$0000
+	JSR $B511  ;  Move to High Jump or lower in boots
+	BRA BRANCH_THEL
+BRANCH_SIN
+	LDA $0755
+	AND #$FF00
+	BEQ BRANCH_THEL
+	LDA $0755
+	SEC
+	SBC #$0100
+	STA $0755
+	XBA
+	AND #$00FF
+	ASL A
+	TAX
+	JSR $B4E6  ;  Move up in Misc./Suits
+BRANCH_THEL
+	PLP
+	RTS
+
+
+;MAIN --> BOOTS
+82:B150
+	PHP
+	REP #$30
+	JSR $B160  ;  Move response for d-pad
+	LDA #$0012
+	STA $18
+	JSR $B568  ;  Button response (toggles item if A is pressed)
+	PLP
+	RTS
+
+;MAIN --> BOOTS --> MOVE_RESPONSE
+82:B160
+	PHP
+	REP #$30
+	LDA $0755
+	STA $12
+	LDA $8F
+	BIT #$0200  ;  Left
+	BEQ BRANCH_SOD
+	BIT #$0800  ;  Up
+	BNE BRANCH_DOD
+	LDX #$0008
+	JSR $B489  ;  Move to bottom of Beams
+	CMP #$FFFF
+	BNE BRANCH_TOD
+BRANCH_DOD
+	LDX #$0000
+	JSR $B43F  ;  Move to Reserve Tanks
+	CMP #$0000
+	BNE BRANCH_TOD
+	LDA $12
+	STA $0755
+	BRA BRANCH_TOD
+BRANCH_SOD
+	BIT #$0400  ;  Down
+	BNE BRANCH_ZOD
+	BIT #$0800  ;  Up
+	BEQ BRANCH_TOD
+	LDA $0755
+	AND #$FF00
+	BEQ BRANCH_FATHA
+	LDA $0755
+	SEC
+	SBC #$0100
+	STA $0755
+	XBA
+	AND #$00FF
+	ASL A
+	TAX
+	JSR $B53F  ;  Move up in boots
+	CMP #$FFFF
+	BNE BRANCH_TOD
+BRANCH_FATHA
+	LDX #$000A
+	JSR $B4E6  ;  Move to Screw Attack or higher on Suits/Misc
+	BRA BRANCH_TOD
+BRANCH_ZOD
+	LDA $0755
+	CMP #$0203
+	BEQ BRANCH_TOD
+	LDA $0755
+	CLC
+	ADC #$0100
+	STA $0755
+	XBA
+	AND #$00FF
+	ASL A
+	TAX
+	JSR $B511  ;  Move down in boots
+BRANCH_TOD
+	PLP
+	RTS
+
+;MAIN --> UPDATE_BG1
+82:B1E0
+	PHP
+	REP #$30
+	JSR $B20C  ;  Updates Samus's wireframe tilemap
+	LDX $0330
+	LDA #$0500  ; VRAM Target: $0500 (actually $0A00)
+	STA $D0, X
+	INX
+	INX
+	LDA #$3900
+	STA $D0, X
+	INX
+	INX
+	SEP #$20
+	LDA #$7E    ; Source address: 7E3900
+	STA $D0, X
+	REP #$20
+	INX
+	LDA #$3080  ; Size: #$3080 bytes. No idea what the later portion of it is for
+	STA $D0, X
+	INX
+	INX
+	STX $0330
+	PLP
+	RTS
+
+;MAIN --> UPDATE_BG1 --> SAMUS_MODEL
+82:B20C
+	PHP
+	REP #$30
+	LDA $09A2
+	AND #$0101
+	LDX #$0000
+BRANCH_DUMMA
+	CMP $B257, X  ;  Find equipment match
+	BEQ BRANCH_KESRA
+	INX
+	INX
+	BRA BRANCH_DUMMA
+BRANCH_KESRA
+	LDA $B25F, X  ;  Get pointer to display version: D521, D631, D741, D851
+	STA $00
+	LDA #$0082    ;  Bank 82
+	STA $02
+	LDA #$0011
+	STA $14
+	LDY #$0000
+	LDX #$01D8
+BRANCH_GHEIN
+	PHX
+	LDA #$0008
+	STA $12
+BRANCH_EIN
+	LDA [$00], Y
+	STA $7E3800, X
+	INX
+	INX
+	INY
+	INY
+	DEC $12
+	BNE BRANCH_EIN
+	PLX
+	TXA
+	CLC
+	ADC #$0040
+	TAX
+	DEC $14
+	BNE BRANCH_GHEIN
+	PLP
+	RTS
+
+;MAIN --> DISPLAY_SELECTION
+82:B267
+	PHP
+	REP #$30
+	LDA $09A8
+	ORA $09A4
+	ORA $09D4
+	BEQ BRANCH_RAH  ; If no items, leave
+	LDA $0755
+	AND #$00FF
+	ASL A
+	TAX
+	LDA $C18E, X    ; List Base pointer: C196, C19E, C1B2, C1CA
+	STA $12
+	LDA $0755
+	XBA
+	AND #$00FF
+	ASL A
+	ASL A
+	CLC
+	ADC $12
+	TAY
+	LDA $0000, Y    ; Specific Item X position
+	TAX
+	DEX
+	INY
+	INY
+	LDA $0000, Y    ; Specific Item Y position
+	TAY
+	LDA #$0003
+	JSR $A881  ;  This must actually display the sprite...
+BRANCH_RAH
+	PLP
+	RTS
+
+;MAIN --> DISPLAY_RESERVES (useless middle routine)
+82:B2A2
+	PHP
+	REP #$30
+	JSR $B2AA  ;  now that we've done nothing, go do something productive
+	PLP
+	RTS
+
+;MAIN --> DISPLAY_RESERVES --> NO,REALLY
+82:B2AA
+	PHP
+	REP #$30
+	STZ $03
+	JSR $B3F9  ;  Pallete setup
+	STZ $34
+	LDA $09D4
+	BNE BRANCH_ZAH
+	PLP
+	RTS
+BRANCH_ZAH
+	STA $4204
+	SEP #$20
+	LDA #$64
+	STA $4206
+	REP #$20
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	LDA $4214
+	STA $2C
+	LDA $09D6
+	STA $4204
+	SEP #$20
+	LDA #$64
+	STA $4206
+	REP #$20
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	LDA $4216 ; Percent of last box to fill
+	STA $32
+	LDA $4214 ; Boxes to fill
+	STA $2A
+	STA $30
+	STA $2E
+	BEQ BRANCH_YEH
+	LDY #$0000
+BRANCH_HEH
+	PHY
+	LDA $C1D6, Y ; X position of each box
+	TAX
+	LDY $C1E2    ; Y position of boxes
+	DEY
+	LDA #$001B
+	JSL $81891F  ;  Draw sprite?
+	PLY
+	INY
+	INY
+	DEC $2E
+	BNE BRANCH_HEH
+	STY $34
+BRANCH_YEH
+	LDA $4216
+	BEQ BRANCH_JIIM
+	STA $4204
+	SEP #$20
+	LDA #$0E
+	STA $4206
+	REP #$20
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	LDA $4214
+	ASL A
+	TAX
+	CMP #$0007
+	BPL BRANCH_HAMZA
+	LDA $4216
+	BEQ BRANCH_HAMZA
+	LDA $05B5
+	BIT #$0004
+	BNE BRANCH_HAMZA
+	INX
+	INX
+BRANCH_HAMZA
+	LDA $09D6
+	CMP #$0064
+	BMI BRANCH_ARIES
+	TXA
+	CLC
+	ADC #$0010
+	TAX
+BRANCH_ARIES
+	LDA $B3D9, X
+	PHA
+	LDX $34
+	LDA $C1D6, X
+	TAX
+	LDY $C1E2
+	DEY
+	PLA
+	JSL $81891F  ;  Draw sprite?
+	INC $30
+	INC $34
+	INC $34
+BRANCH_JIIM
+	LDX $34
+	LDA $30
+	CMP $2C
+	BPL BRANCH_LEO
+	LDA $C1D6, X
+	TAX
+	LDY $C1E2
+	DEY
+	LDA #$0020
+	JSL $81891F  ;  Draw sprite?
+	INC $34
+	INC $34
+	INC $30
+	BRA BRANCH_JIIM
+BRANCH_LEO
+	LDX $34
+	LDA $C1D6, X
+	TAX
+	LDY $C1E2
+	DEY
+	LDA #$001F
+	JSL $81891F  ;  Draw sprite?
+	SEP #$20
+	LDA $32
+	STA $4204
+	LDA $33
+	STA $4205
+	LDA #$0A
+	STA $4206
+	REP #$20
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	LDA $4216
+	CLC
+	ADC #$0804
+	STA $7E3B14
+	LDA $4214
+	CLC
+	ADC #$0804
+	STA $7E3B12
+	LDA $2A
+	CLC
+	ADC #$0804
+	STA $7E3B10
+	PLP
+	RTS
+
+;MAIN --> DISPLAY_RESERVES --> REALLY --> SET_PALLETES
+82:B3F9
+	PHP
+	REP #$30
+	LDA #$0600
+	STA $03
+	LDA $09D6
+	BEQ BRANCH_SAGITTARIUS
+	DEC $072F
+	BEQ BRANCH_TAURUS
+	BPL BRANCH_VIRGO
+BRANCH_TAURUS
+	LDA $0743
+	INC A
+	STA $0743
+	ASL A
+	TAX
+	LDA $C165, X
+	AND #$00FF
+	CMP #$00FF
+	BNE BRANCH_CAPRICORN
+	STZ $0743
+	LDA $C165
+	AND #$00FF
+BRANCH_CAPRICORN
+	STA $072F
+BRANCH_VIRGO
+	LDA $0743
+	ASL A
+	INC A
+	TAX
+	LDA #$0003
+	ASL A
+	TAX
+	LDA $C0FA, X
+	STA $03
+BRANCH_SAGITTARIUS
+	PLP
+	RTS
+
+;MAIN --> SPECIFIC_LIST --> MOVE_RESPONSES --> MOVETOTANKS
+82:B43F
+	PHP
+	REP #$30
+	LDA $09D4
+	BEQ BRANCH_GEMINI
+	STZ $0755
+	LDA #$0037
+	JSL $809049  ;  Sound
+	LDA #$0001
+BRANCH_GEMINI
+	PLP
+	RTS
+
+;MAIN --> SPECIFIC_LIST --> MOVE_RESPONSES --> MOVETOBEAMS
+82:B456
+	PHP
+	REP #$30
+	LDA $0A76  ;  Hyper beam
+	BNE BRANCH_LIBRA
+BRANCH_CANCER
+	LDA $09A8  ;  Collected Beams
+	BIT $C04C, X ;Beam Checklist?
+	BNE BRANCH_AQUARIUS
+	INX
+	INX
+	CPX #$000A
+	BMI BRANCH_CANCER
+BRANCH_LIBRA
+	LDA $12
+	STA $0755
+	BRA BRANCH_SCOPRIO
+BRANCH_AQUARIUS
+	TXA
+	LSR A
+	XBA
+	AND #$FF00
+	ORA #$0001
+	STA $0755
+	LDA #$0037
+	JSL $809049  ;  Sound
+BRANCH_SCOPRIO
+	PLP
+	RTS
+
+;MAIN --> SPECIFIC_LIST --> MOVE_RESPONSES --> MOVETOPLASMA
+82:B489
+	PHP
+	REP #$30
+	LDA $0A76
+	BNE BRANCH_PISCES
+BRANCH_SEPHIROTH
+	LDA $09A8
+	BIT $C04C, X
+	BNE BRANCH_CLOUD
+	DEX
+	DEX
+	BPL BRANCH_SEPHIROTH
+BRANCH_PISCES
+	LDA #$FFFF
+	BRA BRANCH_LINK
+BRANCH_CLOUD
+	LDA #$0037
+	JSL $809049  ;  Sound
+	TXA
+	LSR A
+	XBA
+	AND #$FF00
+	ORA #$0001
+	STA $0755
+BRANCH_LINK
+	PLP
+	RTS
+
+;MAIN --> SPECIFIC_LIST --> MOVE_RESPONSES --> MOVETO_SUITS/MISC_X_DOWN
+82:B4B7
+	PHP
+	REP #$30
+BRANCH_BETA
+	LDA $09A4
+	BIT $C056, X
+	BNE BRANCH_ALPHA
+	INX
+	INX
+	CPX #$000A   ;  BUG, should be C. Can't access Screw Attack without Spring Ball or Boots
+	BMI BRANCH_BETA
+	LDA #$FFFF
+	BRA BRANCH_GAMMA
+BRANCH_ALPHA
+	LDA #$0037
+	JSL $809049  ;  Sound
+	TXA
+	LSR A
+	XBA
+	AND #$FF00
+	ORA #$0002
+	STA $0755
+	LDA #$0000
+BRANCH_GAMMA
+	PLP
+	RTS
+
+;MAIN --> SPECIFIC_LIST --> MOVE_RESPONSES --> MOVETO_SUITS/MISC_X_UP
+82:B4E6
+	PHP
+	REP #$30
+BRANCH_VENUS
+	LDA $09A4
+	BIT $C056, X
+	BNE BRANCH_MERCURY
+	DEX
+	DEX
+	BPL BRANCH_VENUS
+	LDA $12
+	STA $0755
+	BRA BRANCH_EARTH
+BRANCH_MERCURY
+	LDA #$0037
+	JSL $809049  ;  Sound
+	TXA
+	LSR A
+	XBA
+	AND #$FF00
+	ORA #$0002
+	STA $0755
+BRANCH_EARTH
+	PLP
+	RTS
+
+;MAIN --> SPECIFIC_LIST --> MOVE_RESPONSES --> MOVETOBOOTS_X_DOWN
+82:B511
+	PHP
+	REP #$30
+BRANCH_JUPITER
+	LDA $09A4
+	BIT $C062, X
+	BNE BRANCH_MARS
+	INX
+	INX
+	CPX #$0006
+	BMI BRANCH_JUPITER
+	LDA $12
+	STA $0755
+	BRA BRANCH_SATURN
+BRANCH_MARS
+	LDA #$0037
+	JSL $809049  ;  Sound
+	TXA
+	LSR A
+	XBA
+	AND #$FF00
+	ORA #$0003
+	STA $0755
+BRANCH_SATURN
+	PLP
+	RTS
+
+;MAIN --> SPECIFIC_LIST --> MOVE_RESPONSES --> MOVETOBOOTS_X_UP
+82:B53F
+	PHP
+	REP #$30
+BRANCH_NEPTUNE
+	LDA $09A4
+	BIT $C062, X
+	BNE BRANCH_URANUS
+	DEX
+	DEX
+	BPL BRANCH_NEPTUNE
+	LDA #$FFFF
+	BRA BRANCH_PLUTO
+BRANCH_URANUS
+	LDA #$0037
+	JSL $809049  ;  Sound
+	TXA
+	LSR A
+	XBA
+	AND #$FF00
+	ORA #$0003
+	STA $0755
+BRANCH_PLUTO
+	PLP
+	RTS
+
+
+;MAIN --> SPECIFIC_LIST (but not TANKS) --> BUTTON_RESPONSE
+82:B568
+	PHP
+	REP #$30
+	LDA $8F
+	BIT #$0080  ;  Button A
+	BNE BRANCH_MICKEY
+	PLP
+	RTS
+BRANCH_MICKEY
+	LDA #$0038
+	JSL $809049  ;  Sound
+	LDA $0755
+	AND #$00FF
+	ASL A
+	TAX
+	STA $1A
+	LDA $0755
+	XBA
+	AND #$00FF
+	ASL A
+	STA $12      ; For the following part, X = list * 2, $12 = list index
+	LDA $C02C, X ; Pointers to start of VRAM offsets? 2 byte entries.
+	CLC
+	ADC $12
+	TAY
+	LDA $0000, Y ; VRAM offsets?
+	STA $00
+	LDA $C03C, X ; Pointers to RAM offsets (09A2 and 09A4)
+	TAY
+	LDA $C034, X ; Pointers to start of item bit checks.
+	CLC
+	ADC $12
+	TAX
+	LDA $0000, Y ; Load current value for ram and
+	BIT $0000, X ; check the specific bit
+	BNE BRANCH_MINNIE
+	ORA $0000, X ; Set the bit
+	STA $0000, Y ; Store it
+	LDA $18
+	STA $16
+	LDX $1A
+	LDA $C044, X
+	CLC
+	ADC $12
+	TAY
+	LDA $0000, Y ; Not sure exactly
+	TAX
+	JSR $A27E  ;  Set the tiles and pallete for this item to enabled.
+	BRA BRANCH_DONALD
+BRANCH_MINNIE
+	LDA $0000, X
+	EOR #$FFFF
+	STA $12
+	LDA $0000, Y 
+	AND $12      ; Disable the bit (keep everything but it)
+	STA $0000, Y
+	LDA #$0C00
+	STA $12
+	LDA $18
+	STA $16
+	JSR $A29D  ;  Set the pallete for this item to disabled.
+BRANCH_DONALD
+	PLP
+	RTS
+
+;Unknown. unused?
+82:B5E8
+	PHP
+	REP #$30
+	STA $18
+	STZ $12
+	STZ $14
+	STZ $16
+BRANCH_CHIP
+	LDA $18
+	SEC
+	SBC #$0064
+	STA $18
+	BMI BRANCH_GOOFY
+	INC $16
+	BRA BRANCH_CHIP
+BRANCH_GOOFY
+	CLC
+	ADC #$0064
+	STA $18
+BRANCH_HUEY
+	LDA $18
+	SEC
+	SBC #$000A
+	STA $18
+	BMI BRANCH_DALE
+	INC $14
+	BRA BRANCH_HUEY
+BRANCH_DALE
+	CLC
+	ADC #$000A
+	STA $18
+BRANCH_LUEY
+	LDA $18
+	SEC
+	SBC #$0001
+	STA $18
+	BMI BRANCH_DUEY
+	INC $12
+	BRA BRANCH_LUEY
+BRANCH_DUEY
+	PLP
+	RTS
+

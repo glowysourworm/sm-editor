@@ -1,0 +1,816 @@
+
+
+         .---------------------------------------------[ddf]
+         |                                              /|\
+         |                                               |
+         |                 .-------------------.  .------|------------.
+ _____   |                 |                   |  |      |            |
+|     | \|/                |                  \|/ |      |           \|/
+| rdf | [rdf_header]~[rdf_stateselect]~[rdf_roomstate] [rdf_doorout] [rdf_scroll]
+|_____|            |                    ||||           /|\
+                   |                    ||||            |
+                   '------------------------------------'
+                                        ||||
+    .-----------------------------------'|||
+    |                  .-----------------'|'------------------.
+   \|/                 |                  |                   |
+   [room_map]         \|/                 |                   |
+                      [room_population]   |                   |
+                        |                 |               
+                        |               .-'
+                        |               |
+                        |              \|/
+                       \|/             [enemy_set]
+                       [enemy_data]     |
+                       /|\              |
+                        |               |
+                        '---------------'
+
+################################################################################################################
+################################################################################################################
+################################################################################################################
+
+      _______________________________
+
+      room_population - variable size
+      _______________________________
+
+example data: crateria mainstreet - roomstate 2
+
+
+     PosX PosY Pose Swt1 Swt2 Opt0 Opt1
+FFDC 9804 4000 0200 0128 0000 0100 0000
+FFDC 1F04 8800 0300 0128 0000 0100 0000
+FFDC 4804 B800 0300 0120 0000 0100 0000
+7FDB FE02 3B00 0000 0020 0000 0000 0000
+7FDB BE02 5B00 0000 0020 0000 0000 0000
+7FDB 7E02 3B00 0000 0020 0000 0000 0000
+FFDC A001 7801 0300 0120 0000 0100 0000
+7FD4 B801 2802 0000 0020 0000 1000 0000
+FFDC 2801 3804 0000 0320 0000 0100 0000
+FFDC D401 3804 0300 0020 0000 0100 0000
+FFDC 8001 0804 0300 0120 0000 0100 0000
+FFDC 6801 2803 0000 0220 0000 0100 0000
+FFDC EA01 EA02 0100 0320 0000 0100 0000
+FFDC C801 7802 0300 0120 0000 0100 0000
+FFDC 8101 1501 0200 0120 0000 0100 0000
+7FD4 AD03 E801 0000 0020 0000 1000 0000 FFFF 10
+^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^
+|    |    |    |    |    |    |    |    |    |_ enemies player must kill for room to be considered "cleaned out"
+|    |    |    |    |    |    |    |    |______ end of room_population enemies section
+|    |    |    |    |    |    |    |___________ Room argument 2
+|    |    |    |    |    |    |________________ Room argument 1 (speed, direction, etc.)
+|    |    |    |    |    |_____________________ more property bits
+|    |    |    |    |__________________________ property bits
+|    |    |    |_______________________________ Initial graphic AI pointer. Virtually never used (initialized by enemy instead)
+|    |    |____________________________________ y position
+|    |_________________________________________ x position
+|______________________________________________ pointer to enemy_data [ $A0 ]
+
+################################################################################################################
+################################################################################################################
+################################################################################################################
+
+      ________________________
+
+      room_fx1 - variable size
+      ________________________
+
+example data: west of wrecked ship
+
+0000 F004 FFFF 0000 00 06 02 18 01 00 06 48
+^^^^ ^^^^ ^^^^ ^^^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^
+|    |    |    |    |  |  |  |  |  |  |  |
+|    |    |    |    |  |  |  |  |  |  |  |_ fx1_blend ---------- index value for palette blend data table [ $89 ]
+|    |    |    |    |  |  |  |  |  |  |____ fx1_animatetile ---- tile animation bitflags (region-based)
+|    |    |    |    |  |  |  |  |  |_______ fx1_palette fx ----- palette fx bitflags (region-based)
+|    |    |    |    |  |  |  |  |__________ fx1_C
+|    |    |    |    |  |  |  |_____________ fx1_B
+|    |    |    |    |  |  |________________ fx1_A
+|    |    |    |    |  |___________________ fx1_layer3type
+|    |    |    |    |______________________ fx1_surface_delay -- lower is faster
+|    |    |    |___________________________ fx1_surface_speed -- lower is faster, bit 15 selects direction(0=flow down)
+|    |    |________________________________ fx1_surface_new ---- new position for liquid's surface
+|    |_____________________________________ fx1_surface_start -- starting position for liquid's surface
+|__________________________________________ fx1_select
+
+VALUES:  fx1_select
+
+          value   | effect
+          --------+-----------
+          FFFF    | no FX1(use internal defaults)
+          0000    | use this FX1 entry as our FX1 entry
+   active door id | use this FX1 entry as our FX1 entry
+    anything else | add 10h to the room_fx1 pointer and
+                  | loop back to try the next FX1 entry
+
+VALUES:  layer3_fx
+
+         00 - None
+         02 - Lava
+         04 - Acid/Lava/Orange Soda
+         06 - Water
+         08 - Spores
+         0A - Rain
+         0C - Fog
+
+         20 - Sky Scrolling (UNUSED)
+         22 - ??? (UNUSED)
+         24 - Fireflea FX **SPECIAL**
+         26 - 4 Statues **SPECIAL**
+         28 - Ceres Elevator Shaft **SPECIAL**
+         2A - Ridley at Ceres **SPECIAL**
+         2C - Haze (As in Ceres -- UNUSED)
+
+VALUES:  A
+
+         00 - bad x-ray scope
+         02 - normal -- USED
+         04 - no bg
+         06 - layer 1 bg transparency
+         08 - seemingly normal  -- USED
+         0A - seemingly normal
+         0C - seemingly normal
+         0E - seemingly normal
+         10 - seemingly normal
+         12 - seemingly normal
+         14 - seemingly normal
+         16 - layer 2 transparency
+         18 - seemingly normal
+         1A - ugly transparency
+         1C - darker ugly transparency
+         1E - seemingly normal
+         20 - seemingly normal
+         22 - seemingly normal
+         24 - seemingly normal
+         26 - ugly dark room
+         28 - glowing visor dark room -- USED
+         2A - darker glowing visor dark room -- USED
+         2C - seemingly normal
+         2E - seemingly normal
+
+VALUES:  B
+
+         00 - bad x-ray scope
+         02 - normal -- USED for normal rooms
+         04 - no bg
+         06 - liquid/fog drawn behind Sprite Layer, L1 FG out of water is transparent
+         08 - liquid/fog drawn behind Layer 1 and Sprite Layer
+         0A - liquid/fog drawn behind Layer 1 only -- USED for spores
+         0C - liquid/fog drawn behind all
+         0E - liquid/fog drawn behind enemies only -- USED for rain at Samus's Ship
+         10 - liquid/fog drawn behind enemies only
+         12 - liquid/fog drawn behind enemies only
+         14 - darkens liquid -- USED for Maridian water
+         16 - darkens liquid, transparent layer 2 drawn over Layer 1 and Samus -- USED for Maridian waterfall rooms
+         18 - USED for normal water
+         1A - wacky transparencies -- possible interesting uses
+         1C - wacky transparencies -- darker
+         1E - seemingly normal, liquid/fog drawn over all -- USED for lava/acid
+         20 - liquid/fog drawn behind enemies only
+         22 - seemingly normal, liquid/fog drawn over all
+         24 - no liquid/fog drawn
+         26 - ugly darkness
+         28 - dark room, no liquid/fog, no visor glow
+         2A - darker room, no liquid/fog, no visor glow
+         2C - no liquid/fog drawn
+         2E - darkens liquid, liquid/fog drawn behind enemies
+         30 - seeminly normal -- USED for fog
+         32 - darkens liquid, draws liquid/fog behind enemies and Layer 1
+         34 - liquid/fog drawn behind enemies only
+
+VALUES:  C
+
+         0 0 0 0   0 0 0 0
+         | | | |   | | | |__ liquid flow left
+         | | | |   | | |____ bg warp - cascade heat
+         | | | |   | |______ bg warp - line shift
+         | | | |   |________ unknown       **FIXME**
+         | | | |____________ unused
+         | | |______________ unused
+         | |________________ liquid tide - big
+         |__________________ liquid tide - small
+
+
+
+
+VALUES:  tile animation bitflags and palette fx bitflags
+
+                [ CRATERIA / BRINSTAR / NORFAIR / WRECKED SHIP / MARIDIA / TOURIAN / CERES / DEBUG ]
+
+                                                  .--.
+tile animation: CRATERIA                          |..|         palette fx: CRATERIA
+                                                  ||||                                effect        | gfx sets 00/01                | gfx sets 02/03
+0 0 0 0   0 0 0 0                                 ||||         0 0 0 0   0 0 0 0   _________________|_______________________________|________________
+| | | |   | | | |__ animate_spikes_h              ||||         | | | |   | | | |__ stays grey       | sky bg, tourian style pipes   | cre pipes/ruins
+| | | |   | | |____ animate_spikes_v              ||||         | | | |   | | |____ pulses red       | rock/mountains                | ruin fg
+| | | |   | |______ animate_ocean                 ||||         | | | |   | |______ flash yellow     | sky bg                        | ruin bg, tourian fg/bg
+| | | |   |________ animate_lava_wtf              ||||         | | | |   |________ glow red or blue | tourian-style pipes, ugly sky | tourian fg, plats, bg lights
+| | | |____________ unused                        ||||         | | | |____________ flash yellow     | underwater plants             | tourian bg supports
+| | |______________ unused                        ||||         | | |______________ flash yellow     | sky bg, ugly                  | tourian, ruins, cre pipes' bg
+| |________________ unused                        ||||         | |________________ flickers purple  | sky bg                        | tourian, ruins, cre pipes' bg
+|__________________ unused                        ||||         |__________________ set for hall before Statues.
+                                                  ||||
+tile animation: BRINSTAR                          ||||         palette fx: BRINSTAR
+                                                  ||||                                effect        | gfx set 06                    | gfx set 07/08
+0 0 0 0   0 0 0 0                                 ||||         0 0 0 0   0 0 0 0   _________________|_______________________________|__________
+| | | |   | | | |__ animate_spikes_h              ||||         | | | |   | | | |__ glow blue        | blue holes in bg              | lights
+| | | |   | | |____ animate_spikes_v              ||||         | | | |   | | |____ glow pink-purple | pink tiles(some ugly)         | pink-purple bg, pink-purple orb
+| | | |   | |______ animate_mouth                 ||||         | | | |   | |______ glow red-orange  | holes in bg                   | lights
+| | | |   |________ unused                        ||||         | | | |   |________ set for Spore Spawn
+| | | |____________ unused                        ||||         | | | |____________ unused?
+| | |______________ unused                        ||||         | | |______________ unused?
+| |________________ unused                        ||||         | |________________ unused?
+|__________________ unused                        ||||         |__________________ unused?
+                                                  ||||
+tile animation: NORFAIR                           ||||         palette fx: NORFAIR
+                                                  ||||
+0 0 0 0   0 0 0 0                                 ||||         0 0 0 0   0 0 0 0
+| | | |   | | | |__ animate_spikes_h              ||||         | | | |   | | | |__ HEAT BIT *** IMPORTANT! LQQK! FREE PORN! ***
+| | | |   | | |____ animate_spikes_v              ||||         | | | |   | | |____ glow on silver tiles
+| | | |   | |______ unused                        ||||         | | | |   | |______ glow on cave walls/bubbles/lots
+| | | |   |________ unused                        ||||         | | | |   |________ glow on ruins/maw/purple metal/lots
+| | | |____________ unused                        ||||         | | | |____________ glowing cracked bg wall
+| | |______________ unused                        ||||         | | |______________ unused?
+| |________________ unused                        ||||         | |________________ unused?
+|__________________ unused                        ||||         |__________________ unused?
+                                                  ||||
+tile animation: WRECKED SHIP                      ||||         palette fx: WRECKED SHIP
+                                                  ||||
+0 0 0 0   0 0 0 0                                 ||||         0 0 0 0   0 0 0 0
+| | | |   | | | |__ animate_spikes_h              ||||         | | | |   | | | |__ glowing green lights
+| | | |   | | |____ animate_spikes_v              ||||         | | | |   | | |____ unused?
+| | | |   | |______ animate_conveyor_r            ||||         | | | |   | |______ unused?
+| | | |   |________ animate_conveyor_l            ||||         | | | |   |________ unused?
+| | | |____________ animate_monitor               ||||         | | | |____________ unused?
+| | |______________ unused                        ||||         | | |______________ unused?
+| |________________ unused                        ||||         | |________________ unused?
+|__________________ unused                        ||||         |__________________ unused?
+                                                  ||||
+tile animation: MARIDIA                           ||||         palette fx: MARIDIA
+                                                  ||||
+0 0 0 0   0 0 0 0                                 ||||         0 0 0 0   0 0 0 0
+| | | |   | | | |__ animate_spikes_h              ||||         | | | |   | | | |__ quicksand floor animation illusion
+| | | |   | | |____ animate_spikes_v              ||||         | | | |   | | |____ quicksand floor animation illusion part 2
+| | | |   | |______ animate_quicksand_ceiling     ||||         | | | |   | |______ bg waterfall animation illusion(lots of other crap too)
+| | | |   |________ animate_quicksand_falling     ||||         | | | |   |________ unused?
+| | | |____________ unused                        ||||         | | | |____________ unused?
+| | |______________ unused                        ||||         | | |______________ unused?
+| |________________ unused                        ||||         | |________________ unused?
+|__________________ unused                        ||||         |__________________ unused?
+                                                  ||||
+tile animation: TOURIAN                           ||||         palette fx: TOURIAN
+                                                  ||||
+0 0 0 0   0 0 0 0                                 ||||         0 0 0 0   0 0 0 0
+| | | |   | | | |__ animate_spikes_h              ||||         | | | |   | | | |__ HEAT BIT
+| | | |   | | |____ animate_spikes_v              ||||         | | | |   | | |____ slow pulse blue/red lights
+| | | |   | |______ unused                        ||||         | | | |   | |______ faster pulse blue/red lights
+| | | |   |________ unused                        ||||         | | | |   |________ red glow on shutters in room after mb
+| | | |____________ unused                        ||||         | | | |____________ bg glows red
+| | |______________ unused                        ||||         | | |______________ fast red pulse fg
+| |________________ unused                        ||||         | |________________ lights pulse red
+|__________________ unused                        ||||         |__________________ unused?
+                                                  ||||
+tile animation: CERES                             ||||         palette fx: CERES
+                                                  ||||
+0 0 0 0   0 0 0 0                                 ||||         0 0 0 0   0 0 0 0
+| | | |   | | | |__ animate_spikes_h              ||||         | | | |   | | | |__ unused?
+| | | |   | | |____ animate_spikes_v              ||||         | | | |   | | |____ unused?
+| | | |   | |______ unused                        ||||         | | | |   | |______ unused?
+| | | |   |________ unused                        ||||         | | | |   |________ unused?
+| | | |____________ unused                        ||||         | | | |____________ unused?
+| | |______________ unused                        ||||         | | |______________ unused?
+| |________________ unused                        ||||         | |________________ unused?
+|__________________ unused                        ||||         |__________________ unused?
+                                                  ||||
+tile animation: DEBUG                             ||||         palette fx: DEBUG
+                                                  ||||
+0 0 0 0   0 0 0 0                                 ||||         0 0 0 0   0 0 0 0
+| | | |   | | | |__ animate_spikes_h              ||||         | | | |   | | | |__ unused?
+| | | |   | | |____ animate_spikes_v              ||||         | | | |   | | |____ unused?
+| | | |   | |______ unused                        ||||         | | | |   | |______ unused?
+| | | |   |________ unused                        ||||         | | | |   |________ unused?
+| | | |____________ unused                        ||||         | | | |____________ unused?
+| | |______________ unused                        ||||         | | |______________ unused?
+| |________________ unused                        ||||         | |________________ unused?
+|__________________ unused                        |''|         |__________________ unused?
+                                                  '--'
+
+################################################################################################################
+################################################################################################################
+################################################################################################################
+
+      _____________________________________
+                                                       
+      room_map - variable size - compressed
+      _____________________________________
+
+room_map_size ----- word ------------- size in bytes of room_map_layer1
+                                       (also used to calculate the sizes of the other room_map components)
+room_map_layer1 --- word per 16x16 --- layer1 tilemap and block properties
+
+                                       FORMAT: ffffvhtt tttttttt
+                                               t = 16x16 number (see gfx_tile_tables)
+                                               h = horizontal flip
+                                               v = vertical flip
+                                               f = simple block properties
+
+room_map_bts ------ byte per 16x16 --- behind-the-scenes data: complex block properties
+room_map_layer2 --- word per 16x16 --- optional layer2 tilemap for rooms with unique backgrounds
+
+                                       FORMAT: 0000vhtt tttttttt
+                                               t = 16x16 number (see gfx_tile_tables)
+                                               h = horizontal flip
+                                               v = vertical flip
+                                               0 = seemingly unused
+
+################################################################################################################
+################################################################################################################
+################################################################################################################
+
+      ___________________
+                         
+      door def - 12 bytes
+      ___________________ 
+
+example data: samus's ship -> crateria mainstreet
+
+FD92 00 05 4E 06 04 00 0080 0000
+^^^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^^^ ^^^^
+|    |  |  |  |  |  |  |    |
+|    |  |  |  |  |  |  |    |
+|    |  |  |  |  |  |  |    pointer to code for updating the scroll map as you enter room [ $8F ]
+|    |  |  |  |  |  |  controls the distance Samus is placed from the door. (default = $8000)
+|    |  |  |  |  |  y distance from upper-left corner of destination room (minimap squares / screen blocks)
+|    |  |  |  |  x distance from upper-left corner of destination room (minimap squares / screen blocks)
+|    |  |  |  y position for door closing PLM (16x16 tiles)
+|    |  |  x position for door closing PLM (16x16 tiles)
+|    |  index value that handles door direction and door type(no door closing behind you, door closing behind you, etc)
+|    door bitflags (bit 7 means door is an elevator, bit 6 means door switches regions, bits 5 and 4 unknown, low nybble is elevator ID if not 0)
+room_id, a pointer to the beginning of a room definition [ $8F ]
+
+[20:21:06] <deskjockey_> door bitflags, set bit 7 and you might have to fiddle with 5 and/or 4 to set direction, i dunno
+[20:21:47] <deskjockey_> when you enter a new room on an elevator, iirc it'll run until it hits a rt that points to a null door def
+[20:22:08] <deskjockey_> just 0000 will do
+[20:22:28] <deskjockey_> no need to include the full ddef for the null elev stopper
+[20:22:38] <deskjockey_> and you can reuse it(the developers do)
+
+[20:55:26] <deskjockey_> the null rt -> ddb isn't just where to end, it's where to place an elevator sprite
+[20:55:30] <deskjockey_> i think
+[20:55:47] <deskjockey_> as for where to end, it doesn't seem to cause that, actually
+
+################################################################################################################
+################################################################################################################
+################################################################################################################
+
+      ________________________
+                              
+      room def - variable size
+      ________________________
+
+
+example data: crateria mainstreet
+
+EXAMPLE ROOM DEF STRUCTURE MAP:
+
+ ____________ ____________________ _______________________________ __________________________
+|            | 1st  | 2nd  | no   | 1st | 2nd | 3rd |             | default   | scrolling    |
+| rdf_header | test   test   test | rs    rs    rs  | rdf_doorout | scrolling   mod commands |
+|____________|______|______|______|_____|_____|_____|_____________|___________|______________|
+             |                    |                 |             |                          |
+             | rdf_stateselect    | rdf_roomstate   |             | rdf_scroll               |
+             |____________________|_________________|             |__________________________|
+
+     _____________________________________
+                                          
+     roomdef_header - 11 bytes - mandatory
+     _____________________________________
+
+02 00 12 04 05 05 70 A0 00 6293
+^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^ ^^^^
+|  |  |  |  |  |  |  |  |  |                           
+|  |  |  |  |  |  |  |  |  |___ rdf_header_p_doorout -- pointer to doorout [ $8F ]
+|  |  |  |  |  |  |  |  |______ unknown 4 (used for certain boss fight rooms) (If bit 0 is set, don't display layer 1 while transitioning. If bit 1 set, and DDB is not 947A, decompress B98000 to 7E:7000. If bit 2 is set(but *not* bit 1), new data is put in CRE's spot)
+|  |  |  |  |  |  |  |_________ unknown 3
+|  |  |  |  |  |  |____________ unknown 2
+|  |  |  |  |  |_______________ rdf_header_height ---- height (minimap squares)
+|  |  |  |  |__________________ rdf_header_width ----- width  (minimap squares)
+|  |  |  |_____________________ rdf_header_ypos ------ y position on the minimap/automap
+|  |  |________________________ rdf_header_xpos ------ x position on the minimap/automap
+|  |___________________________ rdf_header_region ---- which part of the planet the area is in
+|______________________________ unknown 1  ----------- semiunique room number
+
+     _________________________________________________
+                                                      
+     roomdef_stateselect - variable length - mandatory
+     _________________________________________________
+
+12E6 0E 4893
+12E6 00 2E93
+E6E5            (E6E5 means "use the next 26 bytes of data after the E6E5 as the roomstate")
+^^^^ ^^ ^^^^
+|    |  |
+|    |  |___ rdf_stateselect_p_roomstate -- pointer to alternate roomstate [ $8f ]
+|    |______ rdf_stateselect_testvalue ---- I think
+|___________ rdf_stateselect_p_testcode --- pointer to testing code [ $8f ]
+             rdf_stateselect_p_testcode values (in snes/intel byte-order):
+                 STATESELECT_TEST_FINISH --------- E6E5
+                 STATESELECT_TEST_DOOR ----------- EBE5 dddd ssss
+                 STATESELECT_TEST_TOURIANBOSS01 -- FFE5 ssss
+                 STATESELECT_TEST_EVENTBITARRAY -- 12E6 rr ssss
+                 STATESELECT_TEST_BOSSBITFLAGS --- 29E6 bb ssss
+                 STATESELECT_TEST_MORPH ---------- 40E6 ssss
+                 STATESELECT_TEST_MORPH_MISSILE -- 52E6 ssss
+                 STATESELECT_TEST_POWERBOMBS ----- 69E6 ssss
+                 STATESELECT_TEST_SPEEDBOOSTER --- 78E6 ssss
+
+     ______________________________________________
+                                                   
+     roomdef_roomstate - multiple of 26 - mandatory
+     ______________________________________________
+
+C4DBC2 00 00 00 F080 FA86 8581 C1C1 7093 0000 0000 5A80 B4B8 D391
+C4DBC2 00 09 05 5080 6182 6780 C1C1 7093 0000 0000 5A80 B4B8 BC91
+C4DBC2 00 00 00 1080 A08D 9582 C1C1 7093 0000 24C1 0481 B4B8 9491
+^^^^^^ ^^ ^^ ^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^
+|      |  |  |  |    |    |    |    |    |    |    |    |    |
+|      |  |  |  |    |    |    |    |    |    |    |    |    |___ layer 1 and 2 handling code [ $8F ]
+|      |  |  |  |    |    |    |    |    |    |    |    |________ pointer to bg_data [ $8F ]
+|      |  |  |  |    |    |    |    |    |    |    |_____________ pointer to room_plm [ $8F ]     
+|      |  |  |  |    |    |    |    |    |    |__________________ pointer to room_fx2 (code? I forgot) [ $8F ]
+|      |  |  |  |    |    |    |    |    |_______________________ xray special casing pointer [ $8F ] (4 bytes: X, Y, Tile. Position 00,00 = end of list)
+|      |  |  |  |    |    |    |    |____________________________ pointer to rdf_scroll [ $8f ]
+|      |  |  |  |    |    |    |_________________________________ vertical screen nudging limit
+|      |  |  |  |    |    |______________________________________ pointer to enemy_set [ $B4 ]
+|      |  |  |  |    |___________________________________________ pointer to room_population [ $A1 ]
+|      |  |  |  |________________________________________________ pointer to room_fx1 [ $83 ]
+|      |  |  |___________________________________________________ music_control (VALUES)
+|      |  |______________________________________________________ music_track   (VALUES)
+|      |_________________________________________________________ graphics_set  (VALUES)
+|________________________________________________________________ pointer to compressed room_map [ any ]
+
+
+     ___________________________________________
+
+     roomdef_doorout - multiple of 2 - mandatory
+     ___________________________________________
+
+5E89
+6A89
+7689
+8289
+8E89
+9A89
+A689
+^^^^
+|
+|___ pointers to door def entries [ $83 ]
+
+
+     ___________________________________________
+     
+     roomdef_scroll - variable length - optional
+     ___________________________________________
+
+0001010101
+0000000000
+0002000100     
+0002000000     
+0002000000     
+^^^^^^^^^^
+|
+|_________ default scrolling
+
+   VALUES: 00 = No scrolling from any room into this room
+           01 = Free scrolling from any room into this room
+           02 = Free scrolling from any room into this room, can scroll lower than 01
+
+
+08 02 80
+08 00 80
+00 00 02 00 06 02 80
+06 00 80
+00 01 80
+02 01 80
+04 01 80
+04 00 80
+04 00 08 02 80
+^^^^^^^^^^^^^^
+|
+|___________________ scrolling modification commands (pointed to by scrolling PLM arguments)
+
+             FORMAT: screen number, replacement scrolling data, terminate (80h)
+
+                     screen number, replacement scrolling data,
+                     screen number, replacement scrolling data,
+                     ...
+                     terminate (80h)
+
+
+
+VALUES: graphics_set  **FIXME**
+
+        00 = Outdoor/Rocky Crateria
+        01 = Hell Crateria
+        02 = Crateria Ruins / Awakened Old Tourian
+        03 = Crateria Ruins / Sleeping Old Tourian
+        04 = Powered Wrecked Ship
+        05 = Unpowered Wrecked Ship
+        06 = Blue/Pink/Green Brinstar
+        07 = Red Brinstar / Kraid's Hideout: Normal
+        08 = Red Brinstar / Kraid's Hideout: Hallway before Statues in Crateria
+        09 = Norfair 1
+        0A = Norfair 2
+        0B = Maridia 1
+        0C = Maridia 2
+        0D = Tourian
+        0E = Tourian
+        0F = Ceres
+        10 = Ceres
+        11 = Ceres Elevator WTF
+        12 = Ceres Elevator WTF
+        13 = Ceres Tilemap UBERWTF
+        14 = Ceres Tilemap UBERWTF
+        15 = cmap
+        16 = str
+        17 = str
+        18 = str
+        19 = csave
+        1A = Kraid Fight
+        1B = Crocomire Fight
+        1C = Draygon Fight
+
+
+VALUES: music_track, music_control
+        00 00 = no change
+        ## 00 = no music
+        ## 01 = Samus appears clip
+        ## 02 = Item aquired clip
+        ## 03 = Elevator music
+        ## 04 = Hallway before the statues / Continue music
+        00 05 = No change. If entered from a ## 00-04 room, switches to ##
+        00 06 = Retain's previous room's track, but plays the 06 version of it
+        ## 07 = Mute, game crashes when you enter a door
+        03 05 = Title screen music
+        03 06 = Title screen music after Start is pressed
+        06 05 = Empty Zebes w/ Thunder
+        06 06 = Thunder alone
+        06 07 = Empty Zebes w/o Thunder
+        09 05 = Space Pirate music
+        09 06 = Statues before Tourian
+        0C 05 = Samus's Theme
+        0F 05 = Green Brinstar Fadein
+        12 05 = Red Brinstar Fadein
+        15 05 = Upper Norfair
+        18 05 = Lower Norfair
+        1B 05 = Eastern Maridia
+        1B 06 = Western Maridia
+        1E 05 = Tourian
+        1E 06 = No music
+        21 05 = Mother Brain fight
+        24 05 = Boss fight (Ridley) (KEJ: Draygon uses this. Ridley uses 24 04)
+        24 06 = Music before fight w/ Bomb Torizo
+        24 07 = Escape music
+        24 80 = Ridley on Ceres (KEJ: Added 5/3/05. No idea what the 80 does)
+        27 05 = Boss fight (Kraid) (KEJ: This is used by Crocamire, not Kraid)
+        27 06 = Music before fight w/ Kraid (KEJ: *This* is used by Kraid, and Phantoon)
+        2A 05 = Miniboss (Spore Spawn) (KEJ: Botwoon too)
+        2D 05 = Colony to Zebes
+        2D 06 = Ceres
+        30 05 = Wrecked Ship asleep
+        30 06 = Wrecked Ship alive
+        33 05 = Zebes goes boom
+        36 05 = Intro music
+        39 05 = Death
+        3C 05 = Credits
+        3F 05 = "The last metroid is in captivity"
+        3F 06 = No music
+        42 05 = "The galaxy is at peace"
+        42 06 = No music
+        45 05 = Boss music (Kraid) (KEJ: Actually, Metroid's music, called indirectly. I doubt Kraid uses this)
+        45 06 = Music before fight w/ Kraid (KEJ: Actually, this is used in Tourian, for the blue Sidehoppers)
+        48 05 = Samus's theme
+
+8F:E7E1 is a list of 3-byte pointers to SPC blocks - this is what music_track indexes
+Music_control is an index for song start position in the SPC, I'm guessing.
+00 is music off, 01-04 are static song entries, 05-07 are music entries for specific songs?
+I have no idea what the 80 means
+
+
+################################################################################################################
+################################################################################################################
+################################################################################################################
+
+     ________________________
+
+     room_plm - variable size     
+     ________________________
+
+
+03B7 3F 0B 8993
+03B7 43 0B 8C93
+03B7 16 0D 8F93
+3BB6 17 0D 0080
+3BB6 18 0D 0080
+3BB6 19 0D 0080
+03B7 16 0B 9693
+3BB6 17 0B 0080
+3BB6 18 0B 0080
+3BB6 19 0B 0080
+03B7 0E 09 9993
+47B6 0E 08 0080
+47B6 0E 07 0080
+03B7 1C 0A 9C93
+47B6 1C 09 0080
+47B6 1C 08 0080
+47B6 1C 07 0080
+47B6 1C 06 0080
+47B6 1C 05 0080
+03B7 32 0B 9F93
+03B7 3C 0B 9F93
+03B7 3A 11 A293
+3BB6 3B 11 0080
+3BB6 3C 11 0080
+3BB6 3D 11 0080
+3BB6 3E 11 0080
+03B7 34 0E A593
+8AC8 1E 36 0500 0000
+^^^^ ^^ ^^ ^^^^ ^^^^
+|    |  |  |    |
+|    |  |  |    |___ terminator
+|    |  |  |________ arguments
+|    |  |___________ y position (16x16 tiles)
+|    |______________ x position (16x16 tiles)
+|___________________ plm command
+
+Format for scrolling PLMs:
+Trigger type, X, Y, Pointer to scrolling modification command
+
+Scrolling triggers:
+
+03B7 = Use value for 
+3BB6 = Copy previous, moves horizontally
+47B6 = Copy previous, moves vertically
+
+X: Number of blocks (16x16 pixels) from left to place scrolling trigger.
+
+Y: Number of blocks (16x16 pixels) from top to place scrolling trigger. The top bar in the
+   game (that shows missiles, super missiles, powerbombs, etc.) counts as two blocks.
+
+Pointer: Points to scrolling modification to be used when this trigger is triggered. 0080
+         means Copy Previous scrolling modification, used only with Copy Previous scrolling
+         triggers
+
+(#): Not in game, used to show connection to the scrolling commands
+
+NOTE: The spot that the trigger is placed it has no clipping.
+
+################################################################################################################
+################################################################################################################
+################################################################################################################
+
+================================= EVENT BIT ARRAY
+7ED820   0 0 z z   z 0 0 0
+         | | | |   | | | |__ 00 -- Zebes is awake. (Set when MB's old room is cleared.)
+         | | | |   | | |____
+         | | | |   | |______ 02 -- Mother Brain's container has been destroyed.
+         | | | |   |________ --. Zebetites
+         | | | |____________   | Destroyed
+         | | |______________ --' Counter
+         | |________________ 06 -- Phantoon statue is grey.
+         |__________________ 07 -- Ridley statue is grey.
+
+7ED821   0 0 0 0   0 0 0 0
+         | | | |   | | | |__ 08 -- Draygon statue is grey.
+         | | | |   | | |____ 09 -- Kraid statue is grey.
+         | | | |   | |______ 0A -- Path to Tourian is open.
+         | | | |   |________ 0B -- Glass tube is broken.
+         | | | |____________ 0C -- Orange Soda Chozo has lowered the lava.
+         | | |______________ 0D -- Shaktool has cleared a path.
+         | |________________ 0E -- The Zebes timebomb has been set.
+         |__________________ 0F -- The Dachola and the Etecoons have been saved.
+
+7ED822   0 0 0 0   0 0 0 0
+         | | | |   | | | |__ 10 -- 1st metroid hallway has been cleared.
+         | | | |   | | |____ 11 -- 1st metroid shaft has been cleared.
+         | | | |   | |______ 12 -- 2nd metroid hallway has been cleared.
+         | | | |   |________ 13 -- 2nd metroid shaft has been cleared.
+         | | | |____________
+         | | |______________ 15 -- Outran the Speed Booster lavaquake.
+         | |________________
+         |__________________
+
+================================= BOSS BITFLAGS
+CRATERIA 0 0 0 0   0 0 0 0
+         | | | |   | | | |__
+         | | | |   | | |____
+         | | | |   | |______ Bomb Torizo is dead.
+         | | | |   |________
+         | | | |____________
+         | | |______________
+         | |________________
+         |__________________
+
+BRINSTAR 0 0 0 0   0 0 0 0
+         | | | |   | | | |__ Kraid is dead.
+         | | | |   | | |____ Spore Spawn is dead.
+         | | | |   | |______
+         | | | |   |________
+         | | | |____________
+         | | |______________
+         | |________________
+         |__________________
+
+NORFAIR  0 0 0 0   0 0 0 0
+         | | | |   | | | |__ Ridley is dead.
+         | | | |   | | |____ Crocomire is dead.
+         | | | |   | |______ Golden Torizo is dead.
+         | | | |   |________
+         | | | |____________
+         | | |______________
+         | |________________
+         |__________________
+
+WS       0 0 0 0   0 0 0 0
+         | | | |   | | | |__ Phantoon is dead.
+         | | | |   | | |____
+         | | | |   | |______
+         | | | |   |________
+         | | | |____________
+         | | |______________
+         | |________________
+         |__________________
+
+MARIDIA  0 0 0 0   0 0 0 0
+         | | | |   | | | |__ Draygon is dead.
+         | | | |   | | |____ Botwoon is dead.
+         | | | |   | |______
+         | | | |   |________
+         | | | |____________
+         | | |______________
+         | |________________
+         |__________________
+
+TOURIAN  0 0 0 0   0 0 0 0
+         | | | |   | | | |__
+         | | | |   | | |____ Mother Brain is dead.  Zebes go BEWM.
+         | | | |   | |______
+         | | | |   |________
+         | | | |____________
+         | | |______________
+         | |________________
+         |__________________
+
+CERES    0 0 0 0   0 0 0 0
+         | | | |   | | | |__ Ridley has fled.  Ceres go BEWM.
+         | | | |   | | |____
+         | | | |   | |______
+         | | | |   |________
+         | | | |____________
+         | | |______________
+         | |________________
+         |__________________
+
+################################################################################################################
+################################################################################################################
+################################################################################################################
+
+KEJ: Shamelessly stealing this doc for any misc. info I find or recieve
+
+Gamestate is 7E:0998 
+Paused is 0F 
+Playing is 08, 12, and 0C
+(0C = transitioning to pause, 12 = transitioning from pause) 
+Dead = 15, 17, 18, 19, 1A 
+Game Over screen is also 1A 
+Load area is 05 
+Loading game = 06, Samus being electrified in save capsule = 07 
+Transitions to 08 in save capsule, still being electrified
+X-ray, reserve, door transition, and item pickup do not affect Gamestate
+
+7E:0727 = which pause screen you're on. 01 = inventory 00 = map. 
+7E:0052 = graphics dealing with pause/in-game screen. (03=in-game 01=pause)
+
+Item Array
+7E:09A2/09A4
+0000 0000  0000 0000
+|||| ||||  |||| |||\Varia
+|||| ||||  |||| ||\-Spring Ball
+|||| ||||  |||| |\--Morphing Ball
+|||| ||||  |||| \---Screw Attack
+|||| ||||  ||||
+|||| ||||  |||\-----Unused (1)
+|||| ||||  ||\------Gravity Suit
+|||| ||||  |\-------Unused (2)
+|||| ||||  \--------Unused (3)
+|||| ||||
+|||| |||\-----------High Jump
+|||| ||\------------Space Jump
+|||| |\-------------Unused (4)
+|||| \--------------Unused (5)
+||||
+|||\----------------Bomb
+||\-----------------Speed Booster
+|\------------------Grapple
+\-------------------X-Ray
+

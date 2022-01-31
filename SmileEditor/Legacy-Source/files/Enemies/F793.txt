@@ -1,0 +1,4 @@
+F793 (BATTA3Tu)
+[Speed] = 0000/0001 for facing left/right
+[Speed 2] = distance it can walk
+[Graphic Unknown] = 0004

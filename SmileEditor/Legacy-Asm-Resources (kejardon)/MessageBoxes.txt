@@ -1,0 +1,66 @@
+$28080-$280F9
+{
+	PHP
+	PHB
+	PHX
+	PHY
+	PHK
+	PLB
+	STA $1C1F
+	JSL $82BE17  ;  $13E17 IN ROM. Plays 'sounds' (80:9049, 90CB, 914D), actually stops all sounds.
+	JSR $8143  ;  $28143 IN ROM. Layer 3 message box setup?
+	JSR $81F3  ;  $281F3 IN ROM. Layer 3 clearing above and below message box
+	JSR $8241  ;  $28241 IN ROM. Two subroutines depending on $1C1F. I'm guessing tiles and length, in that order.
+	JSR $8574  ;  $28574 IN ROM. Adds a 2 frame delay, if I understand this right.
+	JSR $844C  ;  $2844C IN ROM. 'Opens' the message box. This takes up several frames, during which nothing else runs.
+	LDA $1C1F
+	CMP #$001C
+
+	BEQ BRANCH_ALPHA
+
+	JSR $846D  ;  $2846D IN ROM. Code for while message box is open. Nothing else happens during this. (Wait for X time than any button usually, or wait for A or left/right/select on save)
+	JSR $8589  ;  $28589 IN ROM. 'Closes' the message box. Takes several frames, nothing else happens.
+	JSR $81F3  ;  $281F3 IN ROM. Layer 3 clearing, again
+	JSR $861A  ;  $2861A IN ROM. Layer 3 message box cleanup.
+	JSL $82BE2F  ;  $13E2F IN ROM. Resume speed boost and charge beam sounds, if necessary, and a few other sounds I'm unsure of.
+	JSR $8574  ;  $28574 IN ROM. Another 2 frame pause.
+	JSR $80FA  ;  $280FA IN ROM. If map station, go to pause screen. Else if 1C (ship save?) or 17 (save station save), LDA $05F9 (selected option)
+
+BRANCH_GAMMA
+
+	PLY
+	PLX
+	PLB
+	PLP
+	RTL
+
+BRANCH_ALPHA
+
+	JSR $846D  ;  $2846D IN ROM. Code for while message box is open. Nothing else happens during this. (Wait for X time than any button usually, or wait for A or left/right/select on save)
+	JSR $8589  ;  $28589 IN ROM. 'Closes' the message box. Takes several frames, nothing else happens.
+	LDA $05F9
+	CMP #$0002
+
+	BEQ BRANCH_BETA
+
+	LDA #$0018
+	STA $1C1F
+	JSR $81F3  ;  $281F3 IN ROM. Layer 3 clearing, again
+	JSR $8119  ;  $28119 IN ROM
+	JSR $8241  ;  $28241 IN ROM
+	JSR $8574  ;  $28574 IN ROM. Adds a 2 frame delay
+	JSR $844C  ;  $2844C IN ROM. 'Opens' the message box. "Game Saved" in this case.
+	JSR $846D  ;  $2846D IN ROM. Code for while message box is open. Nothing else happens during this.
+	JSR $8589  ;  $28589 IN ROM. 'Closes' the message box. Takes several frames, nothing else happens.
+
+BRANCH_BETA
+
+	JSR $81F3  ;  $281F3 IN ROM. Layer 3 clearing, again
+	JSR $861A  ;  $2861A IN ROM. Layer 3 message box cleanup.
+	JSL $82BE2F  ;  $13E2F IN ROM. Resume speed boost and charge beam sounds, if necessary, and a few other sounds I'm unsure of.
+	JSR $8574  ;  $28574 IN ROM. Adds a 2 frame delay
+	JSR $80FA  ;  $280FA IN ROM. If map station, go to pause screen. Else if 1C (ship save?) or 17 (save station save), LDA $05F9 (selected option)
+
+	BRA BRANCH_GAMMA
+
+}

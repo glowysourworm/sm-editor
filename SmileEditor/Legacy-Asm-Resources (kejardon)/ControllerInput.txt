@@ -1,0 +1,28 @@
+$8B holds currently-pressed keys. AND with the below to get the player's customizable keys.
+
+7E:09AA Up
+7E:09AC Down
+7E:09AE Left
+7E:09B0 Right
+7E:09B2 Shoot
+7E:09B4 Jump
+7E:09B6 Run
+7E:09B8 Item Cancel
+7E:09BA Switch Item
+7E:09BC Aim Up
+7E:09BE Aim Down
+
+$4218 (Saved to $8B also): Joypad #1 status register (1=pressed)
+
+8000: B button
+4000: Y button
+2000: Select
+1000: Start
+0800: Up
+0400: Down
+0200: Left
+0100: Right
+0080: A button
+0040: X button
+0020: L
+0010: R

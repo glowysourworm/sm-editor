@@ -1,0 +1,33 @@
+Checks blocks to see what to do whenever Samus is currently touching one (NOT when Samus runs into it)
+
+JSR ($9B40),X (many places in bank 94)
+X = block type*2
+
+BlockType           Call
+------------------|------
+0 = Air           | 97D0
+1 = Slope         | 97BF
+2 = XRay Air      | 98CC
+3 = Treadmill     | 9B16
+4 = Shootable Air | 97D0
+5 = H-Extend      | 9411
+6 = Air???        | 97D0
+7 = Bombable Air  | 97D0
+8 = Solid         | 98DC
+9 = Door          | 98DC
+A = Spike         | 98DC
+B = Crumble       | 98DC
+C = Shot          | 98DC
+D = V-Extend      | 9447
+E = Grapple       | 98DC
+F = Bomb block    | 98DC
+
+
+9411 : Adjust horizontal position according to BTS and go to the pointed-to block's code
+9447 : Adjust vertical position according to BTS and go to the pointed-to block's code
+
+97D0 : Put #$9F55 into $0A6C (Set normal momentum indexes)
+97BF : Check if the slope is a special case (0-5) or normal slope. Then do nothing.
+98CC : JSR ($98AC,X), X = 2*BTS (expected 00 - 0F). 0 = CLC RTS, 1 = CLC RTS, 2 = do $10 damage to Samus as if an enemy hurt her, 3-F = RTS.
+9B16 : If BTS is positive, JSR ($9966,X), X = 2*BTS. Else create a region-indexed PLM from 94:9A06,X, X = (2*BTS + 20*Region).
+98DC : Put #$9F55 into $0A6C (Set normal momentum indexes)

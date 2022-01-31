@@ -1,0 +1,60 @@
+I held off on posting this for a while because I wanted to find the "correct" way to enable access to the extended enemy debugger features. I recently found the time to look into that issue. It seems there is no "correct" way to enable the extended enemy debugger, so you'll have to use a second code. Anyway, here's the first code:
+
+808004FF -- Debug Mode
+
+This enables a whole mess of debugging features. This is actually the same as the code listed in the GGCCC's Super Metroid GG FAQ as "Another version of Galoob's 'select any area when loading a saved game'". In addition to selecting which region of the planet to start in, you can also pick a spot within the region using select on controller 2.
+
+Various debugging features can be unlocked during normal gameplay via button combos on controller 1. Holding Select + L and pressing X will get you sprite tile viewer. Continue holding Select + L and press A to view the tiles with different palettes, or press X again to view the second set of sprite tiles.
+
+Hold Select + L and press A for a (buggy) palette viewer.
+
+Hold Select + R and press A to turn off the layer 3 stuff(status bar, liquids/fogs).
+
+[Select + R + B = set missiles, super missiles, and power bombs to 0.]
+
+[Select + L + Y = gray the bottom portion of the screen (why?).]
+
+There are other Select + [shoulder button] + [other button] combos, but their uses aren't as apparent. Try some and see what I mean. Also, the standard Select + Start + L + R reset combo is enabled now. Pretty boring, to be honest. The real fun is to be had over on controller 2. Here's a rundown of the keys for controller 2:
+
+Start --- Save prompt. Save and reset or (likely) crash. Your choice.
+Select --- Displays the room's enemy set data(needs the debugger font).
+A --- Toggle Samus <-> enemy interaction(you can't hurt each other).
+L --- Disable framely processing of enemies(all enemies stop).
+R --- Enemy Mover(and what loads the enemy debugger font)
+
+The enemy mover is what's important here. It shows you the enemy's name, X/Y position, current HP, the enemy set name, and lets you move enemies around with the pad on controller 2. Press Select to select the next enemy, B + Select to go back one(somewhat buggy). Pressing A will summon the enemy to a spot on Samus's right and holding X while moving the enemy around will move it much faster. Pressing R will bring us to...
+
+...the enemy room population entry editor. This edits the enemy's entry in the room population data in RAM. Use the pad to move the cursor, X to increase the value, and B to decrease it. Select will move the enemy to the X/Y pos that you've set while A does the opposite, setting the X/Y pos to the enemy's current position. Pressing R will exit, but pressing L takes us to...
+
+...the enemy spawner. It gives you a list of enemies in the current enemy set. You pick your enemy with down. You spawn the enemy with L. You cancel with R. You know where the Kraid's Hideout energy tank is? Go try it out there.
+
+Now for the code to give you access to the extended enemy debugger...
+
+B495D69C -- Extended Enemy Debugger
+
+This will make the R button in the enemy spawner take you to the extended enemy debugger instead of exiting. Here you can watch all kinds of enemy animation and AI variables. Press R to move to the next page. After a few pages of four variables per page, you'll be dumped into the enemy set display, where you can press Select to exit the debugger.
+
+And I think I'll split the post right about here.
+
+Now then, that first code has some less useful cousins.
+
+808000FF --- Bypass country and NTSC/PAL check
+
+808002FF --- Enable what I'm fairly sure is the demo recorder. It tries to record what appears to be the current button presses, button holds, Samus's X/Y position, and the X/Y position of the top-left corner of the visible area. That was off the top of my head, so question its accuracy. Either way, it does exactly nothing at the moment due to the fact that it tries to write these values to ROM(which would have worked fine on Nintendo's development systems, but not on current emulators or the SNES).
+
+808006FF --- Lets X on controller 2 toggle scrolling on and off. Pretty annoying. You have to use this with the main debug code(which enables reading of the second controller) in order for this to work.
+
+808008FF --- Something for the audio man, I'm guessing. Start up with this code and you'll crash when you go through a door. Turn the code on during gameplay and the music won't change(actually, I think it still changes for the item room/elevator music and some other special tracks).
+
+There are a lot of other little debugging and development features hiding throughout the game's code, but they're generally not worth the work to find and enable. Here's an example:
+
+A2AAF000 --- Hold B on controller 2 to make Samus's ship lift off when you enter it.
+
+I'm not in the mood to go hunting around for stuff like that at the moment, but someday I might get around to it.
+
+And to wrap things up, here's one last little feature: scrolling trigger and scrolling trigger extension display.
+
+84B33360 --- Display Scrolling Trigger Extensions
+84B36660 --- Display Scrolling Triggers
+
+That's one of many interesting things I found while picking the map alterations apart, but I've typed enough for one day. Have fun.

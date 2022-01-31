@@ -1,0 +1,138 @@
+X-ray block scanning
+Bank 91 unless otherwise stated
+
+D2D6 table:
+4 byte entries, 2 byte end (#$FFFF)
+Entry: 00 X0 YY YY
+X = block type
+YYYY = pointer to BTS checklist
+
+BTS checklist:
+4 byte entries, 2 or 4 byte end (#$FFFF, or #$FF00 and a pointer. #$FF00 means "Always use this regardless of BTS")
+Entry: XX 00 YY YY
+XX = BTS check
+YYYY = Value for $03, and also pointer to value for $00
+
+$00 is then used as a pointer to code. Typically $CF36 seems to be used, which simply uses a two-byte argument as a block graphic.
+
+To illustrate the format:
+org $91D2D6
+	DW $0000, $D2FC	;Checking for Air (X000, 0 for air). If air, go to the checklist at D2FC
+	DW $3000, $D306	;Checking for Treadmill
+	...
+	DW $FFFF
+
+org $91D2FC
+	DW $FF00, $D302	;FF00: Instead of checking for a specific BTS, always go to this pointer (D302).
+	DW $FFFF	;This is actually redundant: The FF00 will *always* trigger and so an 'end' marker is unnecessary
+
+org $91D302
+	DW $CF36, $00FF	;CF36: Use the argument as a tile graphic. In this case, an air block (00FF).
+
+
+org $91D306
+	DW $0046, $D30C	;Check if BTS is 46. If so, go to D30C
+	DW $FFFF	;If not, don't do anything for this block.
+
+org $91D30C
+	DW $CF36, $00FF	;It's another airblock apparently. This is actually a scroll PLM block (Treadmill BTS 46) if my memory is right.
+
+
+There are other values than CF36 too - for example, the vertical and horizontal extensions refer back to their target block, but I haven't looked into them farther than that.
+
+
+Summary of 91:CDD6
+{
+;setup
+BTS in $26
+Block Type in $28
+
+;block type check
+Check D2D6,X for matching block type
+If no matches, end
+Else if a match is found, store pointer after it to $00
+
+;BTS check
+Load BTS checklist entry
+If #$FFFF, end (no effect)
+If #$FF00, always use next pointer
+If matching BTS, use next pointer
+Else try next BTS checklist entry
+
+;Loading data
+Get pointer from matching BTS checklist entry and put it in $03
+Get first pointer from THERE (pointer at $03) and put it in $00
+The pointer is also in A, that's important when returning
+}
+
+91:CDD6
+	LDA $7F6402, X
+	AND #$00FF
+	STA $26		;BTS in $26
+	TXA
+	ASL A
+	TAX
+	LDA $7F0002, X
+	AND #$F000
+	STA $28		;Block Type in $28
+	LDX #$0000
+
+BRANCH_GAMMA
+
+	LDA $D2D6, X	;Check D2D6,X for matching block type
+	CMP #$FFFF
+
+	BEQ BRANCH_ALPHA ;If no matches, end
+
+	CMP $28
+
+	BEQ BRANCH_BETA
+
+	INX
+	INX
+	INX
+	INX
+
+	BRA BRANCH_GAMMA
+
+BRANCH_BETA
+
+	LDA $D2D8, X	;Found matching block type
+	STA $00		;Store pointer for block type to $00
+	LDY #$0000
+
+BRANCH_EPSILON
+
+	LDA ($00), Y	;Load BTS checklist entry
+	CMP #$FFFF	;If #$FFFF, do nothing
+
+	BEQ BRANCH_ALPHA
+
+	CMP #$FF00	;If #$FF00, always do next
+
+	BEQ BRANCH_DELTA
+
+	CMP $26		;If matching BTS, do next
+
+	BEQ BRANCH_DELTA
+
+	INY
+	INY
+	INY
+	INY
+
+	BRA BRANCH_EPSILON ;Else try next BTS checklist entry
+
+BRANCH_DELTA
+
+	INY
+	INY
+	LDA ($00), Y	;Get pointer from matching BTS checklist entry
+	STA $03		;Put it here
+	LDY #$0000
+	LDA ($03), Y	;Get first pointer from THERE
+	STA $00		;Put it here. Also in A, important when RTSing
+
+BRANCH_ALPHA
+
+	RTS

@@ -1,0 +1,62 @@
+7E:0370 - 7E:0590    *ALL* OAM data (according to routine at 80:933A)
+
+82:B777: Samus's ship icon, JSLs to 81:891F if in Crateria.
+82:B716: Samus's helmet icon, for loading saves. JSLs to 81:891F.
+82:B805: Icons. Missile, energy, map, and debug save. X = type, A = graphic
+82:B855: Checks a location to see if Samus has explored it
+81:891F: JSL routine to set OAM data. ALL OAM data.
+Coming into the routine:
+$12 = Y
+$14 = X
+X = A
+Y = $C569,X
+Available options for Y are between C200 and D100, I think (ship = CFD4?)
+$18 = 0000,Y ; #$0002 for ship. I'm guessing 2 tiles.
+Y = Y+2
+X = $0590
+E:
+$0370,X = 0000,Y + $14 ; X position, #$04 + $14 for ship (2 bytes used, last byte overwritten)
+If X position < 100, goto B
+Has some weird stuff I don't understand...
+B:
+1 more weird check if $0000,Y is negative... dunno what for.
+Anypath it takes, it eventually gets here:
+$0371,X = 0002,Y + $12 ; Y position, #$FE + $12 for ship (2 bytes used, last byte overwritten)
+$0372,X = (0003,Y AND #$F1FF) OR $03 ; $0003,Y is the tile and x/y flips, $03 is the pallete.
+Y = Y + 5
+X = (X + 4) AND #$01FF
+DEC $18. Goto E if not 0.
+
+Samus's ship: Hardcoded to be in Crateria only. X/Y: 82:C853 and 82:C855, measured in pixels. Note, this is the same entry as Crateria's first save.
+
+82:C80B,X = Savespots
+Indexed by 2*area.
+If value is 0000, there are no savespots (will crash debug loading). Else it's a pointer to entries containing the X and Y of each savepoint (each entry is 4 bytes, total of 8 entries or 20 bytes per area)
+
+82:C82B,X = debug savepoints
+82:C7DB,X = missile stations
+82:C7EB,X = energy stations
+82:C7FB,X = map stations
+Indexed by 2*area.
+If value is 0000, there are no stations. Else it's a pointer to entries containing the X and Y of each station (each entry is 4 bytes, ends with an FFFF)
+Coordinates are in pixels, again.
+
+82:B892: Routine used in game for boss icons
+
+82:C7CB,X = Boss icons
+Indexed by 2*area.
+0000 = No boss icons. Else X/Y coordinate(s).
+I'm GUESSING on this, this needs to be tested:
+XX 0X YY 00 = X/Y entry
+FFFE #### = Skip entry
+FFFF = End of List
+First entry checks first boss bit, second entry second boss bit, etc.
+Again, needs to be tested.
+Crossouts use same location.
+
+82:BB30: Routine used in game for name icons
+
+82:C74D,X = Name Icons
+Indexed by 2*area. 0000 = crash. Eep.
+Must be a pointer to 6-byte entries, containing X, Y, and Name. Entries end at a 2-byte FFFF
+59 = Crateria, 5A = Brinstar, 5B = Norfair, 5C = Wrecked Ship(2 lines), 5D = Maridia, 5E = Tourian (Never used normally, but looks like it works fine)

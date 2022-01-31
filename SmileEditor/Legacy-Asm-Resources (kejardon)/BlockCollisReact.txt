@@ -1,0 +1,51 @@
+Checks blocks to see what to do whenever Samus runs into one of them (NOT while Samus is touching them)
+
+X = block type*2
+94:953E: Vertical. JSR ($94F5,X)
+94:9527: Horizontal. JSR ($94D5,X)
+
+BlockType           Vert   Horz
+------------------|------|------
+0 = Air           | 8F47 | 8F47
+1 = Slope         | 8FDA | 8FBB
+2 = XRay Air      | 901A | 9018
+3 = Treadmill     | 909D | 906F
+4 = Shootable Air | 8F47 | 8F47
+5 = H-Extend      | 9411 | 9411
+6 = Air???        | 8F47 | 8F47
+7 = Bombable Air  | 9313 | 92F9
+8 = Solid         | 8F82 | 8F49
+9 = Door          | 93CE | 938B
+A = Spike         | 905D | 904B
+B = Crumble       | 9102 | 90CB
+C = Shot          | 8F82 | 8F49
+D = V-Extend      | 9447 | 9447
+E = Grapple       | 8F82 | 8F49
+F = Bomb block    | 934C | 932D
+
+
+
+8F47: CLC and RTS - always unsolid
+
+8FBB: Load the BTS AND #$001F. If greater than 5, load the full BTS, put it into $1E77, and JMP $84D6. If it's less than 5, just JMP $8D2B (with the BTS AND #$001F in A)
+    84D6: If BTS is negative or Samus is moving vertically, just CLC and RTS. Get the distance ($12.$15) in A, and $8588,((BTS AND #$001F)*4) in Y, and JSL $8082D6. Use 05F1 and 05F3 as new distances.
+    BASICALLY: Multiply Samus's movement by (94:8588,X)/(100), X = 4*BTS. The multiplier is, obviously, usually less than 100.
+    8D2B: BTS AND #$001F into $0DD4. BTS X/Y flip into $0DD6. Other stuff I'm not going to bother figuring out.
+    BASICALLY: 94:8E54 is a table of 4-byte entries for the first 5 special 'slope' blocks. 80 = solid, 00 = air, organized topleft, topright, bottomleft, bottomright.
+
+904B: Check BTS. JSR $902B,BTS (8E83, 8ECF, 8F45, 8F0A, 8F45 for the rest. 10 entries, 20 bytes). JMP $8F49 when done (normal solid).
+    8E83: Unless already hurt, deal 60 damage (environmental) to Samus, unless in WS and Phantoon is alive.
+    8ECF: Unless already hurt, deal 16 damage (environmental) to Samus.
+    8F45: SEC and RTS. Just a solid block.
+    8F0A: Identical to 8ECF.
+
+905D: Check BTS. JSR $902B,BTS. JMP $8F82 when done (normal solid).
+
+90CB: Check BTS. If positive, make a PLM from the table at 9139,X (X=2*BTS, max BTS is 4F). If negative, make a region-indexed PLM (91D9 + 20*Area + 2*BTS, max BTS is 0F). If PLM fails to be made, JMP $8F49 (normal solid).
+
+9102: Check BTS. If positive, make a PLM from the table at 9139,X (X=2*BTS, max BTS is 4F). If negative, make a region-indexed PLM (91D9 + 20*Area + 2*BTS, max BTS is 0F). If PLM fails to be made, JMP $8F82 (normal solid).
+
+938B: Store #$E17D to $099C, store BTS to $078F, lookup (2*(BTS AND #$7F) + DoorOut), check to see if elevator or door. Set $078D and $0998 if door, else some elevator code, I think.
+
+93CE: Store #$E17D to $099C, store BTS to $078F, lookup (2*(BTS AND #$7F) + DoorOut), check to see if elevator or door. Set $078D and $0998 if door, else some elevator code, I think.
+

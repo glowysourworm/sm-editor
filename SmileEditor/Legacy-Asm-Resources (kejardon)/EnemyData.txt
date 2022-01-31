@@ -1,0 +1,83 @@
+Enemy data table stored in bank A0
+              example data: geemer/zoomer (DCFF)
+                            metal geemer/zoomer (DD3F)
+                            homing geemer/zoomer (DC3F)
+                   ______________________
+                   enemy_data - $40 bytes     
+                   ______________________
+              0006 B0E5 0F00 0500 0800 0800 A3   00     23   00 0000 69E6 0100 0100 C2E6 0A80 4C80 4180 0000 00   00 00000000 0000 000000000000 2380 2D80 0000 0080AE 05 24F2 48EC DBE1                        
+              0006 D0E5 0F00 0500 0800 0800 A3   00     23   00 0000 69E6 0100 0100 C2E6 0A80 4C80 4180 0000 00   00 00000000 0000 000000000000 2380 2D80 0000 0080AE 05 02F3 D4ED C7DF                     
+              0006 A2DF 0F00 0500 0800 0800 A3   00     23   00 0000 43E0 0100 0000 8BE0 0A80 4C80 4180 0000 00   00 00000000 0000 000000000000 2380 2D80 0000 0080AE 05 FCF2 48EC F5DE
+              ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^   ^^     ^^   yy ^^^^ ^^^^ ^^^^ xxyy ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^   yy xxyyxxyy ^^^^ xxyyxxyyxxyy ^^^^ ^^^^ xxyy ^^^^^^ yy ^^^^ ^^^^ ^^^^
+              tile pal  hp   dmg  wide high Bank # of   hurt    Boss AI   Part      Norm Grap Hurt Froz XRay die              PB                Tch. Beam      Tile    | |    |    |
+              get  ptr                      Ptr  "hurt" snd.    num  Init Cnt.      Move AI   AI   AI   or   anim             Pntr              Pntr Pntr      Pointr  | |    |    name pointer
+              lgth                               frames                   0=>1      AI?                 Rsrv                                                           | |    pointer to enemy resistances
+              ???                                0=>4                                                   AI                                                             | pointer to enemy drop chances
+                                                                                                                                                                       background/foreground
+
+Bytes 00-01: Size of tile data. If minus, use room population index for offset to copy to VRAM (6X00, actually C000 - DE00)
+Bytes 02-03: pointer to the color pallete
+Bytes 04-05: Enemy HP
+Bytes 06-07: Damage from contact with enemy
+Bytes 08-09: *2 = number of pixels wide the enemy is?
+Bytes 0A-0B: *2 = number of pixels high the enemy is?
+Byte  0C:    Pointer to bank, used with other pointers
+Byte  0D:    Number of frames to run 'hurt' AI when hit, +8 = number of frames an enemy will flash if it's hurt. If #$00, #$04 is used instead?
+Byte  0E-0F: Sound played when enemy is hit
+Bytes 10-11: Special boss fight value
+Bytes 12-13: Initialization(?) AI
+Bytes 14-15: How many 'parts' this enemy is, 0 being understood to be 1. Seems to be almost unused in practice... MB does use it though.
+Bytes 16-17: Unknown
+Bytes 18-19: Pointer to main movement AI. (Gives Ripper IIs fire tails)
+Bytes 1A-1B: Grapple reaction. See below.
+Bytes 1C-1D: Extra AI routine. (Metroid latching) (Normally hit reaction?)
+Bytes 1E-1F: Extra AI routine. (Frozen AI, I think)
+Bytes 20-21: Extra AI routine. (Reserve Tank/X-Ray pause AI)
+             Side note: 18 - 21 all seem to carry out basic movement
+Byte  22-23: Animation played when enemy dies. If 00 or 01 and killed by super missile, use 02 instead.
+Bytes 24-27: Unknown
+Bytes 28-29: Pointer to Powerbomb reaction (if 0000, uses 8037 instead; normal power bomb susceptibility)
+Bytes 2A-2F: Unknown
+Bytes 30-31: Pointer to Touch Action
+Bytes 32-33: Pointer to Projectile Action
+Bytes 34-35: Unknown
+Bytes 36-38: Long Pointer to Tile pallete
+Byte  39:    Layer control (02 = In front of Samus, 05 = behind Samus, in front of background, 0B = behind background)
+Bytes 3A-3B: Pointer to enemy's item drop chances, often used by multiple enemies (bank B4)
+             Bytes: 1 = Energy, 2 = Big Energy, 3 = Missiles, 4 = nothing, 5 = super missiles, 6 = power bombs 14 0A 55 82 05 05
+Bytes 3C-3D: Pointer to enemy's resistances, often used by multiple enemies (bank B4)
+Bytes 3E-3F: Pointer to enemy's name (bank B4)
+
+
+Grapple actions:
+## 00 = crash
+00 80 = Grapple ignores enemy, enemy pauses one frame. Will unfreeze frozen enemies
+01-04 80 = Grapple ignores enemy, enemy stops movement
+05 80 = Grapple latches on to enemy, enemy stops until released
+06 80 = Grapple ignores enemy, enemy stops movement
+07-08 80 = Grapple curves, enemy unaffected
+09 80 = Enemy stops
+0A 80 = Grapple latches on to enemy, kills enemy
+0B-0D 80 = Grapple curves, enemy unaffected
+0E 80 = Grapple ignores enemy, enemy stops movement
+0F 80 = Grapple is stopped by enemy, enemy not affected
+14 80 = Grapple latches on to enemy, no effect on enemy
+19 80 = Grapple latches on to enemy, enemy dies in about 1/4 a second
+1E 80 = Grapple latches on to enemy for a moment, Samus is hurt and knocked off
+23 80 = Grapple latches on to enemy for a moment, Samus is hurt once a frame for 1 damage until killed
+28 80 = Grapple latches on to enemy for a moment, Samus is hurt once a frame for 1 damage until killed. Enemy is frozen
+37 80 = Grapple ignores enemy, enemy is killed
+3C 80 = Grapple ignores enemy, enemy stops movement and becomes untouchable
+4B 80 = Crash
+
+Enemy resistance stuff for beams:
+If base beam resistance is FF, play the frozen sound if not already frozen, and set everything for frozen (see below). Done
+If charge beam and charge beam resistance is FF or X0, or the total damage is 0:
+    Kill the beam, make a dud explosion at the beam's X/Y (#$0006 in $16, JSL $B4BC26), and play the dud sound. Done
+Set hurt time and hurt AI
+If not already frozen, play hurt sound and inc $0E2E (unknown)
+If plasma, set intangible timer to 10
+If new health will be =< 0:
+    Freeze if beam is ice, resistance is not 8X, enemy isn't already frozen
+    Set freeze timer to 400 frames normally, 300 in Norfair, set frozen AI, set intangible for 0A frames, and play frozen sound. Health is not affected. Done
+If new health will be > 0, subtract it. Done
