@@ -1834,6 +1834,7 @@ Dim TestByte As Byte    'check for RoomVar and other special coding
 Dim TempByte As Byte    'check to make sure it's not a PAL ROM
 Dim TempROM_HEADER As Integer
 
+'.bin file is the temporary file for editing a rom - opened by SMILE
 KillFile needslash & ".bin"
 
 Open needslash For Binary As #1
@@ -2082,7 +2083,7 @@ End Sub
 
 
 
-
+' TODO
 Private Sub Command2_Click()
 Dim ASMCode As String
 Dim Coding() As Byte    'the actual *.bin
@@ -2106,6 +2107,7 @@ Open ASMCode For Binary As #1
     Get #1, 1, Coding()
 Close #1
 
+' TODO:  OFFSET FOR the Coding() array needs to be understood
 Open needslash For Binary As #1
     Put #1, &H1174A0 + ROM_HEADER + 1, Coding()
 Close #1

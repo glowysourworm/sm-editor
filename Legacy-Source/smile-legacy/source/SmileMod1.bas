@@ -244,6 +244,7 @@ Public Type mdb_RoomState
     Layer1_2 As Integer 'pointer to layer 1 and 2 handling code ($8F)
 End Type
 
+' TODO:  Specific use of RoomVar (?)
 Public Type Jathys_RoomVar
     MultiVar1 As Integer
     MultiVar2 As Integer

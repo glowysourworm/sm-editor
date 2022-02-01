@@ -7,4 +7,12 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="IO\Rom\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\common-utility\CommonUtility\CommonUtility.csproj" />
+  </ItemGroup>
+
 </Project>
