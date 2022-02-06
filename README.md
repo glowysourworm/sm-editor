@@ -6,7 +6,7 @@ This is an update of the code and a feature re-write to enhance usability.
                is NOT intended - nor MAY it be used - to produce or redistribute
                the original Super Metroid game IN ANY WAY. It is intended as a
                tool for educational purposes; and is - itself - NOT INTENDED FOR
-               PUBLIC SALE.
+               PUBLIC SALE.**
               
 # Project Goals:
 
