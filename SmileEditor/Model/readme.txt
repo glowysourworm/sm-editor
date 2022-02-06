@@ -10,3 +10,6 @@
 		   structure TBD).
 
 		   This design change will greatly simplify the model processing in the new editor. 
+
+[2/6/2022] Model extensions will be marked as such "(Extension)" - so that these data can be stored outside the 
+		   ROM as part of the working database for the open project. 

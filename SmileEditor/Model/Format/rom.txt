@@ -1,0 +1,175 @@
+﻿Super Metroid ROM Specification
+-------------------------------
+
+*** NOTE: This is based on the ROM format imported from the SMILE RF Guide; and should be
+		  a work in progress - such that the COMPLETE ROM format can be inferred from usage.
+
+		  Versioning of this is left to source control.
+
+		  The format is broken down into sub-folders to get the data offsets for each bank
+-------------------------------
+(Legacy v2.5) REALLY REALLY IMPORTANT INFORMATION ABOUT BANKS (See SMILE RF Guide)
+
+Pretty soon, you will be seeing a lot of mention of banks in this guide. If you've been reading 
+this guide in order, you should already know how to count in hexadecimal, and how to convert 
+between PC/LoROM addresses. That's all you need to know to understand banks. Super Metroid is 
+divided into banks, and every bank is exactly $8000 bytes in size (32,768 bytes if you're counting 
+in decimal). Super Metroid's ROM type is LoROM, so this means that its maximum bank range is $80-FF. 
+
+By default, Super Metroid only uses banks $80-DF, but banks $E0-FF can be easily added in with SMILE 
+and used for level data, tileset data, graphics, and other stuff, since the original game never needed 
+to use that extra data. Because the first bank is $80, it occupies LoROM addresses $80:0000-$80:7FFF. 
+Bank $81 then begins at LoROM address $81:8000 and ends at $81:FFFF. Bank $82 is LoROM addresses 
+$82:0000-$82:7FFF, and so on.
+
+Any time that there is an address/data given to you (hex edits or whatever), it will be either a LoROM 
+or PC address. This guide mostly uses PC addresses for simplicity, since that's what HxD and TLP need 
+for their Goto functions.
+
+Here's a quick list of every bank and its address range, and then a brief description of each bank's contents. 
+Thanks PJBoy and GF_Kennon for most of the info below:
+
+-------------- (Current Bank Layout)
+
+Quick Reference: 
+
+	- Each bank length is 0x7FFF (+ zeroth address) = 32,768 Bytes = 3.2768 kB
+
+Bank $##        LoROM address          PC address        Bank description
+Bank $80      $80:0000-$80:7FFF      $0-7FFF             Game setup, intros, save station data, other important stuff.
+Bank $81      $81:8000-$81:FFFF      $8000-FFFF          Map data, save data, sprite drawing routines, etc.
+Bank $82      $82:0000-$82:7FFF      $10000-17FFF        Load areas, pause data, game states, HDMA, demo setup, Samus dying, room setup, etc.
+Bank $83      $83:8000-$83:FFFF      $18000-1FFFF        FX Data, door data, FX 'Animated Tiles' and 'Palette Setup' setup.
+Bank $84      $84:0000-$84:7FFF      $20000-27FFF        PLM setup, PLM data, probably other stuff.
+Bank $85      $85:8000-$85:FFFF      $28000-2FFFF        Message boxes from PLMs and Samus's ship.
+Bank $86      $86:0000-$86:7FFF      $30000-37FFF        Enemy projectiles, enemy drops setup.
+Bank $87      $87:8000-$87:FFFF      $38000-3FFFF        FX graphics, golden boss statue graphics.
+Bank $88      $88:0000-$88:7FFF      $40000-47FFF        DMA/HDMA stuff, power bomb explosions, Crateria scrolling sky, etc.
+Bank $89      $89:8000-$89:FFFF      $48000-4FFFF        Item graphics, palette blends, FX color math stuff.
+Bank $8A      $8A:0000-$8A:7FFF      $50000-57FFF        FX tilemaps, free space.
+Bank $8B      $8B:8000-$8B:FFFF      $58000-5FFFF        Screen fades, OAM stuff, title setup, ending and credits stuff, etc.
+Bank $8C      $8C:0000-$8C:7FFF      $60000-67FFF        Intro & menu tilemaps, ending tilemaps, etc.
+Bank $8D      $8D:8000-$8D:FFFF      $68000-6FFFF        FX palettes, cheat for damage in heated rooms, etc.
+Bank $8E      $8E:0000-$8E:7FFF      $70000-77FFF        Main menu palettes and graphics, etc.
+Bank $8F      $8F:8000-$8F:FFFF      $78000-7FFFF        Room headers, PLM Set data, Background data, Room Scrolls data, etc.
+
+Bank $90      $90:0000-$90:7FFF      $80000-87FFF        Samus's animations/movement/weapons, shinesparking, minimap, hitbox collision, etc.
+Bank $91      $91:8000-$91:FFFF      $88000-8FFFF        Samus's movement transitions/frame delays, other Samus data, demo inputs, etc.
+Bank $92      $92:0000-$92:7FFF      $90000-97FFF        Animation pointer tables, animation data, tilemaps, etc.
+Bank $93      $93:8000-$93:FFFF      $98000-9FFFF        Samus's beam animation tilemaps.
+Bank $94      $94:0000-$94:7FFF      $A0000-A7FFF        BTS collision, start of "Special GFX" in SMILE.
+Bank $95      $95:8000-$95:FFFF      $A8000-AFFFF        "Special GFX" in SMILE.
+Bank $96      $96:0000-$96:7FFF      $B0000-B7FFF        "Special GFX" in SMILE.
+Bank $97      $97:8000-$97:FFFF      $B8000-BFFFF        "Special GFX" in SMILE.
+Bank $98      $98:0000-$98:7FFF      $C0000-C7FFF        "Special GFX" in SMILE.
+Bank $99      $99:8000-$99:FFFF      $C8000-CFFFF        "Special GFX" in SMILE.
+Bank $9A      $9A:0000-$9A:7FFF      $D0000-D7FFF        Grapple graphics, layer FX graphics, beam graphics, common sprite graphics, etc.
+Bank $9B      $9B:8000-$9B:FFFF      $D8000-DFFFF        Samus's graphics.
+Bank $9C      $9C:0000-$9C:7FFF      $E0000-E7FFF        Samus's graphics.
+Bank $9D      $9D:8000-$9D:FFFF      $E8000-EFFFF        Samus's graphics.
+Bank $9E      $9E:0000-$9E:7FFF      $F0000-F7FFF        Samus's graphics.
+Bank $9F      $9F:8000-$9F:FFFF      $F8000-FFFFF        Samus's graphics.
+
+Bank $A0      $A0:0000-$A0:7FFF      $100000-107FFF      Lots of common enemy routines, enemy header data, free space.
+Bank $A1      $A1:8000-$A1:FFFF      $108000-10FFFF      Enemy GFX pointer data, free space.
+Bank $A2      $A2:0000-$A2:7FFF      $110000-117FFF      Enemy AI.
+Bank $A3      $A3:8000-$A3:FFFF      $118000-11FFFF      Enemy AI.
+Bank $A4      $A4:8000-$A4:7FFF      $120000-127FFF      Enemy AI.
+Bank $A5      $A5:8000-$A5:FFFF      $128000-12FFFF      Enemy AI.
+Bank $A6      $A6:8000-$A6:7FFF      $130000-137FFF      Enemy AI.
+Bank $A7      $A7:8000-$A7:FFFF      $138000-13FFFF      Enemy AI.
+Bank $A8      $A8:8000-$A8:7FFF      $140000-147FFF      Enemy AI.
+Bank $A9      $A9:8000-$A9:FFFF      $148000-14FFFF      Enemy AI.
+Bank $AA      $AA:8000-$AA:7FFF      $150000-157FFF      Enemy AI.
+Bank $AB      $AB:8000-$AB:FFFF      $158000-15FFFF      Enemy AI.
+Bank $AC      $AC:8000-$AC:7FFF      $160000-167FFF      Enemy graphics.
+Bank $AD      $AD:8000-$AD:FFFF      $168000-16FFFF      Enemy graphics.
+Bank $AE      $AE:8000-$AE:7FFF      $170000-177FFF      Enemy graphics.
+Bank $AF      $AF:0000-$AF:FFFF      $178000-17FFFF      Enemy graphics.
+
+Bank $B0      $B0:0000-$B0:7FFF      $180000-187FFF      Enemy graphics.
+Bank $B1      $B1:8000-$B1:FFFF      $188000-18FFFF      Enemy graphics.
+Bank $B2      $B2:0000-$B2:7FFF      $190000-197FFF      Space pirate hitboxes, also tilemaps(?), etc.
+Bank $B3      $B3:8000-$B3:FFFF      $198000-19FFFF      Miscellaneous enemy/boss stuff (i.e, Botwoon's destroyed wall), etc.
+Bank $B4      $B4:0000-$B4:7FFF      $1A0000-1A7FFF      Enemy Set pointer data, debug stuff, enemy instructions/weaknesses/drops.
+Bank $B5      $B5:8000-$B5:FFFF      $1A8000-1AFFFF      Area map tilemaps, free space.
+Bank $B6      $B6:0000-$B6:7FFF      $1B0000-1B7FFF      Graphics and tilemaps for the equipment/map/title screens.
+Bank $B7      $B7:8000-$B7:FFFF      $1B8000-1BFFFF      Enemy graphics (Tourian enemies, Botwoon, etc.)
+Bank $B8      $B8:0000-$B8:7FFF      $1C0000-1C7FFF      Free space (unused bank).
+Bank $B9      $B9:8000-$B9:FFFF      $1C8000-1CFFFF      CRE graphics/table, Background pointer tilemaps.
+Bank $BA      $BA:0000-$BA:7FFF      $1D0000-1D7FFF      Background pointer tilemaps, tileset graphics.
+Bank $BB      $BB:8000-$BB:FFFF      $1D8000-1DFFFF      Tileset graphics.
+Bank $BC      $BC:0000-$BC:7FFF      $1E0000-1E7FFF      Tileset graphics.
+Bank $BD      $BD:8000-$BD:FFFF      $1E8000-1EFFFF      Tileset graphics.
+Bank $BE      $BE:0000-$BE:7FFF      $1F0000-1F7FFF      Tileset graphics.
+Bank $BF      $BF:8000-$BF:FFFF      $1F8000-1FFFFF      Tileset graphics.
+
+Bank $C0      $C0:0000-$C0:7FFF      $200000-207FFF      Tileset graphics.
+Bank $C1      $C1:8000-$C1:FFFF      $208000-20FFFF      Tileset graphics, tileset tables, etc.
+Bank $C2      $C2:0000-$C2:7FFF      $210000-217FFF      Tileset tables, tileset palettes, level data.
+Bank $C3      $C3:8000-$C3:FFFF      $218000-21FFFF      Level data.
+Bank $C4      $C4:0000-$C4:7FFF      $220000-227FFF      Level data.
+Bank $C5      $C5:8000-$C5:FFFF      $228000-22FFFF      Level data.
+Bank $C6      $C6:0000-$C6:7FFF      $230000-237FFF      Level data.
+Bank $C7      $C7:8000-$C7:FFFF      $238000-23FFFF      Level data.
+Bank $C8      $C8:0000-$C8:7FFF      $240000-247FFF      Level data.
+Bank $C9      $C9:8000-$C9:FFFF      $248000-24FFFF      Level data.
+Bank $CA      $CA:0000-$CA:7FFF      $250000-257FFF      Level data.
+Bank $CB      $CB:8000-$CB:FFFF      $258000-25FFFF      Level data.
+Bank $CC      $CC:0000-$CC:7FFF      $260000-267FFF      Level data.
+Bank $CD      $CD:8000-$CD:FFFF      $268000-26FFFF      Level data.
+Bank $CE      $CE:0000-$CE:7FFF      $270000-277FFF      Level data.
+Bank $CF      $CF:8000-$CF:FFFF      $278000-27FFFF      Music/audio setup.
+
+Bank $D0      $D0:0000-$D0:7FFF      $280000-287FFF      Music data.
+Bank $D1      $D1:8000-$D1:FFFF      $288000-28FFFF      Music data.
+Bank $D2      $D2:0000-$D2:7FFF      $290000-297FFF      Music data.
+Bank $D3      $D3:8000-$D3:FFFF      $298000-29FFFF      Music data.
+Bank $D4      $D4:0000-$D4:7FFF      $2A0000-2A7FFF      Music data.
+Bank $D5      $D5:8000-$D5:FFFF      $2A8000-2AFFFF      Music data.
+Bank $D6      $D6:0000-$D6:7FFF      $2B0000-2B7FFF      Music data.
+Bank $D7      $D7:8000-$D7:FFFF      $2B8000-2BFFFF      Music data.
+Bank $D8      $D8:0000-$D8:7FFF      $2C0000-2C7FFF      Music data.
+Bank $D9      $D9:8000-$D9:FFFF      $2C8000-2CFFFF      Music data.
+Bank $DA      $DA:0000-$DA:7FFF      $2D0000-2D7FFF      Music data.
+Bank $DB      $DB:8000-$DB:FFFF      $2D8000-2DFFFF      Music data.
+Bank $DC      $DC:0000-$DC:7FFF      $2E0000-2E7FFF      Music data.
+Bank $DD      $DD:8000-$DD:FFFF      $2E8000-2EFFFF      Music data.
+Bank $DE      $DE:0000-$DE:7FFF      $2F0000-2F7FFF      Music data.
+Bank $DF      $DF:8000-$DF:FFFF      $2F8000-2FFFFF      Unused songs, note length table, ASDR settings, tracker, etc.
+
+Banks $E0-FF must be added by SMILE ("ROM" > "Expand ROM") before they can be seen in a hex editor.
+
+Bank $E0      $E0:0000-$E0:7FFF      $300000-307FFF      Free space
+Bank $E1      $E1:8000-$E1:FFFF      $308000-30FFFF      Free space
+Bank $E2      $E2:0000-$E2:7FFF      $310000-317FFF      Free space
+Bank $E3      $E3:8000-$E3:FFFF      $318000-31FFFF      Free space
+Bank $E4      $E4:0000-$E4:7FFF      $320000-327FFF      Free space
+Bank $E5      $E5:8000-$E5:FFFF      $328000-32FFFF      Free space
+Bank $E6      $E6:0000-$E6:7FFF      $330000-337FFF      Free space
+Bank $E7      $E7:8000-$E7:FFFF      $338000-33FFFF      Free space
+Bank $E8      $E8:0000-$E8:7FFF      $340000-347FFF      Free space
+Bank $E9      $E9:8000-$E9:FFFF      $348000-34FFFF      Free space
+Bank $EA      $EA:0000-$EA:7FFF      $350000-357FFF      Free space
+Bank $EB      $EB:8000-$EB:FFFF      $358000-35FFFF      Free space
+Bank $EC      $EC:0000-$EC:7FFF      $360000-367FFF      Free space
+Bank $ED      $ED:8000-$ED:FFFF      $368000-36FFFF      Free space
+Bank $EE      $EE:0000-$EE:7FFF      $370000-377FFF      Free space
+Bank $EF      $EF:8000-$EF:FFFF      $378000-37FFFF      Free space
+Bank $F0      $F0:0000-$F0:7FFF      $380000-387FFF      Free space
+
+Bank $F1      $F1:8000-$F1:FFFF      $388000-38FFFF      Free space
+Bank $F2      $F2:0000-$F2:7FFF      $390000-397FFF      Free space
+Bank $F3      $F3:8000-$F3:FFFF      $398000-39FFFF      Free space
+Bank $F4      $F4:0000-$F4:7FFF      $3A0000-3A7FFF      Free space
+Bank $F5      $F5:8000-$F5:FFFF      $3A8000-3AFFFF      Free space
+Bank $F6      $F6:0000-$F6:7FFF      $3B0000-3B7FFF      Free space
+Bank $F7      $F7:8000-$F7:FFFF      $3B8000-3BFFFF      Free space
+Bank $F8      $F8:0000-$F8:7FFF      $3C0000-3C7FFF      Free space
+Bank $F9      $F9:8000-$F9:FFFF      $3C8000-3CFFFF      Free space
+Bank $FA      $FA:0000-$FA:7FFF      $3D0000-3D7FFF      Free space
+Bank $FB      $FB:8000-$FB:FFFF      $3D8000-3DFFFF      Free space
+Bank $FC      $FC:0000-$FC:7FFF      $3E0000-3E7FFF      Free space
+Bank $FD      $FD:8000-$FD:FFFF      $3E8000-3EFFFF      Free space
+Bank $FE      $FE:0000-$FE:7FFF      $3F0000-3F7FFF      Free space
+Bank $FF      $FF:8000-$FF:FFFF      $3F8000-3FFFFF      Free space

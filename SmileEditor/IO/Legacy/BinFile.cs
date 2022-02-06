@@ -35,6 +35,14 @@ namespace SmileEditor.IO.Legacy
 
         #endregion
 
+        #region (internal) Variable Offsets (Data Bank Data (??)) These are still being migrated and learned...
+
+        internal const int AreaSavePointerTable   = 0x44B5;           // (Legacy) AreaSavePointerTable 'pointer to table with the 8 pointers to the 8 areas' save spots
+        internal const int ShipIconOffset         = 0x14853;          // (Legacy) ShipIconOffset       'offset where the ship's map icon is stored on the map
+        internal const int BossIconOffset         = 0x147CB;          // (Legacy) BossIconOffset       'offset to start of pointer table to boss icons (indexed by area)
+
+        #endregion
+
         #region (internal) Variable Values - from the stream i/o procedures
 
         internal const int ShowRoomVarMenus        = 0x20;                   // Test value for showing the room variable data menus (Legacy) RoomVarData

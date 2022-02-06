@@ -9,6 +9,8 @@
 
   <ItemGroup>
     <Folder Include="IO\Rom\" />
+    <Folder Include="Model\Current\Graphics\" />
+    <Folder Include="Model\Format\DataBank\" />
   </ItemGroup>
 
   <ItemGroup>

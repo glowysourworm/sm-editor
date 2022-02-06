@@ -1,5 +1,8 @@
 ﻿namespace SmileEditor.Model.Legacy
 {
+    /// <summary>
+    /// Data structure to load room data from the ROM.
+    /// </summary>
     internal class MDB_Header
     {
         internal byte RoomIndex { get; set; }               // (Legacy) 'index value for room, for an unknown purpose

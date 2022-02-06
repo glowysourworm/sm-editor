@@ -1,0 +1,44 @@
+﻿Music Databank
+--------------
+
+NOTE*** This is used to fill in the Music -> Track data structure. These data offsets have to be tied to the
+		actual bank they're pulled from in the ROM (TODO).
+
+Music Control: 
+
+0	No Change
+1	Samus appear
+2	Aquire item
+3	Elevator
+4	Hall before statues
+5	No change/Song One
+6	Song Two
+7	Mute
+	
+Music Track:
+
+0	None
+3	Title Screen
+6	Empty Crateria
+9	Space Pirate
+0C	Samus Theme
+0F	Green Brinstar
+12	Red Brinstar
+15	Upper Norfair
+18	Lower Norfair
+1B	Maridia
+1E	Tourian
+21	Mother Brain
+24	Boss Fight 1 (04,05,06,80)
+27	Boss Fight 2 (04,05,06)
+2A	Miniboss Fight
+2D	Ceres
+30	Wrecked Ship
+33	Zebes Boom
+36	Intro
+39	Death
+3C	Credits
+3F	The last metroid is in captivity
+42	The galaxy is at peace
+45	Large Metroid
+48	Samus Theme
