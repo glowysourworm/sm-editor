@@ -1,0 +1,41 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32112.339
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SMEditor", "SMEditor\SMEditor.csproj", "{327B26B1-387D-4C08-BC1E-CC5160408BC8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Package-Dependencies", "Package-Dependencies", "{8BDF00BB-FA3F-424E-8792-81C66749F67A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommonUtility", "..\common-utility\CommonUtility\CommonUtility.csproj", "{C0001936-65F8-457C-97CB-8B2EBD9B89A2}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "SmileEditorLegacy", "SmileEditorLegacy\SmileEditorLegacy.shproj", "{242DB192-5E4A-4938-B3DE-B6875ECBA4E3}"
+EndProject
+Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		SmileEditorLegacy\SmileEditorLegacy.projitems*{242db192-5e4a-4938-b3de-b6875ecba4e3}*SharedItemsImports = 13
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{327B26B1-387D-4C08-BC1E-CC5160408BC8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{327B26B1-387D-4C08-BC1E-CC5160408BC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{327B26B1-387D-4C08-BC1E-CC5160408BC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{327B26B1-387D-4C08-BC1E-CC5160408BC8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0001936-65F8-457C-97CB-8B2EBD9B89A2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0001936-65F8-457C-97CB-8B2EBD9B89A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0001936-65F8-457C-97CB-8B2EBD9B89A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0001936-65F8-457C-97CB-8B2EBD9B89A2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C0001936-65F8-457C-97CB-8B2EBD9B89A2} = {8BDF00BB-FA3F-424E-8792-81C66749F67A}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {52C22A4A-5CF2-4AD8-8BA4-D337A3B75035}
+	EndGlobalSection
+EndGlobal

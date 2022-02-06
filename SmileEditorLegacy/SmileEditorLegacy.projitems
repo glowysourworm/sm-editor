@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>242db192-5e4a-4938-b3de-b6875ecba4e3</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>SmileEditorLegacy</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)bas-files\ArithOp.bas" />
+    <None Include="$(MSBuildThisFileDirectory)bas-files\dllModule.bas" />
+    <None Include="$(MSBuildThisFileDirectory)bas-files\EasterEgg.bas" />
+    <None Include="$(MSBuildThisFileDirectory)bas-files\Lunar.bas" />
+    <None Include="$(MSBuildThisFileDirectory)bas-files\LunarMod.bas" />
+    <None Include="$(MSBuildThisFileDirectory)bas-files\LunarMod_old.bas" />
+    <None Include="$(MSBuildThisFileDirectory)bas-files\PaletteSMILE.bas" />
+    <None Include="$(MSBuildThisFileDirectory)bas-files\PAL_000C.BAS" />
+    <None Include="$(MSBuildThisFileDirectory)bas-files\SmileMod1.bas" />
+    <None Include="$(MSBuildThisFileDirectory)bas-files\SMI_0014.BAS" />
+    <None Include="$(MSBuildThisFileDirectory)bas-files\UCommon.bas" />
+    <None Include="$(MSBuildThisFileDirectory)bas-files\UGraphics.bas" />
+    <None Include="$(MSBuildThisFileDirectory)cls-files\cDIBSection.cls" />
+    <None Include="$(MSBuildThisFileDirectory)cls-files\OpenSave.cls" />
+    <None Include="$(MSBuildThisFileDirectory)cpp-files\smile.cpp" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\AddSubtractEP.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\BG_Editor.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\DoorForm1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\EasterEggs.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\eek1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\EnemyMiscellaneousEdit1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\ExceptionRooms1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\FX1_1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\GameBehavior1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\GraphicForm.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\HotKeys1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\Icons1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\InfoForm1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\Layer3Editor.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\LoadPoints1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\Magnifier.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\MakeDefaults.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\Mapper1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\MapshotForm1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\MiscForm1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\Outlet.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\Palette1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\PaletteBlendForm1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\PLMForm.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\plugin.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\Plugins.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\PointerForm1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\Poses1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\ProjectileEditor1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\RoomFromMap1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\RoomHeader1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\RoomVar1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\SamusForm.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\SamusForm2.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\SaveScrollPLM1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\Smile.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\SpeciesForm.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\SPI1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\States1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\Test.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\TextForm1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\VulnerabilitiesForm1.frm" />
+    <None Include="$(MSBuildThisFileDirectory)frm-files\Watcher.frm" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)readme.txt" />
+  </ItemGroup>
+</Project>
