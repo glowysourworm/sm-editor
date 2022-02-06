@@ -8,7 +8,7 @@ This is an update of the code and a feature re-write to enhance usability.
                tool for educational purposes; and is - itself - NOT INTENDED FOR
                PUBLIC SALE.**
               
-# Project Goals:
+# SM Editor Project Goals:
 
   - CAD capabilities similar to the SMILE editor v2.5 with better ease-of-use and
     an updated pallate of usual items that is available to GREATLY simplify design
