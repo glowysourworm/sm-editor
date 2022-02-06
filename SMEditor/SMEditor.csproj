@@ -8,8 +8,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Model\Current\Graphics\**" />
+    <EmbeddedResource Remove="Model\Current\Graphics\**" />
+    <None Remove="Model\Current\Graphics\**" />
+    <Page Remove="Model\Current\Graphics\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="IO\Rom\" />
-    <Folder Include="Model\Current\Graphics\" />
+    <Folder Include="Model\Current\Graphic\" />
     <Folder Include="Model\Format\DataBank\" />
   </ItemGroup>
 

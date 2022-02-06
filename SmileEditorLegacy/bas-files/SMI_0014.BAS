@@ -3,24 +3,6 @@ Public Declare Function BitBlt Lib "gdi32" (ByVal hDestDC As Long, ByVal X As Lo
 Public Declare Function StretchBlt Lib "gdi32" (ByVal hdc As Long, ByVal X As Long, ByVal Y As Long, ByVal nWidth As Long, ByVal nHeight As Long, ByVal hSrcDC As Long, ByVal xSrc As Long, ByVal ySrc As Long, ByVal hSrcWidth As Long, ByVal nSrcHeight As Long, ByVal dwRop As Long) As Long
 Public Const SRCCOPY = &HCC0020
 
-Public Type Tile
-    BlockID As Byte
-    PatternByte As Byte
-End Type
-
-Public Type RoomData
-    RoomID As Integer   '2 bytes
-    RoomAddress As Long '4 bytes
-    RoomArea As Byte    '1 byte
-    RoomWidth As Byte   '1 byte
-    RoomHeight As Byte  '1 byte
-End Type
-
-Public Type RLEentry
-    Repeat As Byte
-    BlockID As Byte
-    PatternByte As Byte
-End Type
 
 Public Const faketiles = 0
 Public AtNextCompression As Boolean 'whether or not compression byte of next tile has been reached (only used in special xx cases)

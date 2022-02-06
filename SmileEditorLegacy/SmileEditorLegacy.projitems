@@ -71,4 +71,33 @@
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)readme.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Routines\Graphics\DecompressTiles.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Routines\Graphics\DecompressTtable.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Routines\Graphics\Palette.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Graphics\BITMAPFILEHEADER.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Graphics\BitmapImageHeader.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Graphics\BitmapPalette.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Graphics\OAM.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Model\AreaSave.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Model\CloneDoor.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Model\EnemyStats.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Model\DoorData.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Model\Enemy.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Model\FX1.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Model\h8BDD8899_Type.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Model\hsuit8BDD8899_Type.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Model\Jathys_RoomVar.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Model\mdb_Header.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Model\mdb_RoomState.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Model\PLM6.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Model\PoseProperties.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Model\PoseTransitions.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Model\RLEentry.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Model\RoomData.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Model\SamusPalleteSet.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Model\ThreeByte.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Model\Tile.vb" />
+    <Compile Include="$(MSBuildThisFileDirectory)Parsed\Types\Model\TwoIntegers.vb" />
+  </ItemGroup>
 </Project>
