@@ -226,7 +226,7 @@ tile animation: BRINSTAR                          ||||         palette fx: BRINS
 tile animation: NORFAIR                           ||||         palette fx: NORFAIR
                                                   ||||
 0 0 0 0   0 0 0 0                                 ||||         0 0 0 0   0 0 0 0
-| | | |   | | | |__ animate_spikes_h              ||||         | | | |   | | | |__ HEAT BIT *** IMPORTANT! LQQK! FREE PORN! ***
+| | | |   | | | |__ animate_spikes_h              ||||         | | | |   | | | |__ HEAT BIT *** IMPORTANT! LQQK! ***
 | | | |   | | |____ animate_spikes_v              ||||         | | | |   | | |____ glow on silver tiles
 | | | |   | |______ unused                        ||||         | | | |   | |______ glow on cave walls/bubbles/lots
 | | | |   |________ unused                        ||||         | | | |   |________ glow on ruins/maw/purple metal/lots
