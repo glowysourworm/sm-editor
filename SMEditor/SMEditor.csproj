@@ -8,19 +8,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="IO\Rom\**" />
     <Compile Remove="Model\Current\Graphics\**" />
+    <Compile Remove="Model\Current\Graphic\**" />
+    <EmbeddedResource Remove="IO\Rom\**" />
     <EmbeddedResource Remove="Model\Current\Graphics\**" />
+    <EmbeddedResource Remove="Model\Current\Graphic\**" />
+    <None Remove="IO\Rom\**" />
     <None Remove="Model\Current\Graphics\**" />
+    <None Remove="Model\Current\Graphic\**" />
+    <Page Remove="IO\Rom\**" />
     <Page Remove="Model\Current\Graphics\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="IO\Rom\" />
-    <Folder Include="Model\Current\Graphic\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\common-utility\CommonUtility\CommonUtility.csproj" />
+    <Page Remove="Model\Current\Graphic\**" />
   </ItemGroup>
 
 </Project>
