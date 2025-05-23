@@ -1,0 +1,110 @@
+﻿<UserControl x:Class="SMEditor.View.AnimatorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+             xmlns:converter="clr-namespace:SMEditor.Converter" 
+             xmlns:controls="clr-namespace:SMEditor.Controls">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <converter:HexConverter x:Key="HexConverter" />
+            <converter:ZoomTransformConverter x:Key="ZoomTransformConverter" />
+            <Style TargetType="TextBlock">
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Margin" Value="5" />
+            </Style>
+            <Style TargetType="TextBox">
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="Margin" Value="2" />
+            </Style>
+            <Style TargetType="xctk:IntegerUpDown">
+                <Setter Property="Margin" Value="2" />
+            </Style>
+            <Style TargetType="xctk:ColorPicker">
+                <Setter Property="Margin" Value="2" />
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Border x:Name="PrimaryBorder">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="250" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="32" />
+                    <RowDefinition Height="32" />
+                    <RowDefinition Height="32" />
+                    <RowDefinition Height="32" />
+                    <RowDefinition Height="32" />
+                    <RowDefinition Height="32" />
+
+                    <RowDefinition Height="32" />
+                    <RowDefinition Height="32" />
+                    <RowDefinition Height="32" />
+                    <RowDefinition Height="32" />
+                    <RowDefinition Height="32" />
+                    <RowDefinition Height="32" />
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="Sprite Sheet" />
+                <TextBlock Grid.Row="1" Text="Width (pixels)" />
+                <TextBlock Grid.Row="2" Text="Height (pixels)" />
+                <TextBlock Grid.Row="3" Text="Sprite Columns" />
+                <TextBlock Grid.Row="4" Text="Sprite Rows" />
+                <TextBlock Grid.Row="5" Text="Animation Time (ms)" />
+
+                <TextBlock Grid.Row="6" Text="Zoom Level" />
+                <TextBlock Grid.Row="7" Text="Offset" />
+                <TextBlock Grid.Row="8" Text="Background Color" />
+                <TextBlock Grid.Row="9" Text="Grid Color" />
+                <TextBlock Grid.Row="10" Text="Brush Size (pixels)" />
+                <TextBlock Grid.Row="11" Text="Selected Color" />
+
+                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding SpriteSheetFile}" IsReadOnly="True" />
+                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding SpriteSheetWidth}" IsReadOnly="True" />
+                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding SpriteSheetHeight}" IsReadOnly="True" />
+
+                <xctk:IntegerUpDown Grid.Row="3" Grid.Column="1" Value="{Binding SpriteSheetColumns}" Minimum="1" Maximum="1000" />
+                <xctk:IntegerUpDown Grid.Row="4" Grid.Column="1" Value="{Binding SpriteSheetRows}" Minimum="1" Maximum="1000" />
+                <xctk:IntegerUpDown Grid.Row="5" Grid.Column="1" Value="{Binding AnimationTimeMilliSeconds}" Minimum="50" Maximum="10000" />
+
+                <xctk:IntegerUpDown Grid.Row="6" Grid.Column="1" Value="{Binding Zoom}" Minimum="1" Maximum="20" />
+                <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding Offset}" />
+                <xctk:ColorPicker Grid.Row="8" Grid.Column="1" SelectedColor="{Binding BackgroundColor}" SelectedColorChanged="ColorPicker_SelectedColorChanged" />
+                <xctk:ColorPicker Grid.Row="9" Grid.Column="1" SelectedColor="{Binding SpriteGridColor}" />
+                <xctk:IntegerUpDown Grid.Row="10" Grid.Column="1" Value="{Binding BrushSize}" Minimum="1" Maximum="20" />
+                <xctk:ColorPicker Grid.Row="11" Grid.Column="1" SelectedColor="{Binding SelectedColor}" />
+            </Grid>
+
+            <GridSplitter Grid.Column="0" HorizontalAlignment="Right" BorderBrush="Gray" BorderThickness="1" />
+
+            <!-- Image -->
+            <Border x:Name="ImageBorder" Grid.Column="1" ClipToBounds="True">
+                <controls:SpriteSheetEditor x:Name="ImageEditor"      
+                                            Clip="{Binding Clip, ElementName=ImageBorder}"
+                                            ImageFileName="{Binding SpriteSheetFile}"
+                                            BackgroundColor="{Binding BackgroundColor}"
+                                            SpriteGridColor="{Binding SpriteGridColor}"
+                                            SpriteSheetColumns="{Binding SpriteSheetColumns}"
+                                            SpriteSheetRows="{Binding SpriteSheetRows}"
+                                            Zoom="{Binding Zoom, Mode=TwoWay}"
+                                            Offset="{Binding Offset, Mode=TwoWay}"
+                                            BrushSize="{Binding BrushSize}"
+                                            SelectedColor="{Binding SelectedColor, NotifyOnSourceUpdated=True}"
+                                            >
+                </controls:SpriteSheetEditor>
+            </Border>
+
+            <!-- Animator -->
+
+        </Grid>
+    </Border>
+</UserControl>

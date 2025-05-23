@@ -11,6 +11,8 @@ namespace SMEditor.ViewModel
         int _imageHeight;
         int _stride;
 
+        SpriteEditorViewModel _animatorViewModel;
+
         ObservableCollection<RomImageViewModel> _images;
         ObservableCollection<LogViewModel> _logs;
 
@@ -44,6 +46,13 @@ namespace SMEditor.ViewModel
             get { return _stride; }
             set { this.RaiseAndSetIfChanged(ref _stride, value); }
         }
+        public SpriteEditorViewModel AnimatorViewModel
+        {
+            get { return _animatorViewModel; }
+            set { this.RaiseAndSetIfChanged(ref _animatorViewModel, value); }
+        }
+
+
         public ObservableCollection<RomImageViewModel> Images
         {
             get { return _images; }
@@ -59,6 +68,7 @@ namespace SMEditor.ViewModel
         {
             this.Images = new ObservableCollection<RomImageViewModel>();
             this.Logs = new ObservableCollection<LogViewModel>();
+            this.AnimatorViewModel = new SpriteEditorViewModel();
         }
     }
 }

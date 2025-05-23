@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:converter="clr-namespace:SMEditor.Converter"
+        xmlns:view="clr-namespace:SMEditor.View"
         Title="SM Editor">
 
     <Window.Resources>
@@ -25,66 +26,23 @@
             <RowDefinition Height="250" />
         </Grid.RowDefinitions>
 
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition />
-            <ColumnDefinition />
-        </Grid.ColumnDefinitions>
-        
-        <Menu Grid.ColumnSpan="2">
-            <MenuItem Header="_File" />
-            <MenuItem Header="_Dump Samus Data" Click="MenuItem_Click" />
+        <Menu>
+            <MenuItem Header="_File">
+                <MenuItem Header="Open _ROM" />
+                <MenuItem Header="Open _Sprite Sheet" Click="OpenSpriteSheet_Click" />
+            </MenuItem>
         </Menu>
 
-        <Grid Grid.Row="1">
+        <TabControl Grid.Row="1">
+            <TabItem Header="ROM Dump">
+                <view:RomDumpView />
+            </TabItem>
+            <TabItem Header="Animator">
+                <view:AnimatorView DataContext="{Binding AnimatorViewModel}" />
+            </TabItem>
+        </TabControl>
 
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-
-            <Grid.RowDefinitions>
-                <RowDefinition Height="32" />
-                <RowDefinition Height="32" />
-                <RowDefinition Height="32" />
-                <RowDefinition Height="32" />
-                <RowDefinition Height="32" />
-                <RowDefinition Height="32" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-
-            <TextBlock Grid.Row="0" Text="ROM File" />
-            <TextBlock Grid.Row="1" Text="Start Address" />
-            <TextBlock Grid.Row="2" Text="End Address" />
-            <TextBlock Grid.Row="3" Text="Stride (in Bytes)" />
-            <TextBlock Grid.Row="4" Text="Image Width" />
-            <TextBlock Grid.Row="5" Text="Image Height" />
-
-            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding RomFile}" />
-            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding StartAddress, Converter={StaticResource HexConverter}}" TextChanged="TextBox_TextChanged" />
-            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding EndAddress, Converter={StaticResource HexConverter}}" TextChanged="TextBox_TextChanged" />
-            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Stride, Converter={StaticResource HexConverter}}" TextChanged="TextBox_TextChanged" />
-            <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding ImageWidth}" TextChanged="TextBox_TextChanged" />
-            <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding ImageHeight}" TextChanged="TextBox_TextChanged" />
-
-            <Button Grid.Row="0" Grid.Column="2" Width="32" Height="32" Content="..." Click="Button_Click" />
-
-            <Button Grid.Row="6" Grid.ColumnSpan="2" HorizontalAlignment="Right" Margin="0 5 2 0" Content="Read ROM" Click="ReadROM_Click" />
-        </Grid>
-
-        <Grid Grid.Row="1" Grid.Column="1">
-            <ListBox x:Name="ImageLB">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <Border Height="{Binding Height}" Width="{Binding Width}" BorderBrush="Gray" BorderThickness="1">
-                            <Image Source="{Binding Source}" />
-                        </Border>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-        </Grid>
-
-        <GridSplitter Grid.ColumnSpan="2" Grid.Row="2" VerticalAlignment="Top" />
+        <GridSplitter Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" BorderBrush="Gray" BorderThickness="1" />
 
         <ListBox Grid.Row="2" Grid.ColumnSpan="2" ItemsSource="{Binding Logs}">
             <ListBox.ItemTemplate>

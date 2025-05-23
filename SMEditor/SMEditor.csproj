@@ -2,9 +2,11 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net6.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseWindowsForms>True</UseWindowsForms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,6 +22,25 @@
     <Page Remove="IO\Rom\**" />
     <Page Remove="Model\Current\Graphics\**" />
     <Page Remove="Model\Current\Graphic\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Controls\Graphics\GLSL\FragmentShader\Frame.frag" />
+    <None Remove="Controls\Graphics\GLSL\FragmentShader\Scene.frag" />
+    <None Remove="Controls\Graphics\GLSL\VertexShader\Frame.vert" />
+    <None Remove="Controls\Graphics\GLSL\VertexShader\Scene.vert" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Controls\Graphics\GLSL\FragmentShader\Frame.frag" />
+    <EmbeddedResource Include="Controls\Graphics\GLSL\FragmentShader\Scene.frag" />
+    <EmbeddedResource Include="Controls\Graphics\GLSL\VertexShader\Frame.vert" />
+    <EmbeddedResource Include="Controls\Graphics\GLSL\VertexShader\Scene.vert" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Extended.Wpf.Toolkit" Version="4.7.25104.5739" />
+    <PackageReference Include="OpenTK.GLControl" Version="4.0.2" />
   </ItemGroup>
 
 </Project>
