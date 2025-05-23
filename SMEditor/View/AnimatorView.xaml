@@ -88,8 +88,7 @@
 
             <!-- Image -->
             <Border x:Name="ImageBorder" Grid.Column="1" ClipToBounds="True">
-                <controls:SpriteSheetEditor x:Name="ImageEditor"      
-                                            Clip="{Binding Clip, ElementName=ImageBorder}"
+                <controls:SpriteSheetEditor x:Name="ImageEditor"            
                                             ImageFileName="{Binding SpriteSheetFile}"
                                             BackgroundColor="{Binding BackgroundColor}"
                                             SpriteGridColor="{Binding SpriteGridColor}"

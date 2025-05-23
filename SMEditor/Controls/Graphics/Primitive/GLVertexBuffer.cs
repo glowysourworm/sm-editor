@@ -102,6 +102,22 @@ namespace SMEditor.Controls.Graphics.Primitive
 
                     }
                     break;
+                    case ActiveUniformType.FloatVec4:
+                    {
+                        // Element size of the vector4
+                        attributeSize = 4;
+
+                        // Data type to read on the GL backend
+                        glType = VertexAttribPointerType.Float;
+
+                        // Normalized coordinates (?)
+                        glNormalized = false;
+
+                        // Setup an offset to be added to the total offset
+                        currentOffset = 4 * sizeof(float);
+
+                    }
+                    break;
                     default:
                         throw new GLException("Unhandled vertex array attribute data type:  {0}", attribute.Type);
                 }
@@ -167,6 +183,9 @@ namespace SMEditor.Controls.Graphics.Primitive
                 // HANDLE ATTRIBUTES BY DATA TYPE
                 if (attribute.Type == ActiveUniformType.FloatVec2)
                     return stride + (2 * sizeof(float));
+
+                else if (attribute.Type == ActiveUniformType.FloatVec4)
+                    return stride + (4 * sizeof(float));
                 else
                     throw new GLException("Unhandled vertex array attribute data type:  {0}", attribute.Type);
             });

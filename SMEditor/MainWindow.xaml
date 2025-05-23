@@ -38,7 +38,7 @@
                 <view:RomDumpView />
             </TabItem>
             <TabItem Header="Animator">
-                <view:AnimatorView DataContext="{Binding AnimatorViewModel}" />
+                <view:AnimatorView DataContext="{Binding AnimatorViewModel}" GLBackendEvent="AnimatorView_GLBackendEvent" />
             </TabItem>
         </TabControl>
 

@@ -45,10 +45,13 @@ namespace SMEditor.Controls.Grpahics.Data
                 // FRAGMENT SHADERS
                 case GLSLResource.FrameFragmentShader:
                     this.Uniforms1i = new UniformData<int>[] {
-                        new UniformData<int>("frameTexture", ActiveUniformType.Sampler2D)
+                        new UniformData<int>("frameTexture", ActiveUniformType.Sampler2D, 0)        // CONSTANTS!!! THESE MUST MATCH Texture Unit indices!!!
                     };
                     break;
                 case GLSLResource.SceneFragmentShader:
+                    this.Uniforms1i = new UniformData<int>[] {
+                        new UniformData<int>("sceneTexture", ActiveUniformType.Sampler2D, 1)        // CONSTANTS!!! THESE MUST MATCH Texture Unit indices!!!
+                    };
                     break;
 
                 // VERTEX SHADERS

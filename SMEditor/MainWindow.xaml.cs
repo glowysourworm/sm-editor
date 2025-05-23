@@ -13,6 +13,7 @@ namespace SMEditor
             InitializeComponent();
 
             this.DataContext = new MainViewModel();
+
         }
 
         private void OpenSpriteSheet_Click(object sender, RoutedEventArgs e)
@@ -23,6 +24,19 @@ namespace SMEditor
             if (dialog.ShowDialog() == true && viewModel != null)
             {
                 viewModel.AnimatorViewModel.SpriteSheetFile = dialog.FileName;
+            }
+        }
+
+        private void AnimatorView_GLBackendEvent(object sender, string glMessage)
+        {
+            var viewModel = this.DataContext as MainViewModel;
+
+            if (viewModel != null)
+            {
+                viewModel.Logs.Add(new LogViewModel()
+                {
+                    Message = glMessage
+                });
             }
         }
     }

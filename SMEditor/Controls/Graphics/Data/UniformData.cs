@@ -12,14 +12,10 @@ namespace SMEditor.Controls.Grpahics.Data
         /// </summary>
         public T Value { get; private set; }
 
-        public UniformData(string name, ActiveUniformType type)
+        public UniformData(string name, ActiveUniformType type, T value)
         {
             this.Type = type;
             this.Name = name;
-        }
-
-        public void SetValue(T value)
-        {
             this.Value = value;
         }
     }
