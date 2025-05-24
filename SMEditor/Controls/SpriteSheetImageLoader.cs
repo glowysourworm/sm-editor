@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Drawing;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 using OpenTK.Graphics.OpenGL4;
-using OpenTK.Mathematics;
 
 using RogueCreator.Graphics.GLModel.Program;
 
@@ -122,7 +119,7 @@ namespace SMEditor.Controls
                 new GLLine(CoordinateConverter.ConvertToNormalizedXYScene(x2, y2, _bitmap.PixelWidth, _bitmap.PixelHeight)),
                 new GLLine(CoordinateConverter.ConvertToNormalizedXYScene(x1, y2, _bitmap.PixelWidth, _bitmap.PixelHeight))
             };
-            var dataStream = new DataStream(rubberband.Length, 
+            var dataStream = new DataStream(rubberband.Length,
                                             rubberband.First().GetElementSize(PrimitiveType.Lines),
                                             rubberband.First().GetStreamSize(PrimitiveType.Lines));
 
@@ -147,13 +144,7 @@ namespace SMEditor.Controls
             var x2 = (int)(_bitmap.PixelWidth * 3 / (double)4.0);
             var y2 = (int)(_bitmap.PixelHeight * 3 / (double)4.0);
 
-            var rubberbandPolygon = new GLLine[4]
-            {
-                new GLLine(CoordinateConverter.ConvertToNormalizedXYScene(x1, y1, _bitmap.PixelWidth, _bitmap.PixelHeight)),
-                new GLLine(CoordinateConverter.ConvertToNormalizedXYScene(x2, y1, _bitmap.PixelWidth, _bitmap.PixelHeight)),
-                new GLLine(CoordinateConverter.ConvertToNormalizedXYScene(x2, y2, _bitmap.PixelWidth, _bitmap.PixelHeight)),
-                new GLLine(CoordinateConverter.ConvertToNormalizedXYScene(x1, y2, _bitmap.PixelWidth, _bitmap.PixelHeight))
-            };
+            var rubberbandQuad = CoordinateConverter.CreateQuadNormalizedXYScene(0, 0, _bitmap.PixelWidth, _bitmap.PixelHeight, _bitmap.PixelWidth, _bitmap.PixelHeight);
 
             // Procedure: Make an IGLVector (of Quads) - one per pixel. These may be 
             //            resized for zoom. So, this only needs to be loaded once, or
@@ -189,14 +180,12 @@ namespace SMEditor.Controls
             //
 
             // NOTE***  THE CAPACITY FOR THE STREAM DOES NOT FOLLOW LINES! NEEDS TO BE REWORKED
-            var rubberbandDataStream = new DataStream(rubberbandPolygon.Length, rubberbandPolygon.First().GetElementSize(PrimitiveType.Lines), rubberbandPolygon.First().GetStreamSize(PrimitiveType.Lines));
+            var rubberbandDataStream = new DataStream(1, rubberbandQuad.GetElementSize(PrimitiveType.Triangles), rubberbandQuad.GetStreamSize(PrimitiveType.Triangles));
             var sceneDataStream = new DataStream(1, sceneQuad.GetElementSize(PrimitiveType.Triangles), sceneQuad.GetStreamSize(PrimitiveType.Triangles));
             var frameDataStream = new DataStream(1, frameQuad.GetElementSize(PrimitiveType.Triangles), frameQuad.GetStreamSize(PrimitiveType.Triangles));
 
             // Build the data streams
-            foreach (var point in rubberbandPolygon)
-                point.StreamBuffer(rubberbandDataStream, PrimitiveType.Lines);
-
+            rubberbandQuad.StreamBuffer(rubberbandDataStream, PrimitiveType.Triangles);
             sceneQuad.StreamBuffer(sceneDataStream, PrimitiveType.Triangles);
             frameQuad.StreamBuffer(frameDataStream, PrimitiveType.Triangles);
 
@@ -210,6 +199,7 @@ namespace SMEditor.Controls
 
             var frameTextureUniform = frameShaderFrag.Uniforms1i.FirstOrDefault(x => x.Name == "frameTexture");
             var sceneTextureUniform = frameShaderFrag.Uniforms1i.FirstOrDefault(x => x.Name == "sceneTexture");
+            var componentTextureUniform = frameShaderFrag.Uniforms1i.FirstOrDefault(x => x.Name == "componentTexture");
             var rubberbandColorUniform = rubberbandShaderFrag.Uniforms4.FirstOrDefault(x => x.Name == "rubberbandColor");
 
             // Create the GL frame buffer for our scene
@@ -238,7 +228,7 @@ namespace SMEditor.Controls
                                              PixelFormat.Rgba,
                                              PixelType.UnsignedByte);
 
-            var sceneTexture = new GLTexture(pinnedPointer,                     // UN-MANAGED IntPtr to pixel data!
+            var sceneTexture = new GLTexture(pinnedPointer,                       // UN-MANAGED IntPtr to pixel data!
                                              _bitmap.PixelWidth,
                                              _bitmap.PixelHeight,
                                              textureIndex++,                    // For multiple textures, remember to increment texture index! TEXTURE_UNIT[index]
@@ -246,12 +236,20 @@ namespace SMEditor.Controls
                                              PixelFormat.Rgba,
                                              PixelType.UnsignedByte);
 
+            var componentTexture = new GLTexture(IntPtr.Zero,                       
+                                                 _bitmap.PixelWidth,
+                                                 _bitmap.PixelHeight,
+                                                 textureIndex++,                    // For multiple textures, remember to increment texture index! TEXTURE_UNIT[index]
+                                                 TextureUnit.Texture2,              // MUST MATCH TEXTURE INDEX!
+                                                 PixelFormat.Rgba,
+                                                 PixelType.UnsignedByte);
+
             var rubberbandVBO = new GLVertexBuffer<float>(vertexBufferIndex++, rubberbandDataStream, rubberbandShaderVert.VertexAttributes);
             var sceneVBO = new GLVertexBuffer<float>(vertexBufferIndex++, sceneDataStream, sceneShaderVert.VertexAttributes);
             var frameVBO = new GLVertexBuffer<float>(vertexBufferIndex++, frameDataStream, frameShaderVert.VertexAttributes);
 
             // Create VAOs for each GLShaderProgram
-            var rubberbandVAO = new GLVertexArray(PrimitiveType.Lines, rubberbandVBO);
+            var rubberbandVAO = new GLVertexArray(PrimitiveType.Triangles, rubberbandVBO);
             var sceneVAO = new GLVertexArray(PrimitiveType.Triangles, sceneVBO);
             var frameVAO = new GLVertexArray(PrimitiveType.Triangles, frameVBO);
 
@@ -262,10 +260,10 @@ namespace SMEditor.Controls
             // Save the rubberband program
             _rubberbandProgram = rubberbandProgram;
 
-            var program = new GLRenderingProgram(frameBuffer, rubberbandProgram, 
-                                                 sceneProgram, frameProgram, 
-                                                 frameTexture, sceneTexture, 
-                                                 frameTextureUniform, sceneTextureUniform, rubberbandColorUniform);
+            var program = new GLRenderingProgram(frameBuffer, rubberbandProgram,
+                                                 sceneProgram, frameProgram,
+                                                 frameTexture, sceneTexture, componentTexture,
+                                                 frameTextureUniform, sceneTextureUniform, componentTextureUniform, rubberbandColorUniform);
 
             program.Compile();
 

@@ -27,7 +27,6 @@ namespace SMEditor.Controls.Graphics.PrimitiveData
 
         public int GetElementSize(PrimitiveType primitiveType)
         {
-            // These should probably be tested! :)
             switch (primitiveType)
             {
                 case PrimitiveType.Triangles:
@@ -59,7 +58,7 @@ namespace SMEditor.Controls.Graphics.PrimitiveData
 
             // [x1, y1], [x2, y2], ... [xn, yn]
 
-            outputStream.Write(this.Left);
+            outputStream.Write(this.Left);              // vec2
             outputStream.Write(this.Bottom);
 
             outputStream.Write(this.Left);

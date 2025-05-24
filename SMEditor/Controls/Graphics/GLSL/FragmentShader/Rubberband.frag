@@ -14,5 +14,5 @@ void main()
     // NOTE:  This coordinate transfer is set up with just basic 2D normalized coordinates. The
     //        texture 2D coordinates are neglected because they can be easily calculated
     //
-    outputColor = vec4(1,1,1,1);
+    outputColor = vec4(1,1,1,0.5);
 }

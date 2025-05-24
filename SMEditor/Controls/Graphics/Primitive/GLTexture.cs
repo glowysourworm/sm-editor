@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Windows.Media;
 
 using OpenTK.Graphics.OpenGL4;
+using OpenTK.Mathematics;
 
 using SMEditor.Controls.Graphics.Primitive.Interface;
+using PixelFormat = OpenTK.Graphics.OpenGL4.PixelFormat;
 
 namespace SMEditor.Controls.Graphics.Primitive
 {
@@ -12,6 +15,7 @@ namespace SMEditor.Controls.Graphics.Primitive
         //
         const int TEXTURE_MINIMAP_LEVEL = 0;
 
+        public int ProgramHandle { get; private set; }
         public int Handle { get; private set; }
         public bool IsCreated { get; private set; }
         public bool IsBound { get; private set; }
@@ -43,6 +47,8 @@ namespace SMEditor.Controls.Graphics.Primitive
         {
             if (this.IsCreated)
                 throw new Exception("GLTexture already created in the backend");
+
+            this.ProgramHandle = programHandle;
 
             // Procedure
             //
@@ -85,6 +91,19 @@ namespace SMEditor.Controls.Graphics.Primitive
 
             this.IsCreated = true;
             this.IsBound = true;
+        }
+
+        public void ClearColor(Color color)
+        {
+            if (!this.IsCreated)
+                throw new Exception("GLTexture already deleted from the backend");
+
+            if (!this.IsBound)
+                throw new Exception("GLTexture must be bound before calling ClearColor");
+
+            var colorVector = new Vector4(color.ScR, color.ScG, color.ScB, color.ScA);
+
+            GL.ClearTexImage(this.ProgramHandle, 0, PixelFormat.Rgba, PixelType.UnsignedByte, ref colorVector);
         }
 
         public void Teardown()

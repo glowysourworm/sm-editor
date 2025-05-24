@@ -329,6 +329,9 @@ namespace SMEditor.Controls
         {
             _graphicsLoader.Load(this.ImageFileName);
 
+            this.Zoom = 1;
+            this.Offset = new Point(0, 0);
+
             UpdateViewport();
         }
 

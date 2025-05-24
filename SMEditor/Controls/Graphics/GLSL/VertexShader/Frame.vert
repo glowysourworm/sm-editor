@@ -23,7 +23,7 @@ void main()
     //
 
     // TODO: INVERT TEXTURE IN MEMORY!!! (This was to flip the texture. Not sure why this happens)
-    gl_Position = vec4(vertex.x, -1 * vertex.y, 0, 1.0);
+    gl_Position = vec4(vertex.x, vertex.y, 0, 1.0);
 
     // Struct data should be copied over for use by the fragment shader
     //
