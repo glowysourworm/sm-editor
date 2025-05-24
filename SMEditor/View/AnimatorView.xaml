@@ -86,26 +86,21 @@
 
             <GridSplitter Grid.Column="0" HorizontalAlignment="Right" BorderBrush="Gray" BorderThickness="1" />
 
-            <!-- Image -->
-            <Border x:Name="ImageBorder" Grid.Column="1" ClipToBounds="True">
-                <ScrollViewer x:Name="ImageScroll" 
-                              CanContentScroll="true" 
-                              VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-                    <controls:SpriteSheetEditor x:Name="ImageEditor"
-                                                ClipToBounds="True"
-                                                ImageFileName="{Binding SpriteSheetFile}"
-                                                BackgroundColor="{Binding BackgroundColor}"
-                                                SpriteGridColor="{Binding SpriteGridColor}"
-                                                SpriteSheetColumns="{Binding SpriteSheetColumns}"
-                                                SpriteSheetRows="{Binding SpriteSheetRows}"
-                                                Zoom="{Binding Zoom, Mode=TwoWay}"
-                                                Offset="{Binding Offset, Mode=TwoWay}"
-                                                BrushSize="{Binding BrushSize}"
-                                                SelectedColor="{Binding SelectedColor, NotifyOnSourceUpdated=True}"
-                                                >
-                    </controls:SpriteSheetEditor>
-                </ScrollViewer>
-            </Border>
+            <!-- Image (WIN FORMS HOST NOT CLIPPING! Performance Issue with scrollable fix!) -->
+            <Grid x:Name="ImageBorder" Grid.Column="1" ClipToBounds="True">
+                <controls:SpriteSheetEditor x:Name="ImageEditor"
+                                            ClipToBounds="True"
+                                            ImageFileName="{Binding SpriteSheetFile}"
+                                            BackgroundColor="{Binding BackgroundColor}"
+                                            SpriteGridColor="{Binding SpriteGridColor}"
+                                            SpriteSheetColumns="{Binding SpriteSheetColumns}"
+                                            SpriteSheetRows="{Binding SpriteSheetRows}"
+                                            Zoom="{Binding Zoom, Mode=TwoWay}"
+                                            Offset="{Binding Offset, Mode=TwoWay}"
+                                            BrushSize="{Binding BrushSize}"
+                                            SelectedColor="{Binding SelectedColor, NotifyOnSourceUpdated=True}">
+                </controls:SpriteSheetEditor>
+            </Grid>
 
             <!-- Animator -->
 

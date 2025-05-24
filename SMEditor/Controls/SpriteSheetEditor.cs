@@ -25,7 +25,7 @@ using PixelFormat = OpenTK.Graphics.OpenGL4.PixelFormat;
 
 namespace SMEditor.Controls
 {
-    public class SpriteSheetEditor : ScrollableWindowsFormsHost
+    public class SpriteSheetEditor : WindowsFormsHost
     {
         #region Dependency Properties
         public static readonly DependencyProperty ImageFileNameProperty =
@@ -125,17 +125,13 @@ namespace SMEditor.Controls
             this.Child = openGLControl;
             this.SizeChanged += (sender, e) =>
             {
-                // -> Invalidate
-                //UpdateViewport();
+                openGLControl.Width = (int)this.RenderSize.Width;
+                openGLControl.Height = (int)this.RenderSize.Height;
             };
 
             openGLControl.SizeChanged += (sender, e) =>
             {
-                this.Width = _graphicsLoader.GetGraphics().Width;
-                this.Height = _graphicsLoader.GetGraphics().Height;
-
-                // -> Invalidate
-                //UpdateViewport();
+                // DON'T CHANGE SIZE OF GL CONTROL! Set to parent size only!
             };
 
             openGLControl.MouseWheel += (sender, e) =>
@@ -226,6 +222,8 @@ namespace SMEditor.Controls
             var delta = point - _mouseRightPoint;
 
             this.Offset = new Point(this.Offset.X + (delta.X * this.Zoom), this.Offset.Y + (delta.Y * this.Zoom));
+
+            UpdateViewport();
         }
 
         private void ZoomImpl(bool zoomIn)
@@ -240,44 +238,18 @@ namespace SMEditor.Controls
         }
         #endregion
 
-        /*
-        protected override Size MeasureOverride(Size constraint)
-        {
-            if (_graphicsLoader.IsLoaded())
-                return new Size(_graphicsLoader.GetGraphics().Width * this.Zoom, _graphicsLoader.GetGraphics().Height * this.Zoom);
-
-            return base.MeasureOverride(constraint);
-        }
-
-        protected override Size ArrangeOverride(Size finalSize)
-        {
-            return base.ArrangeOverride(finalSize);
-        }
-        */
-
         protected void UpdateViewport()
         {
-            // Procedure:  This should take care of all sizing / zoom / offset / parent-child 
-            //             rendering viewport issues in one method
-            //
-            // 1) Determine zoomed image size
-            // 2) Set control size to this size
-            // 3) Set wrapper scroll viewer to constrained size (Parent control)
-            // 4) Set GL graphics to proper viewport (zoom scale wasn't needed, yet)
-            // 5) 
+            // Procedure:  This will set just the viewport of the GL backend
+            // 
 
             if (_graphicsLoader == null)
                 return;
 
             if (_graphicsLoader.IsLoaded())
             {
-                // Zoom (sets the viewport) (zoom won't be used; but it's in the render program)
-                _graphicsLoader.SetZoom(this.Zoom);
-
-                // Offset
-                _graphicsLoader.GetGraphics().Invalidate();
-
-                InvalidateVisual();
+                // Zoom / Offset (sets GL viewport)
+                _graphicsLoader.SetViewport(this.Zoom, new System.Drawing.Point((int)this.Offset.X, (int)this.Offset.Y));
             }
         }
 
@@ -285,7 +257,7 @@ namespace SMEditor.Controls
         {
             _graphicsLoader.Load(this.ImageFileName);
 
-            InvalidateVisual();
+            UpdateViewport();
         }
 
         protected void HandleMouseWheel(double delta, bool ctrl)
@@ -293,8 +265,8 @@ namespace SMEditor.Controls
             if (ctrl)
                 ZoomImpl(delta > 0);
 
-            else
-                this.ParentScrollViewer.ScrollToVerticalOffset(this.ParentScrollViewer.VerticalOffset - delta);
+            //else
+            //    this.ParentScrollViewer.ScrollToVerticalOffset(this.ParentScrollViewer.VerticalOffset - delta);
         }
 
         protected override void OnRender(DrawingContext drawingContext)

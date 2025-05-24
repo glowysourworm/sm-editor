@@ -1,11 +1,10 @@
 ﻿using System;
+using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 using OpenTK.GLControl;
 using OpenTK.Graphics.OpenGL4;
-
-using RogueCreator.Graphics.GLModel.Program;
 
 using SMEditor.Controls.Graphics.Program.Interface;
 
@@ -76,17 +75,6 @@ namespace SMEditor.Controls.Graphics
             Invalidate();
         }
 
-        public void SetZoom(int zoomLevel)
-        {
-            if (_renderingProgramLoaded)
-                _renderingProgram.SetZoom(zoomLevel);
-        }
-
-        public int GetZoom()
-        {
-            return _renderingProgram.GetZoom();
-        }
-
         public void UnloadScene()
         {
             // Clear the backend
@@ -95,12 +83,18 @@ namespace SMEditor.Controls.Graphics
             Invalidate();
         }
 
-        public void SetViewport(int offsetX, int offsetY, int width, int height)
+        /// <summary>
+        /// Sets viewport from width, height (of control), zoom, and offset
+        /// </summary>
+        public void SetViewport(int imageWidth, int imageHeight, int zoomLevel, Point offset)
         {
             if (!_glInitialized)
                 throw new GLException("OpenGL not yet initialized:  GraphicsControl.SetViewport");
 
-            GL.Viewport(offsetX, offsetY, width, height);
+            var width = imageWidth * zoomLevel;
+            var height = imageHeight * zoomLevel;
+
+            GL.Viewport((int)(offset.X * zoomLevel), (int)(offset.Y * zoomLevel), width, height);
 
             Invalidate();
         }

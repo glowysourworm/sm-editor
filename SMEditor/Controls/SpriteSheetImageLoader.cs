@@ -89,10 +89,6 @@ namespace SMEditor.Controls
                 var program = BuildProgram();
 
                 _openGLControl.LoadScene(program);
-                _openGLControl.SetViewport(0, 0, _bitmap.PixelWidth, _bitmap.PixelHeight);
-                _openGLControl.Width = _bitmap.PixelWidth;
-                _openGLControl.Height = _bitmap.PixelHeight;
-                //_openGLControl.BackColor = System.Drawing.Color.White;
 
                 OnLog("OpenGL loaded successfully!");
             }
@@ -102,19 +98,12 @@ namespace SMEditor.Controls
             }
         }
 
-        public void SetZoom(int zoomLevel)
+        public void SetViewport(int zoomLevel, Point offset)
         {
             if (!this.IsLoaded())
                 throw new Exception("Trying to set viewport before loading graphics:  SpriteSheetImageLoader.SetViewport");
 
-            if (_openGLControl.GetZoom() == zoomLevel)
-                return;
-
-            _openGLControl.SetZoom(zoomLevel);
-            _openGLControl.SetViewport(0, 0, (int)(_bitmap.PixelWidth * (double)zoomLevel), (int)(_bitmap.PixelHeight * (double)zoomLevel));
-
-            _openGLControl.Width = _bitmap.PixelWidth * zoomLevel;
-            _openGLControl.Height = _bitmap.PixelHeight * zoomLevel;
+            _openGLControl.SetViewport(_bitmap.PixelWidth, _bitmap.PixelHeight, zoomLevel, offset);
         }
 
         /// <summary>

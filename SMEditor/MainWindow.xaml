@@ -23,7 +23,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="250" />
+            <!--RowDefinition Height="250" /-->
         </Grid.RowDefinitions>
 
         <Menu>
@@ -44,13 +44,13 @@
 
         <GridSplitter Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" BorderBrush="Gray" BorderThickness="1" />
 
-        <ListBox Grid.Row="2" Grid.ColumnSpan="2" ItemsSource="{Binding Logs}">
+        <!--ListBox Grid.Row="2" Grid.ColumnSpan="2" ItemsSource="{Binding Logs}">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <TextBlock Text="{Binding Message}" />
                 </DataTemplate>
             </ListBox.ItemTemplate>
-        </ListBox>
+        </ListBox-->
 
     </Grid>
 </Window>
