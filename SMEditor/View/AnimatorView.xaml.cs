@@ -3,6 +3,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
+using SMEditor.ViewModel;
+
 namespace SMEditor.View
 {
     public partial class AnimatorView : UserControl
@@ -27,6 +29,13 @@ namespace SMEditor.View
         {
             if (this.GLBackendEvent != null)
                 this.GLBackendEvent(this, message);
+
+            // Also, just put logs here for now. There were some issues getting the win forms host
+            // to scroll without a nasty lag. So, let's debug this way for a while.
+            //this.GLLogMessages.Items.Add(new LogViewModel()
+            //{
+            //    Message = message
+            //});
         }
 
         private void ColorPicker_SelectedColorChanged(object sender, System.Windows.RoutedPropertyChangedEventArgs<System.Windows.Media.Color?> e)

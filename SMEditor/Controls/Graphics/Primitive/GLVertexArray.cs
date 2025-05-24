@@ -3,6 +3,7 @@
 using OpenTK.Graphics.OpenGL4;
 
 using SMEditor.Controls.Graphics.Primitive.Interface;
+using SMEditor.Controls.Graphics.PrimitiveData;
 
 namespace SMEditor.Controls.Graphics.Primitive
 {
@@ -71,6 +72,17 @@ namespace SMEditor.Controls.Graphics.Primitive
             this.IsCreated = false;
             this.IsBound = false;
             this.Handle = 0;
+        }
+
+        public void ReBuffer(DataStream stream)
+        {
+            if (!this.IsCreated)
+                throw new Exception("GLVertexArray already deleted from the backend");
+
+            if (!this.IsBound)
+                throw new Exception("GLVertexArray must be bound before calling ReBuffer()");
+
+            _vertexBuffer.ReBuffer(stream);
         }
 
         public void Draw()

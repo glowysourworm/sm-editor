@@ -19,6 +19,8 @@ namespace SMEditor.Controls.Graphics
         const string FRAME_VERT = "Frame.vert";
         const string SCENE_FRAG = "Scene.frag";
         const string SCENE_VERT = "Scene.vert";
+        const string RUBBERBAND_FRAG = "Rubberband.frag";
+        const string RUBBERBAND_VERT = "Rubberband.vert";
 
         static Dictionary<GLSLResource, ShaderData> _cache;
 
@@ -63,6 +65,10 @@ namespace SMEditor.Controls.Graphics
                                          return new ShaderData(GLSLResource.SceneFragmentShader, ShaderType.FragmentShader, resourceData);
                                      case SCENE_VERT:
                                          return new ShaderData(GLSLResource.SceneVertexShader, ShaderType.VertexShader, resourceData);
+                                     case RUBBERBAND_FRAG:
+                                         return new ShaderData(GLSLResource.RubberbandFragmentShader, ShaderType.FragmentShader, resourceData);
+                                     case RUBBERBAND_VERT:
+                                         return new ShaderData(GLSLResource.RubberbandVertexShader, ShaderType.VertexShader, resourceData);
                                      default:
                                          throw new Exception("Unhandled GLSL resource name GLSLCache.cs");
                                  }

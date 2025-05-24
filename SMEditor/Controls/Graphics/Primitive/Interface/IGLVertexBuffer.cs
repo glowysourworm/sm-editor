@@ -1,4 +1,6 @@
-﻿namespace SMEditor.Controls.Graphics.Primitive.Interface
+﻿using SMEditor.Controls.Graphics.PrimitiveData;
+
+namespace SMEditor.Controls.Graphics.Primitive.Interface
 {
     /// <summary>
     /// Interface for the VBO (Vertex Buffer Object) in OpenGL. Several of these belong to the VAO (IGLVertexBuffer)
@@ -24,5 +26,10 @@
         /// Gets size of buffer in bytes
         /// </summary>
         int GetBufferSize();
+
+        /// <summary>
+        /// Sets up a new data stream on the GL backend. Must be the same size / type of the original.
+        /// </summary>
+        void ReBuffer(DataStream stream);
     }
 }

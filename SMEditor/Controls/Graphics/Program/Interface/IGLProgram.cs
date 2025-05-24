@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 
 using SMEditor.Controls.Graphics.Primitive.Interface;
+using SMEditor.Controls.Graphics.PrimitiveData;
+using SMEditor.Controls.Graphics.PrimitiveData.Interface;
 using SMEditor.Controls.Grpahics.Data;
 
 namespace SMEditor.Controls.Graphics.Program.Interface
@@ -65,6 +67,11 @@ namespace SMEditor.Controls.Graphics.Program.Interface
         /// Sets the program to active - GL.UseProgram
         /// </summary>
         void Bind(bool bind);
+
+        /// <summary>
+        /// Sets the output stream (must be the same size as the original stream) (should be the same data type; but GL doesn't really care, it's agnostic) ^_^
+        /// </summary>
+        void ReBuffer(DataStream stream);
 
         /// <summary>
         /// Deletes the contents of the program from the GL backend. NOTE*** THIS MUST BE CALLED BEFORE COMPILING

@@ -1,6 +1,7 @@
 ﻿using System;
 
 using OpenTK.Graphics.OpenGL;
+using OpenTK.Mathematics;
 
 using SMEditor.Controls.Graphics;
 using SMEditor.Controls.Graphics.Primitive;
@@ -19,11 +20,13 @@ namespace RogueCreator.Graphics.GLModel.Program
         public bool IsCompiled { get; private set; }
 
         readonly IGLFrameBuffer _frameBuffer;
+        readonly IGLProgram _rubberbandSelectProgram;
         readonly IGLProgram _sceneProgram;
         readonly IGLProgram _frameProgram;
 
         readonly UniformData<int> _frameTextureUniform;                     // Frame texture:  Used for frame buffer attachment - rendered by: { frame program }
         readonly UniformData<int> _sceneTextureUniform;
+        readonly UniformData<Vector4> _rubberbandColorUniform;
 
         GLTexture _frameTexture;
         GLTexture _sceneTexture;
@@ -31,18 +34,22 @@ namespace RogueCreator.Graphics.GLModel.Program
         int _zoomLevel = 1;
 
         public GLRenderingProgram(IGLFrameBuffer frameBuffer,
+                                  IGLProgram rubberbandSelectProgram, 
                                   IGLProgram sceneProgram,
                                   IGLProgram frameProgram,
                                   GLTexture frameTexture,
                                   GLTexture sceneTexture,
                                   UniformData<int> frameTextureUniform,
-                                  UniformData<int> sceneTextureUniform)
+                                  UniformData<int> sceneTextureUniform,
+                                  UniformData<Vector4> rubberbandColorUniform)
         {
             _frameBuffer = frameBuffer;
+            _rubberbandSelectProgram = rubberbandSelectProgram;
             _sceneProgram = sceneProgram;
             _frameProgram = frameProgram;
             _frameTextureUniform = frameTextureUniform;
             _sceneTextureUniform = sceneTextureUniform;
+            _rubberbandColorUniform = rubberbandColorUniform;
             _frameTexture = frameTexture;
             _sceneTexture = sceneTexture;
         }
@@ -52,12 +59,16 @@ namespace RogueCreator.Graphics.GLModel.Program
             if (this.IsCompiled)
                 throw new Exception("Already called IGLLevelRenderingProgram.Compile()");
 
+            _rubberbandSelectProgram.Compile();
             _sceneProgram.Compile();
             _frameProgram.Compile();
 
             // Create the textures:  (NOTE** Program handle not used currently)
             _frameTexture.Create(_frameProgram.Handle);
             _sceneTexture.Create(_sceneProgram.Handle);
+
+            _rubberbandSelectProgram.Bind(true);
+            _rubberbandSelectProgram.BindUniform(_rubberbandColorUniform);
 
             _sceneProgram.Bind(true);
             _sceneProgram.BindUniform(_sceneTextureUniform);
@@ -95,6 +106,7 @@ namespace RogueCreator.Graphics.GLModel.Program
             _frameBuffer.Teardown();
 
             // Programs
+            _rubberbandSelectProgram.Delete();
             _sceneProgram.Delete();
             _frameProgram.Delete();
 
@@ -140,11 +152,19 @@ namespace RogueCreator.Graphics.GLModel.Program
             // Activate Color Attachment 0
             GL.DrawBuffer(DrawBufferMode.ColorAttachment1);
 
-            // Render the VISIBLE scene -> Color Attachment 0
+            // Render the scene (bitmap)
             _sceneProgram.Bind(true);
             _sceneProgram.DrawAll();
 
             GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
+
+            GL.LineWidth(5);
+
+            // Render the rubberband select polygon
+            _rubberbandSelectProgram.Bind(true);
+            _rubberbandSelectProgram.DrawAll();
+
+            GL.LineWidth(1);
 
             // Render the frame buffer contents
             _frameBuffer.Bind(false);

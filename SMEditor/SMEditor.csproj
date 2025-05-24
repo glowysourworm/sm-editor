@@ -33,7 +33,9 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Controls\Graphics\GLSL\FragmentShader\Frame.frag" />
+    <EmbeddedResource Include="Controls\Graphics\GLSL\FragmentShader\Rubberband.frag" />
     <EmbeddedResource Include="Controls\Graphics\GLSL\FragmentShader\Scene.frag" />
+    <EmbeddedResource Include="Controls\Graphics\GLSL\VertexShader\Rubberband.vert" />
     <EmbeddedResource Include="Controls\Graphics\GLSL\VertexShader\Frame.vert" />
     <EmbeddedResource Include="Controls\Graphics\GLSL\VertexShader\Scene.vert" />
   </ItemGroup>

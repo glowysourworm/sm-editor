@@ -1,7 +1,7 @@
-﻿using System.Numerics;
-using System.Windows.Media;
+﻿using System.Windows.Media;
 
 using OpenTK.Graphics.OpenGL4;
+using OpenTK.Mathematics;
 
 using SMEditor.Controls.Graphics.PrimitiveData.Interface;
 

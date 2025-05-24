@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Forms;
 using System.Windows.Forms.Integration;
 using System.Windows.Forms.VisualStyles;
 using System.Windows.Input;
@@ -109,6 +110,13 @@ namespace SMEditor.Controls
 
         private readonly SpriteSheetImageLoader _graphicsLoader;
 
+        bool _mouseLeftDown;
+        bool _mouseRightDown;
+
+        Point _mouseLeftPoint;
+        Point _mouseRightPoint;
+        Point _mouseDragOffset;
+
         public SpriteSheetEditor()
         {
             this.BackgroundColor = Colors.Transparent;
@@ -136,80 +144,65 @@ namespace SMEditor.Controls
 
             openGLControl.MouseWheel += (sender, e) =>
             {
-                HandleMouseWheel(e.Delta, Keyboard.Modifiers == ModifierKeys.Control);
+                HandleMouseWheel(e.Delta, Keyboard.Modifiers == ModifierKeys.Control, e.Location.X, e.Location.Y);
+            };
+
+            openGLControl.MouseDown += (sender, e) =>
+            {
+                HandleMouseDown(e.Button == System.Windows.Forms.MouseButtons.Left, 
+                                e.Button == System.Windows.Forms.MouseButtons.Right, e.Location.X, e.Location.Y);
+            };
+            openGLControl.MouseUp += (sender, e) =>
+            {
+                HandleMouseUp(e.Button == System.Windows.Forms.MouseButtons.Left,
+                              e.Button == System.Windows.Forms.MouseButtons.Right, e.Location.X, e.Location.Y);
+            };
+            openGLControl.MouseMove += (sender, e) =>
+            {
+                HandleMouseMove(e.Location.X, e.Location.Y);
             };
 
             _graphicsLoader = new SpriteSheetImageLoader(openGLControl);
+            _mouseDragOffset = new Point();
+            _mouseLeftPoint = new Point();
+            _mouseRightPoint = new Point();
         }
 
         #region Mouse Interaction
-        bool _mouseLeftDown;
-        bool _mouseRightDown;
-
-        Point _mouseLeftPoint;
-        Point _mouseRightPoint;
-
-        protected override void OnMouseMove(MouseEventArgs e)
+        protected override void OnMouseMove(System.Windows.Input.MouseEventArgs e)
         {
             base.OnMouseMove(e);
-
-            if (_mouseLeftDown)
-            {
-            }
-
-            if (_mouseRightDown)
-            {
-                TranslateImpl(e.GetPosition(this));
-            }
+            HandleMouseMove(e.GetPosition(this).X, e.GetPosition(this).Y);
         }
         protected override void OnMouseWheel(MouseWheelEventArgs e)
         {
             base.OnMouseWheel(e);
-
-            HandleMouseWheel(e.Delta, Keyboard.Modifiers == ModifierKeys.Control);
+            HandleMouseWheel(e.Delta, Keyboard.Modifiers == ModifierKeys.Control, e.GetPosition(this).X, e.GetPosition(this).Y);
         }
 
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
         {
             base.OnMouseLeftButtonDown(e);
-
-            _mouseLeftDown = true;
-            _mouseLeftPoint = e.GetPosition(this);
+            HandleMouseDown(true, false, e.GetPosition(this).X, e.GetPosition(this).Y);
         }
         protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
         {
             base.OnMouseLeftButtonUp(e);
-
-            // Mouse Left Action
-            if (_mouseLeftDown)
-            {
-
-            }
-
-            _mouseLeftDown = false;
+            HandleMouseUp(true, false, e.GetPosition(this).X, e.GetPosition(this).Y);
         }
 
         protected override void OnMouseRightButtonDown(MouseButtonEventArgs e)
         {
             base.OnMouseRightButtonDown(e);
-
-            _mouseRightDown = true;
-            _mouseRightPoint = e.GetPosition(this);
+            HandleMouseDown(false, true, e.GetPosition(this).X, e.GetPosition(this).Y);
         }
         protected override void OnMouseRightButtonUp(MouseButtonEventArgs e)
         {
             base.OnMouseRightButtonUp(e);
-
-            // Mouse Right Action
-            if (_mouseRightDown)
-            {
-                TranslateImpl(e.GetPosition(this));
-            }
-
-            _mouseRightDown = false;
+            HandleMouseUp(false, true, e.GetPosition(this).X, e.GetPosition(this).Y);
         }
 
-        protected override void OnMouseLeave(MouseEventArgs e)
+        protected override void OnMouseLeave(System.Windows.Input.MouseEventArgs e)
         {
             base.OnMouseLeave(e);
 
@@ -217,22 +210,101 @@ namespace SMEditor.Controls
             _mouseRightDown = false;
         }
 
-        private void TranslateImpl(Point point)
+        protected void HandleMouseDown(bool leftButton, bool rightButton, double positionX, double positionY)
         {
-            var delta = point - _mouseRightPoint;
+            if (leftButton)
+            {
+                _mouseLeftDown = true;
+                _mouseLeftPoint.X = positionX;
+                _mouseLeftPoint.Y = positionY;
+            }
 
-            this.Offset = new Point(this.Offset.X + (delta.X * this.Zoom), this.Offset.Y + (delta.Y * this.Zoom));
+            // Drag
+            else if (rightButton)
+            {
+                _mouseRightDown = true;
+
+                // Start where the offset began
+                _mouseRightPoint.X = positionX;
+                _mouseRightPoint.Y = positionY;
+                _mouseDragOffset.X = this.Offset.X;
+                _mouseDragOffset.Y = this.Offset.Y;
+            }
+        }
+        protected void HandleMouseUp(bool leftButton, bool rightButton, double positionX, double positionY)
+        {
+            if (leftButton)
+            {
+                // Mouse Left Action
+                if (_mouseLeftDown)
+                {
+                    RubberbandSelectImpl(positionX, positionY);
+                }
+
+                _mouseLeftDown = false;
+            }
+
+            else if (rightButton)
+            {
+                // Mouse Right Action
+                if (_mouseRightDown)
+                {
+                    // Uses Current Offset
+                    TranslateImpl(positionX, positionY);
+                }
+
+                _mouseRightDown = false;
+            }
+        }
+        protected void HandleMouseMove(double positionX, double positionY)
+        {
+            if (_mouseLeftDown)
+            {
+                RubberbandSelectImpl(positionX, positionY);
+            }
+
+            if (_mouseRightDown)
+            {
+                TranslateImpl(positionX, positionY);
+            }
+        }
+        protected void HandleMouseWheel(double delta, bool ctrl, double positionX, double positionY)
+        {
+            if (ctrl)
+                ZoomImpl(delta > 0, positionX, positionY);
+
+            //else
+            //    this.ParentScrollViewer.ScrollToVerticalOffset(this.ParentScrollViewer.VerticalOffset - delta);
+        }
+
+        private void RubberbandSelectImpl(double positionX, double positionY)
+        {
+            _graphicsLoader.SetRubberband((int)_mouseLeftPoint.X, (int)_mouseLeftPoint.Y, (int)positionX, (int)positionY);           
+        }
+        private void TranslateImpl(double positionX, double positionY)
+        {
+            var deltaX = (positionX - _mouseRightPoint.X) / (double)this.Zoom;
+            var deltaY = (-1 * (positionY - _mouseRightPoint.Y)) / (double)this.Zoom;
+
+            // Dragging
+            if (_mouseRightDown)
+                this.Offset = new Point(_mouseDragOffset.X + deltaX, _mouseDragOffset.Y + deltaY);
+
+            else
+                this.Offset = new Point((this.Offset.X + deltaX), (this.Offset.Y + deltaY));
 
             UpdateViewport();
         }
-
-        private void ZoomImpl(bool zoomIn)
+        private void ZoomImpl(bool zoomIn, double positionX, double positionY)
         {
             if (zoomIn)
-                this.Zoom = Math.Min(this.Zoom + 1, 20);
+                this.Zoom = Math.Min(this.Zoom + 1, 7);
 
             else
                 this.Zoom = Math.Max(this.Zoom - 1, 1);
+
+            //this.Offset = new Point(this.Offset.X + ((this.Offset.X - positionX) * 0.1),
+            //                        this.Offset.Y + ((this.Offset.Y - positionY) * 0.1));
 
             UpdateViewport();
         }
@@ -258,15 +330,6 @@ namespace SMEditor.Controls
             _graphicsLoader.Load(this.ImageFileName);
 
             UpdateViewport();
-        }
-
-        protected void HandleMouseWheel(double delta, bool ctrl)
-        {
-            if (ctrl)
-                ZoomImpl(delta > 0);
-
-            //else
-            //    this.ParentScrollViewer.ScrollToVerticalOffset(this.ParentScrollViewer.VerticalOffset - delta);
         }
 
         protected override void OnRender(DrawingContext drawingContext)

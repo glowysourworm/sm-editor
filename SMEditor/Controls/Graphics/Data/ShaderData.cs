@@ -54,12 +54,20 @@ namespace SMEditor.Controls.Grpahics.Data
                         new UniformData<int>("sceneTexture", ActiveUniformType.Sampler2D, 1)        // CONSTANTS!!! THESE MUST MATCH Texture Unit indices!!!
                     };
                     break;
+                case GLSLResource.RubberbandFragmentShader:
+                    this.Uniforms4 = new UniformData<Vector4>[] {
+                        new UniformData<Vector4>("rubberbandColor", ActiveUniformType.Sampler2D, new Vector4(1,1,1,1)) // Rubberband Color (white)
+                    };
+                    break;
 
                 // VERTEX SHADERS
                 case GLSLResource.FrameVertexShader:
                 case GLSLResource.SceneVertexShader:
                     this.VertexAttributes = new VertexAttributeData[2] { new VertexAttributeData(0, "vertex", ActiveUniformType.FloatVec2),
                                                                          new VertexAttributeData(1, "texcoord", ActiveUniformType.FloatVec2)};
+                    break;
+                case GLSLResource.RubberbandVertexShader:
+                    this.VertexAttributes = new VertexAttributeData[1] { new VertexAttributeData(0, "vertex", ActiveUniformType.FloatVec2) };
                     break;
                 default:
                     throw new System.Exception("Unhandled GLSLResource type:  ShaderData.cs");

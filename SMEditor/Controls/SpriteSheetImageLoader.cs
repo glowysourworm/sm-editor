@@ -7,6 +7,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 using OpenTK.Graphics.OpenGL4;
+using OpenTK.Mathematics;
 
 using RogueCreator.Graphics.GLModel.Program;
 
@@ -25,6 +26,7 @@ namespace SMEditor.Controls
     {
         private readonly GraphicsControl _openGLControl;
         private readonly IGLSLCache _glslCache;
+        private IGLProgram _rubberbandProgram;              // GL_LINES (Vector2[4])
 
         public event EventHandler<string> MessageEvent;
 
@@ -106,6 +108,29 @@ namespace SMEditor.Controls
             _openGLControl.SetViewport(_bitmap.PixelWidth, _bitmap.PixelHeight, zoomLevel, offset);
         }
 
+        public void SetRubberband(int x1, int y1, int x2, int y2)
+        {
+            if (!this.IsLoaded())
+                throw new Exception("Trying to set viewport before loading graphics:  SpriteSheetImageLoader.SetRubberband");
+
+            // Rubberband:  Vector2[] with 4 elements:  top-left, top-right, bottom-right, bottom-left           
+
+            var rubberband = new GLLine[4]
+            {
+                new GLLine(CoordinateConverter.ConvertToNormalizedXYScene(x1, y1, _bitmap.PixelWidth, _bitmap.PixelHeight)),
+                new GLLine(CoordinateConverter.ConvertToNormalizedXYScene(x2, y1, _bitmap.PixelWidth, _bitmap.PixelHeight)),
+                new GLLine(CoordinateConverter.ConvertToNormalizedXYScene(x2, y2, _bitmap.PixelWidth, _bitmap.PixelHeight)),
+                new GLLine(CoordinateConverter.ConvertToNormalizedXYScene(x1, y2, _bitmap.PixelWidth, _bitmap.PixelHeight))
+            };
+            var dataStream = new DataStream(rubberband.Length, 
+                                            rubberband.First().GetElementSize(PrimitiveType.Lines),
+                                            rubberband.First().GetStreamSize(PrimitiveType.Lines));
+
+            //_rubberbandProgram.ReBuffer(dataStream);
+
+            _openGLControl.Invalidate();
+        }
+
         /// <summary>
         /// Builds Compiled GL program for rendering the sprite sheet
         /// </summary>
@@ -116,6 +141,19 @@ namespace SMEditor.Controls
             var sceneBoundsUV = CoordinateConverter.CreateQuadNormalizedUVScene(0, 0, _bitmap.PixelWidth, _bitmap.PixelHeight, _bitmap.PixelWidth, _bitmap.PixelHeight);
             var frameQuad = new GLImageQuad(sceneBoundsXY, sceneBoundsUV);
             var sceneQuad = new GLImageQuad(sceneBoundsXY, sceneBoundsUV);
+
+            var x1 = (int)(_bitmap.PixelWidth / (double)4.0);
+            var y1 = (int)(_bitmap.PixelHeight / (double)4.0);
+            var x2 = (int)(_bitmap.PixelWidth * 3 / (double)4.0);
+            var y2 = (int)(_bitmap.PixelHeight * 3 / (double)4.0);
+
+            var rubberbandPolygon = new GLLine[4]
+            {
+                new GLLine(CoordinateConverter.ConvertToNormalizedXYScene(x1, y1, _bitmap.PixelWidth, _bitmap.PixelHeight)),
+                new GLLine(CoordinateConverter.ConvertToNormalizedXYScene(x2, y1, _bitmap.PixelWidth, _bitmap.PixelHeight)),
+                new GLLine(CoordinateConverter.ConvertToNormalizedXYScene(x2, y2, _bitmap.PixelWidth, _bitmap.PixelHeight)),
+                new GLLine(CoordinateConverter.ConvertToNormalizedXYScene(x1, y2, _bitmap.PixelWidth, _bitmap.PixelHeight))
+            };
 
             // Procedure: Make an IGLVector (of Quads) - one per pixel. These may be 
             //            resized for zoom. So, this only needs to be loaded once, or
@@ -149,10 +187,16 @@ namespace SMEditor.Controls
             // Element Size:   Total number of primitives (floats) to commit to the stream
             // Element Length: Total number of elements as seen by OpenGL - depends on the drawing type
             //
+
+            // NOTE***  THE CAPACITY FOR THE STREAM DOES NOT FOLLOW LINES! NEEDS TO BE REWORKED
+            var rubberbandDataStream = new DataStream(rubberbandPolygon.Length, rubberbandPolygon.First().GetElementSize(PrimitiveType.Lines), rubberbandPolygon.First().GetStreamSize(PrimitiveType.Lines));
             var sceneDataStream = new DataStream(1, sceneQuad.GetElementSize(PrimitiveType.Triangles), sceneQuad.GetStreamSize(PrimitiveType.Triangles));
             var frameDataStream = new DataStream(1, frameQuad.GetElementSize(PrimitiveType.Triangles), frameQuad.GetStreamSize(PrimitiveType.Triangles));
 
             // Build the data streams
+            foreach (var point in rubberbandPolygon)
+                point.StreamBuffer(rubberbandDataStream, PrimitiveType.Lines);
+
             sceneQuad.StreamBuffer(sceneDataStream, PrimitiveType.Triangles);
             frameQuad.StreamBuffer(frameDataStream, PrimitiveType.Triangles);
 
@@ -161,14 +205,18 @@ namespace SMEditor.Controls
             var frameShaderVert = _glslCache.Get(GLSLResource.FrameVertexShader);
             var sceneShaderFrag = _glslCache.Get(GLSLResource.SceneFragmentShader);
             var sceneShaderVert = _glslCache.Get(GLSLResource.SceneVertexShader);
+            var rubberbandShaderFrag = _glslCache.Get(GLSLResource.RubberbandFragmentShader);
+            var rubberbandShaderVert = _glslCache.Get(GLSLResource.RubberbandVertexShader);
 
             var frameTextureUniform = frameShaderFrag.Uniforms1i.FirstOrDefault(x => x.Name == "frameTexture");
             var sceneTextureUniform = frameShaderFrag.Uniforms1i.FirstOrDefault(x => x.Name == "sceneTexture");
+            var rubberbandColorUniform = rubberbandShaderFrag.Uniforms4.FirstOrDefault(x => x.Name == "rubberbandColor");
 
             // Create the GL frame buffer for our scene
             var frameBuffer = new GLFrameBuffer(_bitmap.PixelWidth, _bitmap.PixelHeight);
 
             // Declare Shader Programs
+            var rubberbandProgram = new GLShaderProgram(new GLShader(rubberbandShaderVert), new GLShader(rubberbandShaderFrag));
             var sceneProgram = new GLShaderProgram(new GLShader(sceneShaderVert), new GLShader(sceneShaderFrag));
             var frameProgram = new GLShaderProgram(new GLShader(frameShaderVert), new GLShader(frameShaderFrag));
 
@@ -198,17 +246,26 @@ namespace SMEditor.Controls
                                              PixelFormat.Rgba,
                                              PixelType.UnsignedByte);
 
+            var rubberbandVBO = new GLVertexBuffer<float>(vertexBufferIndex++, rubberbandDataStream, rubberbandShaderVert.VertexAttributes);
             var sceneVBO = new GLVertexBuffer<float>(vertexBufferIndex++, sceneDataStream, sceneShaderVert.VertexAttributes);
             var frameVBO = new GLVertexBuffer<float>(vertexBufferIndex++, frameDataStream, frameShaderVert.VertexAttributes);
 
             // Create VAOs for each GLShaderProgram
+            var rubberbandVAO = new GLVertexArray(PrimitiveType.Lines, rubberbandVBO);
             var sceneVAO = new GLVertexArray(PrimitiveType.Triangles, sceneVBO);
             var frameVAO = new GLVertexArray(PrimitiveType.Triangles, frameVBO);
 
+            rubberbandProgram.DeclareVAO(rubberbandVAO);
             sceneProgram.DeclareVAO(sceneVAO);
             frameProgram.DeclareVAO(frameVAO);
 
-            var program = new GLRenderingProgram(frameBuffer, sceneProgram, frameProgram, frameTexture, sceneTexture, frameTextureUniform, sceneTextureUniform);
+            // Save the rubberband program
+            _rubberbandProgram = rubberbandProgram;
+
+            var program = new GLRenderingProgram(frameBuffer, rubberbandProgram, 
+                                                 sceneProgram, frameProgram, 
+                                                 frameTexture, sceneTexture, 
+                                                 frameTextureUniform, sceneTextureUniform, rubberbandColorUniform);
 
             program.Compile();
 

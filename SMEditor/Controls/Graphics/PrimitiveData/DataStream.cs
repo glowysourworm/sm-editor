@@ -1,5 +1,6 @@
 ﻿using System;
-using System.Numerics;
+
+using OpenTK.Mathematics;
 
 namespace SMEditor.Controls.Graphics.PrimitiveData
 {
@@ -54,6 +55,12 @@ namespace SMEditor.Controls.Graphics.PrimitiveData
             {
                 _array[_cursor++] = buffer[index];
             }
+        }
+
+        public void Write(Vector2 vec2)
+        {
+            this.Write(vec2.X);
+            this.Write(vec2.Y);
         }
 
         public void Write(Vector4 vec4)

@@ -52,6 +52,9 @@
                     <RowDefinition Height="32" />
                     <RowDefinition Height="32" />
                     <RowDefinition Height="32" />
+
+                    <!-- GL Logs -->
+                    <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
                 <TextBlock Grid.Row="0" Text="Sprite Sheet" />
@@ -82,6 +85,14 @@
                 <xctk:ColorPicker Grid.Row="9" Grid.Column="1" SelectedColor="{Binding SpriteGridColor}" />
                 <xctk:IntegerUpDown Grid.Row="10" Grid.Column="1" Value="{Binding BrushSize}" Minimum="1" Maximum="20" />
                 <xctk:ColorPicker Grid.Row="11" Grid.Column="1" SelectedColor="{Binding SelectedColor}" />
+
+                <ListBox x:Name="GLLogMessages" Grid.Row="12" Grid.ColumnSpan="2">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Message}" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
             </Grid>
 
             <GridSplitter Grid.Column="0" HorizontalAlignment="Right" BorderBrush="Gray" BorderThickness="1" />

@@ -7,6 +7,8 @@ using OpenTK.Mathematics;
 
 using SMEditor.Controls.Graphics;
 using SMEditor.Controls.Graphics.Primitive.Interface;
+using SMEditor.Controls.Graphics.PrimitiveData;
+using SMEditor.Controls.Graphics.PrimitiveData.Interface;
 using SMEditor.Controls.Graphics.Program.Interface;
 using SMEditor.Controls.Grpahics.Data;
 
@@ -34,6 +36,10 @@ namespace RogueCreator.Graphics.GLModel.Program
         public void BindUniform<T>(UniformData<T> uniform) where T : struct
         {
             var uniformLocation = GL.GetUniformLocation(this.Handle, uniform.Name);
+
+            // TODO: Setup with GL messages. Also, must have the entire debug stack!!!! The OpenTK wrapper is not adequate!
+            if (uniformLocation == -1)
+                return;
 
             switch (uniform.Type)
             {
@@ -171,6 +177,20 @@ namespace RogueCreator.Graphics.GLModel.Program
                 _programVAOs[index].Bind(true);
                 _programVAOs[index].Draw();
             }
+        }
+
+        public void ReBuffer(DataStream stream)
+        {
+            if (!this.IsCompiled)
+                throw new Exception("Must first call IGLProgram.Compile() before using the GL program");
+
+            if (!this.IsActive)
+                throw new Exception("Must first call Bind to set the program active");
+
+            if (_programVAOs.Count != 1)
+                throw new Exception("Rebuffer not set up to handle multiple VAO's");
+
+            _programVAOs[0].ReBuffer(stream);
         }
 
         public void Bind(bool bind)

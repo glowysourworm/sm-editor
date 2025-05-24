@@ -8,6 +8,8 @@
         FrameFragmentShader,
         FrameVertexShader,
         SceneFragmentShader,
-        SceneVertexShader
+        SceneVertexShader,
+        RubberbandFragmentShader,
+        RubberbandVertexShader
     }
 }

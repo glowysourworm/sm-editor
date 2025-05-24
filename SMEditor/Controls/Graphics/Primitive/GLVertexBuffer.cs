@@ -21,8 +21,9 @@ namespace SMEditor.Controls.Graphics.Primitive
         public bool IsCreated { get; private set; }
 
         // Primary vertex data for the buffer
-        readonly DataStream _stream;
         readonly IEnumerable<VertexAttributeData> _vertexAttributes;
+
+        DataStream _stream;
 
         public GLVertexBuffer(int bufferIndex, DataStream dataStream, IEnumerable<VertexAttributeData> vertexAttributes)
         {
@@ -174,6 +175,24 @@ namespace SMEditor.Controls.Graphics.Primitive
         public int GetBufferSize()
         {
             return _stream.GetStreamSize();
+        }
+
+        public void ReBuffer(DataStream stream)
+        {
+            if (!this.IsCreated)
+                throw new GLException("GLVertexBuffer already deleted from the backend");
+
+            if (stream.StreamNumberElements != _stream.StreamNumberElements ||
+                stream.StreamNumberVertices != _stream.StreamNumberVertices ||
+                stream.GetStreamSize() != _stream.GetStreamSize())
+                throw new GLException("GLVertexBuffer calls to ReBuffer(DataStream stream) must have streams that represent equal data with equal size!");
+
+            GL.BufferData(BufferTarget.ArrayBuffer,
+                          stream.GetStreamSize(),
+                          stream.GetData(),
+                          BufferUsageHint.StaticDraw);
+
+            _stream = stream;
         }
 
         private int CalculateAttributeStride()
