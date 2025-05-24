@@ -21,7 +21,9 @@ void main()
     // Pretty sure the point of this is to set gl_Position; and to provide output data to the
     // next pipeline stages.
     //
-    gl_Position = vec4(vertex.x, vertex.y, 0, 1.0);
+
+    // TODO: INVERT TEXTURE IN MEMORY!!! (This was to flip the texture. Not sure why this happens)
+    gl_Position = vec4(vertex.x, -1 * vertex.y, 0, 1.0);
 
     // Struct data should be copied over for use by the fragment shader
     //

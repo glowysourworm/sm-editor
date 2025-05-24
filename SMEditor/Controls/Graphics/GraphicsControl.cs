@@ -118,6 +118,17 @@ namespace SMEditor.Controls.Graphics
             GLDraw();
         }
 
+        protected override void OnInvalidated(InvalidateEventArgs e)
+        {
+            base.OnInvalidated(e);
+
+            // Must first initialize the GL backend
+            if (!_glInitialized)
+                return;
+
+            GLDraw();
+        }
+
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
@@ -133,12 +144,13 @@ namespace SMEditor.Controls.Graphics
             if (!_glInitialized)
                 throw new GLException("OpenGL not yet initialized:  GraphicsControl.GLDraw");
 
-            // Run the rendering program (TODO)
+            // Run the rendering program
             if (_renderingProgramLoaded)
             {
                 _renderingProgram.Run();
             }
 
+            // Important to take care of flicker (see when to swap buffers!)
             this.Context.SwapBuffers();
         }
         #endregion

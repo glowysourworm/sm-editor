@@ -82,7 +82,7 @@ namespace SMEditor.Controls.Graphics.Primitive
                 throw new Exception("GLVertexArray must be bound before calling Draw()");
 
             // Draw Buffer (NOTE! NOT SURE IF IT IS NUMBER OF ELEMENTS, STREAM SIZE, or VERTICES!) (Documentation is not very good)
-            GL.DrawArrays(_primitiveType, 0, _vertexBuffer.GetBufferSize());
+            GL.DrawArrays(_primitiveType, 0, _vertexBuffer.GetNumberOfVertices());
         }
 
         public void Bind(bool bind)

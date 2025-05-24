@@ -47,37 +47,40 @@ namespace SMEditor.Controls.Graphics.PrimitiveData
             if (primitiveType != PrimitiveType.Triangles)
                 throw new GLException("Unhandled primitive type for GLQuad:  {0}", primitiveType);
 
+            // Triangle 1:  bottom-left, top-left, top-right
+            // Triangle 2:  bottom-left, top-right, bottom-right
+
             // Top Left
             outputStream.Write(this.VertexCoordinates.Left);            // vec2
-            outputStream.Write(this.VertexCoordinates.Top);
+            outputStream.Write(this.VertexCoordinates.Bottom);
             outputStream.Write(this.TextureCoordinates.Left);           // vec2
-            outputStream.Write(this.TextureCoordinates.Top);
-
-            // Top Right
-            outputStream.Write(this.VertexCoordinates.Right);
-            outputStream.Write(this.VertexCoordinates.Top);
-            outputStream.Write(this.TextureCoordinates.Right);
-            outputStream.Write(this.TextureCoordinates.Top);
-
-            // Bottom Left
-            outputStream.Write(this.VertexCoordinates.Left);
-            outputStream.Write(this.VertexCoordinates.Bottom);
-            outputStream.Write(this.TextureCoordinates.Left);
-            outputStream.Write(this.TextureCoordinates.Bottom);
-
-            // Bottom Left
-            outputStream.Write(this.VertexCoordinates.Left);
-            outputStream.Write(this.VertexCoordinates.Bottom);
-            outputStream.Write(this.TextureCoordinates.Left);
             outputStream.Write(this.TextureCoordinates.Bottom);
 
             // Top Right
-            outputStream.Write(this.VertexCoordinates.Right);
+            outputStream.Write(this.VertexCoordinates.Left);
             outputStream.Write(this.VertexCoordinates.Top);
-            outputStream.Write(this.TextureCoordinates.Right);
+            outputStream.Write(this.TextureCoordinates.Left);
             outputStream.Write(this.TextureCoordinates.Top);
 
             // Bottom Right
+            outputStream.Write(this.VertexCoordinates.Right);
+            outputStream.Write(this.VertexCoordinates.Top);
+            outputStream.Write(this.TextureCoordinates.Right);
+            outputStream.Write(this.TextureCoordinates.Top);
+
+            // Top Left
+            outputStream.Write(this.VertexCoordinates.Left);
+            outputStream.Write(this.VertexCoordinates.Bottom);
+            outputStream.Write(this.TextureCoordinates.Left);
+            outputStream.Write(this.TextureCoordinates.Bottom);
+
+            // Bottom Right
+            outputStream.Write(this.VertexCoordinates.Right);
+            outputStream.Write(this.VertexCoordinates.Top);
+            outputStream.Write(this.TextureCoordinates.Right);
+            outputStream.Write(this.TextureCoordinates.Top);
+
+            // Bottom Left
             outputStream.Write(this.VertexCoordinates.Right);
             outputStream.Write(this.VertexCoordinates.Bottom);
             outputStream.Write(this.TextureCoordinates.Right);

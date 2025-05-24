@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
@@ -13,6 +14,13 @@ namespace SMEditor.View
             InitializeComponent();
 
             this.ImageEditor.GLBackendEvent += ImageEditor_GLBackendEvent;
+        }
+
+        protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
+        {
+            base.OnRenderSizeChanged(sizeInfo);
+
+            this.ImageEditor.InvalidateVisual();
         }
 
         private void ImageEditor_GLBackendEvent(object? sender, string message)

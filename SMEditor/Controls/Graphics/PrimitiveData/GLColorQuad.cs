@@ -52,7 +52,8 @@ namespace SMEditor.Controls.Graphics.PrimitiveData
 
             // ELEMENT LAYOUT
             //
-            // Outputs 2-triangle entities:  top-left, top-right, bottom-left, bottom-left, top-right, bottom-right
+            // Triangle 1:  bottom-left, top-left, top-right
+            // Triangle 2:  bottom-left, top-right, bottom-right
             //
             // [x1, y1], [x2, y2], ... [xn, yn]
             //
@@ -62,15 +63,15 @@ namespace SMEditor.Controls.Graphics.PrimitiveData
 
             // 2 + 4 (float) per vertex
             outputStream.Write(this.VertexCoordinates.Left);              // vec2 (top-left)
-            outputStream.Write(this.VertexCoordinates.Top);
+            outputStream.Write(this.VertexCoordinates.Bottom);
             outputStream.Write(this.Color);                               // vec4 (color)
 
-            outputStream.Write(this.VertexCoordinates.Right);
+            outputStream.Write(this.VertexCoordinates.Left);
             outputStream.Write(this.VertexCoordinates.Top);
             outputStream.Write(this.Color);
 
-            outputStream.Write(this.VertexCoordinates.Left);
-            outputStream.Write(this.VertexCoordinates.Bottom);
+            outputStream.Write(this.VertexCoordinates.Right);
+            outputStream.Write(this.VertexCoordinates.Top);
             outputStream.Write(this.Color);
 
             outputStream.Write(this.VertexCoordinates.Left);

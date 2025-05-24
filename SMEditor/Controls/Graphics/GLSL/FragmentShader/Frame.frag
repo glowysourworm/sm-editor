@@ -9,6 +9,7 @@ in vec2 currentTex;
 
 // Try and use a 2D sampler to work with the texture. The active texture should be the 0th texture.
 uniform sampler2D frameTexture;
+uniform sampler2D sceneTexture;
 
 void main()
 {
@@ -16,5 +17,8 @@ void main()
     //        texture 2D coordinates are neglected because they can be easily calculated
     //
 
-    outputColor = texture(frameTexture, currentTex);
+    vec4 sceneOutput = texture(sceneTexture, currentTex);
+    vec4 frameOutput = texture(frameTexture, currentTex);
+
+    outputColor = sceneOutput;
 }

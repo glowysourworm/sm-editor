@@ -1,4 +1,6 @@
 ﻿
+using System.Windows.Media.Media3D;
+
 using OpenTK.Graphics.OpenGL4;
 
 using SMEditor.Controls.Graphics.PrimitiveData.Interface;
@@ -52,18 +54,19 @@ namespace SMEditor.Controls.Graphics.PrimitiveData
             if (primitiveType != PrimitiveType.Triangles)
                 throw new GLException("Unhandled primitive type for GLQuad:  {0}", primitiveType);
 
-            // Outputs 2-triangle entities:  top-left, top-right, bottom-left, bottom-left, top-right, bottom-right
+            // Triangle 1:  bottom-left, top-left, top-right
+            // Triangle 2:  bottom-left, top-right, bottom-right
 
             // [x1, y1], [x2, y2], ... [xn, yn]
+
+            outputStream.Write(this.Left);
+            outputStream.Write(this.Bottom);
 
             outputStream.Write(this.Left);
             outputStream.Write(this.Top);
 
             outputStream.Write(this.Right);
             outputStream.Write(this.Top);
-
-            outputStream.Write(this.Left);
-            outputStream.Write(this.Bottom);
 
             outputStream.Write(this.Left);
             outputStream.Write(this.Bottom);

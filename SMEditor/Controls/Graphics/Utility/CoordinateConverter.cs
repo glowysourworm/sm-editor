@@ -15,8 +15,8 @@ namespace SMEditor.Controls.Graphics.Utility
         /// <param name="sceneHeight">UI Height</param>
         public static Vector2 ConvertToNormalizedXYScene(int pixelX, int pixelY, int sceneWidth, int sceneHeight)
         {
-            var normalizedY = (pixelY / (float)sceneHeight * -2.0f) + 1.0f;
-            var normalizedX = (pixelX / (float)sceneWidth * 2.0f) - 1.0f;
+            var normalizedY = ((pixelY / (float)sceneHeight) * -2.0f) + 1.0f;
+            var normalizedX = ((pixelX / (float)sceneWidth) * 2.0f) - 1.0f;
 
             return new Vector2(normalizedX, normalizedY);
         }
