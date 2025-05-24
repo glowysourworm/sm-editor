@@ -28,6 +28,8 @@ namespace RogueCreator.Graphics.GLModel.Program
         GLTexture _frameTexture;
         GLTexture _sceneTexture;
 
+        int _zoomLevel = 1;
+
         public GLRenderingProgram(IGLFrameBuffer frameBuffer,
                                   IGLProgram sceneProgram,
                                   IGLProgram frameProgram,
@@ -99,6 +101,20 @@ namespace RogueCreator.Graphics.GLModel.Program
             this.IsCompiled = false;
         }
 
+        public void SetZoom(int zoomLevel)
+        {
+            if (!this.IsCompiled)
+                throw new Exception("Must first call IGLProgram.Compile() before using the GL program");
+
+            // Save this scale factor for the rendering loop
+            _zoomLevel = zoomLevel;
+        }
+
+        public int GetZoom()
+        {
+            return _zoomLevel;
+        }
+
         public void Run()
         {
             if (!this.IsCompiled)
@@ -134,6 +150,9 @@ namespace RogueCreator.Graphics.GLModel.Program
             _frameBuffer.Bind(false);
             _frameProgram.Bind(true);
             _frameProgram.DrawAll();
+
+            GL.Flush();
+            GL.Finish();
         }
     }
 }

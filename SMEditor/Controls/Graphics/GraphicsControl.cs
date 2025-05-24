@@ -76,6 +76,17 @@ namespace SMEditor.Controls.Graphics
             Invalidate();
         }
 
+        public void SetZoom(int zoomLevel)
+        {
+            if (_renderingProgramLoaded)
+                _renderingProgram.SetZoom(zoomLevel);
+        }
+
+        public int GetZoom()
+        {
+            return _renderingProgram.GetZoom();
+        }
+
         public void UnloadScene()
         {
             // Clear the backend

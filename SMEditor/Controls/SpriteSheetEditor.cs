@@ -25,7 +25,7 @@ using PixelFormat = OpenTK.Graphics.OpenGL4.PixelFormat;
 
 namespace SMEditor.Controls
 {
-    public class SpriteSheetEditor : WindowsFormsHost
+    public class SpriteSheetEditor : ScrollableWindowsFormsHost
     {
         #region Dependency Properties
         public static readonly DependencyProperty ImageFileNameProperty =
@@ -125,35 +125,22 @@ namespace SMEditor.Controls
             this.Child = openGLControl;
             this.SizeChanged += (sender, e) =>
             {
-
-                //var border = this.Parent as Border;
-
-                //if (openGLControl.Width < border.RenderSize.Width)
-                //    openGLControl.Width = (int)border.RenderSize.Width;
-
-                //if (openGLControl.Height < border.RenderSize.Height)
-                //    openGLControl.Height = (int)border.RenderSize.Height;
-
-                openGLControl.Invalidate();
+                // -> Invalidate
+                //UpdateViewport();
             };
 
             openGLControl.SizeChanged += (sender, e) =>
             {
-                //var border = this.Parent as Border;
+                this.Width = _graphicsLoader.GetGraphics().Width;
+                this.Height = _graphicsLoader.GetGraphics().Height;
 
-                //this.Width = border.RenderSize.Width;
-                //this.Height = border.RenderSize.Height;
+                // -> Invalidate
+                //UpdateViewport();
+            };
 
-                //this.Width = Math.Min(border.RenderSize.Width, openGLControl.Width);
-                //this.Height = Math.Min(border.RenderSize.Height, openGLControl.Height);
-
-                //if (_openGLControl.Width > this.Width)
-                //    _openGLControl.Width = (int)this.Width;
-
-                //if (_openGLControl.Height > this.Height)
-                //    _openGLControl.Height = (int)this.Height;
-
-                openGLControl.Invalidate();
+            openGLControl.MouseWheel += (sender, e) =>
+            {
+                HandleMouseWheel(e.Delta, Keyboard.Modifiers == ModifierKeys.Control);
             };
 
             _graphicsLoader = new SpriteSheetImageLoader(openGLControl);
@@ -179,12 +166,11 @@ namespace SMEditor.Controls
                 TranslateImpl(e.GetPosition(this));
             }
         }
-
         protected override void OnMouseWheel(MouseWheelEventArgs e)
         {
             base.OnMouseWheel(e);
 
-            ZoomImpl(e.Delta > 0);
+            HandleMouseWheel(e.Delta, Keyboard.Modifiers == ModifierKeys.Control);
         }
 
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
@@ -249,18 +235,66 @@ namespace SMEditor.Controls
 
             else
                 this.Zoom = Math.Max(this.Zoom - 1, 1);
+
+            UpdateViewport();
         }
         #endregion
 
+        /*
+        protected override Size MeasureOverride(Size constraint)
+        {
+            if (_graphicsLoader.IsLoaded())
+                return new Size(_graphicsLoader.GetGraphics().Width * this.Zoom, _graphicsLoader.GetGraphics().Height * this.Zoom);
+
+            return base.MeasureOverride(constraint);
+        }
+
+        protected override Size ArrangeOverride(Size finalSize)
+        {
+            return base.ArrangeOverride(finalSize);
+        }
+        */
+
         protected void UpdateViewport()
         {
-            if (_graphicsLoader?.GetGraphics() != null)
+            // Procedure:  This should take care of all sizing / zoom / offset / parent-child 
+            //             rendering viewport issues in one method
+            //
+            // 1) Determine zoomed image size
+            // 2) Set control size to this size
+            // 3) Set wrapper scroll viewer to constrained size (Parent control)
+            // 4) Set GL graphics to proper viewport (zoom scale wasn't needed, yet)
+            // 5) 
+
+            if (_graphicsLoader == null)
+                return;
+
+            if (_graphicsLoader.IsLoaded())
+            {
+                // Zoom (sets the viewport) (zoom won't be used; but it's in the render program)
+                _graphicsLoader.SetZoom(this.Zoom);
+
+                // Offset
                 _graphicsLoader.GetGraphics().Invalidate();
+
+                InvalidateVisual();
+            }
         }
 
         protected void LoadImageFile()
         {
             _graphicsLoader.Load(this.ImageFileName);
+
+            InvalidateVisual();
+        }
+
+        protected void HandleMouseWheel(double delta, bool ctrl)
+        {
+            if (ctrl)
+                ZoomImpl(delta > 0);
+
+            else
+                this.ParentScrollViewer.ScrollToVerticalOffset(this.ParentScrollViewer.VerticalOffset - delta);
         }
 
         protected override void OnRender(DrawingContext drawingContext)
@@ -269,6 +303,15 @@ namespace SMEditor.Controls
 
             _graphicsLoader.GetGraphics().Invalidate();
         }
+
+        protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
+        {
+            base.OnRenderSizeChanged(sizeInfo);
+
+            UpdateViewport();
+        }
+
+
 
         protected override void ParentLayoutInvalidated(UIElement child)
         {
@@ -282,7 +325,6 @@ namespace SMEditor.Controls
             var editor = d as SpriteSheetEditor;
 
             editor?.UpdateViewport();
-            editor?.InvalidateVisual();
         }
 
         private static void OnImageFileChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -299,7 +341,7 @@ namespace SMEditor.Controls
         {
             var editor = d as SpriteSheetEditor;
 
-            if (!string.IsNullOrEmpty(e.NewValue as string) && editor != null)
+            if (editor != null)
             {
                 editor.UpdateViewport();
             }

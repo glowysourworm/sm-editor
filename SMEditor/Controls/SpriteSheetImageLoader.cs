@@ -102,6 +102,21 @@ namespace SMEditor.Controls
             }
         }
 
+        public void SetZoom(int zoomLevel)
+        {
+            if (!this.IsLoaded())
+                throw new Exception("Trying to set viewport before loading graphics:  SpriteSheetImageLoader.SetViewport");
+
+            if (_openGLControl.GetZoom() == zoomLevel)
+                return;
+
+            _openGLControl.SetZoom(zoomLevel);
+            _openGLControl.SetViewport(0, 0, (int)(_bitmap.PixelWidth * (double)zoomLevel), (int)(_bitmap.PixelHeight * (double)zoomLevel));
+
+            _openGLControl.Width = _bitmap.PixelWidth * zoomLevel;
+            _openGLControl.Height = _bitmap.PixelHeight * zoomLevel;
+        }
+
         /// <summary>
         /// Builds Compiled GL program for rendering the sprite sheet
         /// </summary>

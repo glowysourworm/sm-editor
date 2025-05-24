@@ -24,5 +24,15 @@
         /// Renders the program's drawing arrays
         /// </summary>
         void Run();
+
+        /// <summary>
+        /// Sets a scale factor for zoom effect for the program using a scale matrix
+        /// </summary>
+        void SetZoom(int zoomLevel);
+
+        /// <summary>
+        /// Returns last zoom setting
+        /// </summary>
+        int GetZoom();
     }
 }
